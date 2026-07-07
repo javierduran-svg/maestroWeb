@@ -1,0 +1,23 @@
+.env
+*.db
+__pycache__/
+*.pyc
+instance/
+_test_output/
+uploads/
+deploy_export/
+
+# Secretos / notas de servidor (no subir)
+env-servidor.txt
+.env.*
+!.env.example
+!.env.production.example
+
+# Python / entornos virtuales
+.venv/
+venv/
+
+# Claves y certificados locales
+*.pem
+*.key
+id_rsa*

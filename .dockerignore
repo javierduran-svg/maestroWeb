@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.production.example
+__pycache__
+*.pyc
+*.pyo
+*.db
+.git
+.gitignore
+instance
+_test_output
+uploads
+*.md
+!DEPLOY.md
