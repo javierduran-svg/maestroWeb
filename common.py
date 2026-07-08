@@ -687,7 +687,7 @@ def _foto_relativa_trabajador(trabajador: Trabajador) -> str:
 
 
 def _foto_url(trabajador: Trabajador) -> str | None:
-    if trabajador.foto_path:
+    if trabajador.foto_path and _foto_path(trabajador):
         return f'/api/personal/{trabajador.id}/foto'
     return None
 
@@ -1813,12 +1813,46 @@ def _ordenar_movimientos(query, sort: str | None, order: str | None):
     return query.order_by(col.desc() if descending else col.asc())
 
 
+def _validar_datos_proyecto(data: dict, empresa_id: int) -> tuple[dict | None, str | None]:
+    if not data:
+        return None, 'JSON inválido'
+    nombre = (data.get('nombre') or '').strip()
+    if not nombre:
+        return None, 'nombre requerido'
+    servicio = (data.get('servicio') or '').strip()
+    if not servicio:
+        return None, 'servicio requerido'
+    try:
+        cliente_id = int(data.get('cliente_id'))
+    except (TypeError, ValueError):
+        return None, 'cliente_id inválido'
+    cliente = Cliente.query.filter_by(empresa_id=empresa_id, id=cliente_id).first()
+    if not cliente:
+        return None, 'Cliente no pertenece a la empresa activa'
+    try:
+        superficie = float(data.get('superficie'))
+    except (TypeError, ValueError):
+        return None, 'superficie inválida'
+    if superficie < 0:
+        return None, 'superficie debe ser mayor o igual a 0'
+    campos = {
+        'nombre': nombre[:150],
+        'servicio': servicio[:100],
+        'superficie': superficie,
+        'cliente_id': cliente.id,
+    }
+    status = (data.get('status') or '').strip()
+    if status:
+        campos['status'] = status
+    return campos, None
+
+
 def _proyecto_a_dict(p, movimientos):
     recalcular_proyecto(p, movimientos)
     return {
         'id': p.id,
         'nombre': p.nombre,
-        'cliente': p.cliente_rel.razon_social,
+        'cliente': p.cliente_rel.razon_social if p.cliente_rel else '',
         'cliente_id': p.cliente_id,
         'servicio': p.servicio,
         'superficie': p.superficie,
@@ -2442,6 +2476,7 @@ __all__ = [
     '_validar_asignado_id_trabajador',
     '_validar_datos_cuenta',
     '_validar_datos_propuesta',
+    '_validar_datos_proyecto',
     '_validar_datos_trabajador',
     '_valor_uf_a_dict',
     '_verificar_empresa',

@@ -200,6 +200,9 @@ def manejar_foto_trabajador(trabajador_id):
     if request.method == 'GET':
         path = _foto_path(trabajador)
         if not path:
+            if trabajador.foto_path:
+                trabajador.foto_path = None
+                db.session.commit()
             abort(404)
         return send_file(path, mimetype='image/jpeg')
 

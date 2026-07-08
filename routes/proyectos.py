@@ -1,6 +1,6 @@
 from datetime import date
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 
 from bootstrap import ESTADOS_PROPUESTA
 from common import *
@@ -88,40 +88,37 @@ def manejar_proyectos():
     eid, err = _requiere_empresa()
     if err:
         return err
-    movimientos = Movimiento.query.filter_by(empresa_id=eid).all()
 
     if request.method == 'POST':
-        data = request.json
-        cliente = Cliente.query.filter_by(empresa_id=eid, id=int(data['cliente_id'])).first()
-        if not cliente:
-            return jsonify({'error': 'Cliente no pertenece a la empresa activa'}), 400
-        nuevo_p = Proyecto(
-            empresa_id=eid,
-            nombre=data['nombre'],
-            superficie=float(data['superficie']),
-            servicio=data['servicio'],
-            cliente_id=cliente.id,
-        )
+        campos, error = _validar_datos_proyecto(request.json or {}, eid)
+        if error:
+            return jsonify({'error': error}), 400
+        nuevo_p = Proyecto(empresa_id=eid, **campos)
         db.session.add(nuevo_p)
         db.session.commit()
         return jsonify({'mensaje': 'Proyecto creado con éxito', 'id': nuevo_p.id}), 201
 
-    proyectos = Proyecto.query.filter_by(empresa_id=eid).all()
-    for p in proyectos:
-        recalcular_proyecto(p, movimientos)
-    db.session.commit()
+    try:
+        movimientos = Movimiento.query.filter_by(empresa_id=eid).all()
+        for p in Proyecto.query.filter_by(empresa_id=eid).all():
+            recalcular_proyecto(p, movimientos)
+        db.session.commit()
 
-    query = Proyecto.query.filter_by(empresa_id=eid)
-    query = _filtrar_proyectos_query(query, request.args)
-    query = _ordenar_proyectos(query, request.args.get('sort'), request.args.get('order'))
-    page, per_page = _parse_pagination_args()
-    page_items, total, page = _paginate_query(query, page, per_page)
-    return _paginated_json(
-        [_proyecto_a_dict(p, movimientos) for p in page_items],
-        total,
-        page,
-        per_page,
-    )
+        query = Proyecto.query.filter_by(empresa_id=eid)
+        query = _filtrar_proyectos_query(query, request.args)
+        query = _ordenar_proyectos(query, request.args.get('sort'), request.args.get('order'))
+        page, per_page = _parse_pagination_args()
+        page_items, total, page = _paginate_query(query, page, per_page)
+        return _paginated_json(
+            [_proyecto_a_dict(p, movimientos) for p in page_items],
+            total,
+            page,
+            per_page,
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception('Error en GET /api/proyectos empresa_id=%s', eid)
+        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/api/proyectos/<int:proyecto_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -152,15 +149,31 @@ def manejar_proyecto(proyecto_id):
         _recalcular_todos_proyectos(eid)
         return jsonify({'mensaje': 'Proyecto eliminado'})
 
-    data = request.json
+    data = request.json or {}
     if 'nombre' in data:
-        proyecto.nombre = data['nombre'][:150]
+        nombre = (data.get('nombre') or '').strip()
+        if not nombre:
+            return jsonify({'error': 'nombre requerido'}), 400
+        proyecto.nombre = nombre[:150]
     if 'superficie' in data:
-        proyecto.superficie = float(data['superficie'])
+        try:
+            superficie = float(data['superficie'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'superficie inválida'}), 400
+        if superficie < 0:
+            return jsonify({'error': 'superficie debe ser mayor o igual a 0'}), 400
+        proyecto.superficie = superficie
     if 'servicio' in data:
-        proyecto.servicio = data['servicio'][:100]
+        servicio = (data.get('servicio') or '').strip()
+        if not servicio:
+            return jsonify({'error': 'servicio requerido'}), 400
+        proyecto.servicio = servicio[:100]
     if 'cliente_id' in data:
-        cliente = Cliente.query.filter_by(empresa_id=eid, id=int(data['cliente_id'])).first()
+        try:
+            cliente_id = int(data['cliente_id'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'cliente_id inválido'}), 400
+        cliente = Cliente.query.filter_by(empresa_id=eid, id=cliente_id).first()
         if not cliente:
             return jsonify({'error': 'Cliente no pertenece a la empresa activa'}), 400
         proyecto.cliente_id = cliente.id
