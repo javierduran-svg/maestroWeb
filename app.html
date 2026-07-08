@@ -358,16 +358,19 @@
         .table-movimientos tbody tr.mov-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
         .table-movimientos tbody tr.mov-row-selected:hover { background-color: #d6ecec !important; }
         .table-movimientos .cell-edit,
-        .table-movimientos .cell-edit.form-select,
+        .table-movimientos .cell-edit.form-select:not([class*="status-pago-"]),
         .table-movimientos .mov-filtro,
         .table-movimientos .mov-filtro.form-select {
             border: none; box-shadow: none; background: transparent; border-radius: 0;
         }
         .table-movimientos .cell-edit:focus,
-        .table-movimientos .cell-edit.form-select:focus,
+        .table-movimientos .cell-edit.form-select:focus:not([class*="status-pago-"]),
         .table-movimientos .mov-filtro:focus,
         .table-movimientos .mov-filtro.form-select:focus {
             background: #fff; box-shadow: inset 0 0 0 1px var(--teal-green); outline: none;
+        }
+        .table-movimientos select[class*="status-pago-"]:focus {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); outline: none;
         }
         .table-movimientos .badge { border: none !important; font-weight: 500; font-size: 0.65rem; }
         .table-movimientos td, .table-movimientos th {
@@ -381,20 +384,28 @@
         .table-movimientos tbody tr.mov-row td { height: 26px; }
         .table-movimientos .cell-edit-date.mov-fecha-futura { color: #adb5bd; }
         .table-movimientos .cell-edit-date.mov-fecha-hoy { font-weight: 700; color: #198754; }
-        .table-movimientos select.status-pago-por-enviar,
-        .badge.status-pago-por-enviar { background-color: #e9ecef; color: #495057; }
-        .table-movimientos select.status-pago-programado,
-        .badge.status-pago-programado { background-color: #0d6efd; color: #fff; }
-        .table-movimientos select.status-pago-enviado,
-        .badge.status-pago-enviado { background-color: #ffc107; color: #212529; }
-        .table-movimientos select.status-pago-facturado,
-        .badge.status-pago-facturado { background-color: #198754; color: #fff; }
-        .table-movimientos select.status-pago-pagado,
-        .badge.status-pago-pagado { background-color: #0f5132; color: #fff; }
-        .table-movimientos select.status-pago-cedida,
-        .badge.status-pago-cedida { background-color: #dc3545; color: #fff; }
-        .table-movimientos select.status-pago-otro,
-        .badge.status-pago-otro { background-color: #495057; color: #fff; }
+        select.status-pago-por-enviar,
+        td.status-pago-por-enviar,
+        .badge.status-pago-por-enviar { background-color: #e9ecef !important; color: #495057 !important; }
+        select.status-pago-programado,
+        td.status-pago-programado,
+        .badge.status-pago-programado { background-color: #0d6efd !important; color: #fff !important; }
+        select.status-pago-enviado,
+        td.status-pago-enviado,
+        .badge.status-pago-enviado { background-color: #ffc107 !important; color: #212529 !important; }
+        select.status-pago-facturado,
+        td.status-pago-facturado,
+        .badge.status-pago-facturado { background-color: #198754 !important; color: #fff !important; }
+        select.status-pago-pagado,
+        td.status-pago-pagado,
+        .badge.status-pago-pagado { background-color: #0f5132 !important; color: #fff !important; }
+        select.status-pago-cedida,
+        td.status-pago-cedida,
+        .badge.status-pago-cedida { background-color: #dc3545 !important; color: #fff !important; }
+        select.status-pago-otro,
+        td.status-pago-otro,
+        .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
+        td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
         .mov-sel-hint { font-size: 0.75rem; color: #868e96; }
         .table-proyectos tbody tr.proyecto-row { cursor: pointer; }
         .table-proyectos tbody tr.proyecto-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
@@ -2237,7 +2248,7 @@
     let _proyItems = [];
     let _proyFilterTimer = null;
     let _proyFetchSeq = 0;
-    let _movPerPage = 500;
+    let _movPerPage = 0;
     let _movTotal = 0;
     let _movItems = [];
     let _movFilterTimer = null;
@@ -2764,7 +2775,13 @@
 
     function actualizarClaseStatusPagoSelect(sel) {
         if (!sel) return;
-        sel.className = 'form-select cell-edit cell-edit-sm ' + claseStatusPagoSelect(sel.value);
+        const cls = claseStatusPagoSelect(sel.value);
+        sel.className = 'form-select cell-edit cell-edit-sm ' + cls;
+        const td = sel.closest('td[data-field="status_pago"]');
+        if (td) {
+            [...td.classList].filter(c => c.startsWith('status-pago-')).forEach(c => td.classList.remove(c));
+            td.classList.add(cls);
+        }
     }
 
     function selectStatusPagoHtml(selected, onchange) {
@@ -4332,7 +4349,7 @@
                 <td data-field="fecha_estado_pago">${inputFechaMov(m.fecha_estado_pago, gc)}</td>
                 <td data-field="fecha_facturacion">${inputFechaMov(m.fecha_facturacion, gc)}</td>
                 <td data-field="numero_factura"><input type="text" class="form-control cell-edit cell-edit-sm" value="${esc(m.numero_factura)}" onchange="${gc}"></td>
-                <td data-field="status_pago">${selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)}</td>
+                <td data-field="status_pago" class="${claseStatusPagoSelect(m.status_pago || 'Por enviar')}">${selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)}</td>
                 <td data-field="condicion_pago_dias"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsCondicionPago(m.condicion_pago_dias || 30)}</select></td>
                 <td data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm mov-monto-ingreso" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
                 <td class="text-end">${botonesAccion(proyectoId, clase, m.id)}</td>
@@ -6001,12 +6018,39 @@
         renderMovimientos();
     }
 
+    async function cargarMovimientosCompletos(queryString) {
+        const res = await apiFetch('/api/movimientos?' + queryString);
+        const data = await res.json();
+        let items = data.items || [];
+        const total = data.total || 0;
+        if (total === 0 || items.length >= total) return data;
+
+        const perPage = data.per_page || 0;
+        if (perPage === 0 && items.length < total) {
+            const fallback = new URLSearchParams(queryString);
+            fallback.set('per_page', '500');
+            fallback.set('page', '1');
+            return cargarMovimientosCompletos(fallback.toString());
+        }
+        if (perPage > 0) {
+            const pages = data.pages || Math.ceil(total / perPage);
+            for (let page = 2; page <= pages; page++) {
+                const p = new URLSearchParams(queryString);
+                p.set('page', String(page));
+                const r = await apiFetch('/api/movimientos?' + p.toString());
+                const d = await r.json();
+                items = items.concat(d.items || []);
+            }
+            return { ...data, items, page: 1, pages: 1 };
+        }
+        return data;
+    }
+
     async function renderMovimientos() {
         const seq = ++_movFetchSeq;
         const proys = await fetchProyectosSelect();
-        const res = await apiFetch('/api/movimientos?' + buildMovimientosQueryParams());
+        const data = await cargarMovimientosCompletos(buildMovimientosQueryParams());
         if (seq !== _movFetchSeq) return;
-        const data = await res.json();
         _movItems = data.items || [];
         _movTotal = data.total || 0;
         const lista = _movItems;

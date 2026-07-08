@@ -1558,6 +1558,7 @@ def _recalcular_todos_proyectos(empresa_id: int):
 DEFAULT_PER_PAGE = 50
 MAX_PER_PAGE = 100
 ADMIN_PER_PAGE = 500
+FETCH_ALL_PER_PAGE = 0
 
 PROYECTO_SORT_FIELDS = {
     'nombre': Proyecto.nombre,
@@ -1594,7 +1595,9 @@ def _parse_pagination_args():
         per_page_raw = int(request.args.get('per_page', DEFAULT_PER_PAGE))
     except (TypeError, ValueError):
         per_page_raw = DEFAULT_PER_PAGE
-    if per_page_raw == ADMIN_PER_PAGE:
+    if per_page_raw == FETCH_ALL_PER_PAGE:
+        per_page = FETCH_ALL_PER_PAGE
+    elif per_page_raw == ADMIN_PER_PAGE:
         per_page = ADMIN_PER_PAGE
     else:
         per_page = max(1, min(per_page_raw, MAX_PER_PAGE))
@@ -1614,6 +1617,8 @@ def _paginated_json(items, total: int, page: int, per_page: int):
 
 def _paginate_query(query, page: int, per_page: int):
     total = query.count()
+    if per_page == FETCH_ALL_PER_PAGE:
+        return query.all(), total, 1
     pages = max(1, (total + per_page - 1) // per_page) if per_page else 1
     if total > 0 and page > pages:
         page = pages
@@ -2232,6 +2237,7 @@ def _param_bool(val, default: bool = False) -> bool:
 
 __all__ = [
     'ADMIN_PER_PAGE',
+    'FETCH_ALL_PER_PAGE',
     'AUTH_EXEMPT_PREFIXES',
     'CATEGORIAS_CUENTA',
     'CERTIFICADOS_DIR',
