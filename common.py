@@ -125,6 +125,65 @@ ESTADOS_ENTREGA = ['Por Hacer', 'Hecho']
 ESTADOS_TAREA_ENTREGA = ['Pendiente', 'En proceso', 'Hecho']
 NOMBRE_CUENTA_CLIENTES = 'Clientes'
 NOMBRE_CUENTA_BANCO_SANTANDER = 'Cta Cte Santander pesos'
+
+
+def _nombre_cuenta_es_clientes(nombre: str | None) -> bool:
+    return (nombre or '').strip().lower() == NOMBRE_CUENTA_CLIENTES.lower()
+
+
+def _inferir_clase_movimiento(
+    transaccion: str,
+    origen_nombre: str,
+    destino_nombre: str,
+    proyecto_id=None,
+) -> str:
+    """Clase contable según transacción y cuentas (Admin puede ser estado_pago sin proyecto)."""
+    if transaccion == 'Ingreso' and _nombre_cuenta_es_clientes(origen_nombre):
+        return 'estado_pago'
+    if proyecto_id and transaccion == 'Egreso':
+        return 'gasto'
+    return 'general'
+
+
+def _es_movimiento_estado_pago(mov: Movimiento) -> bool:
+    if mov.clase == 'estado_pago':
+        return True
+    if mov.clase != 'general' or mov.transaccion != 'Ingreso':
+        return False
+    origen = mov.cta_origen
+    return bool(origen and _nombre_cuenta_es_clientes(origen.nombre))
+
+
+def migrar_movimientos_admin_estado_pago() -> int:
+    """Reclasifica ingresos Clientes (Admin) mal guardados como general y restaura status."""
+    clientes_ids = {
+        c.id
+        for c in Cuenta.query.filter(
+            func.lower(Cuenta.nombre) == NOMBRE_CUENTA_CLIENTES.lower()
+        ).all()
+    }
+    if not clientes_ids:
+        return 0
+    actualizados = 0
+    for m in Movimiento.query.filter(
+        Movimiento.clase == 'general',
+        Movimiento.transaccion == 'Ingreso',
+        Movimiento.cta_origen_id.in_(clientes_ids),
+    ).all():
+        if not (m.status_pago or m.fecha_facturacion or m.numero_factura):
+            continue
+        m.clase = 'estado_pago'
+        if not m.status_pago:
+            if m.fecha_estado_pago:
+                m.status_pago = 'Pagado'
+            elif m.fecha_facturacion:
+                m.status_pago = 'Facturado'
+            else:
+                m.status_pago = 'Por enviar'
+        actualizados += 1
+    if actualizados:
+        db.session.commit()
+    return actualizados
 NOMBRE_CUENTA_GASTO_BANCO = 'Otros gastos'
 NOMBRE_CUENTA_REMUNERACIONES_POR_PAGAR = 'Remuneraciones por pagar'
 
@@ -1891,8 +1950,11 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
         status = data.get('status_pago') or None
         if mov.clase == 'gasto' and status and status not in STATUS_GASTO:
             abort(400, description=f'Status de gasto no válido: {status}')
-        if mov.clase == 'estado_pago' and status and status not in STATUS_PAGO:
-            abort(400, description=f'Status de pago no válido: {status}')
+        if _es_movimiento_estado_pago(mov):
+            if mov.clase == 'general':
+                mov.clase = 'estado_pago'
+            if status and status not in STATUS_PAGO:
+                abort(400, description=f'Status de pago no válido: {status}')
         mov.status_pago = status
     if 'condicion_pago_dias' in data:
         mov.condicion_pago_dias = _parse_condicion_pago(data.get('condicion_pago_dias'))
@@ -2200,12 +2262,11 @@ def _registrar_movimiento_desde_dte(data: dict, dte: dict, empresa_id: int) -> M
 
     proyecto_id = data.get('proyecto_id')
     centro = data.get('centro_costo', 'Administración')
-    clase = 'general'
+    clase = 'estado_pago'
 
     if proyecto_id:
         proyecto = Proyecto.query.filter_by(empresa_id=empresa_id, id=int(proyecto_id)).first()
         if proyecto:
-            clase = 'estado_pago'
             centro = proyecto.nombre[:50]
 
     mov = Movimiento(

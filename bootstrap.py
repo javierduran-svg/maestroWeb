@@ -452,6 +452,8 @@ def _migrar_schema_legacy() -> None:
             else:
                 m.status_pago = 'Por enviar'
     db.session.commit()
+    from common import migrar_movimientos_admin_estado_pago
+    migrar_movimientos_admin_estado_pago()
     db.create_all()
     if inspect(db.engine).has_table('trabajadores'):
         cols_t = {c['name'] for c in inspect(db.engine).get_columns('trabajadores')}

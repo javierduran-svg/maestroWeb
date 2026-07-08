@@ -522,6 +522,11 @@ def manejar_movimientos():
                 proyecto_id = int(proyecto_id)
                 proyecto = Proyecto.query.filter_by(empresa_id=eid, id=proyecto_id).first_or_404()
                 centro = proyecto.nombre
+            clase_mov = (
+                'estado_pago'
+                if tipo == 'Ingreso' and _nombre_cuenta_es_clientes(origen.nombre)
+                else 'general'
+            )
             mov = Movimiento(
                 empresa_id=eid,
                 fecha_movimiento=_parse_fecha(data['fecha']),
@@ -529,13 +534,17 @@ def manejar_movimientos():
                 fecha_facturacion=_parse_fecha(data.get('fecha_facturacion')),
                 monto_pesos=float(data['monto']),
                 centro_costo=centro,
-                clase='general',
+                clase=clase_mov,
                 cta_origen_id=origen.id,
                 cta_destino_id=destino.id,
                 transaccion=tipo,
                 descripcion=data.get('descripcion'),
                 numero_factura=data.get('numero_factura'),
                 proyecto_id=proyecto_id,
+                status_pago=(
+                    data.get('status_pago')
+                    or ('Por enviar' if clase_mov == 'estado_pago' else None)
+                ),
             )
             db.session.add(mov)
         db.session.commit()

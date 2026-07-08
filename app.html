@@ -330,8 +330,33 @@
             box-shadow: inset 3px 0 0 var(--teal-green);
         }
         .table-proyectos tbody tr.proyecto-row-active:hover { background-color: #c9e5e5 !important; }
-        .subseccion-proyecto .table { font-size: 0.8125rem; }
+        .subseccion-proyecto .table:not(.table-proy-detalle) { font-size: 0.8125rem; }
         .subseccion-proyecto h6 { font-size: 0.8125rem; }
+        .table-proy-detalle .cell-edit,
+        .table-proy-detalle .cell-edit.form-select:not([class*="status-pago-"]) {
+            border: none; box-shadow: none; background: transparent; border-radius: 0;
+        }
+        .table-proy-detalle .cell-edit:focus,
+        .table-proy-detalle .cell-edit.form-select:focus:not([class*="status-pago-"]) {
+            background: #fff; box-shadow: inset 0 0 0 1px var(--teal-green); outline: none;
+        }
+        .table-proy-detalle select[class*="status-pago-"]:focus {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); outline: none;
+        }
+        .table-proy-detalle .badge { border: none !important; font-weight: 500; font-size: 0.65rem; }
+        .table-proy-detalle td, .table-proy-detalle th {
+            box-shadow: none !important;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.78rem;
+            line-height: 1.25;
+        }
+        .table-proy-detalle .cell-edit { padding: 0.1rem 0.28rem; font-size: 0.75rem; min-height: 1.35rem; }
+        .table-proy-detalle tbody tr td { height: 26px; }
+        .subseccion-proyecto .tabla-scroll-wrap.tabla-scroll-expand {
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: auto;
+        }
         .subseccion-proyecto .cell-edit,
         .subseccion-proyecto .cell-edit.form-select {
             border: none; box-shadow: none; background: transparent; border-radius: 0;
@@ -2642,7 +2667,16 @@
 
     function claseMontoMov(m) {
         const t = m.transaccion || m.tipo || '';
-        return (t === 'Ingreso' || m.clase === 'estado_pago') ? 'mov-monto-ingreso' : 'mov-monto-egreso';
+        return (t === 'Ingreso' || m.clase === 'estado_pago' || esEstadoPagoMov(m)) ? 'mov-monto-ingreso' : 'mov-monto-egreso';
+    }
+
+    function esEstadoPagoMov(m) {
+        if (m.clase === 'estado_pago') return true;
+        if (m.clase !== 'general' || (m.transaccion || m.tipo) !== 'Ingreso') return false;
+        const origenNom = (m.origen || '').trim().toLowerCase();
+        if (origenNom === 'clientes') return true;
+        const cuenta = _cuentasCache.find(c => String(c.id) === String(m.origen_id));
+        return cuenta && cuenta.nombre.trim().toLowerCase() === 'clientes';
     }
 
     function statusPagoCobrado(status) {
@@ -2654,12 +2688,11 @@
         const issues = [];
         if (!m.fecha_movimiento) issues.push('Falta fecha movimiento');
         if (!m.monto || Number(m.monto) <= 0) issues.push('Monto inválido o faltante');
-        if (m.clase === 'estado_pago' && !m.proyecto_id) issues.push('Falta proyecto en estado de pago');
 
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
-        if (m.clase === 'estado_pago') {
+        if (esEstadoPagoMov(m)) {
             const status = String(m.status_pago || 'Por enviar').trim() || 'Por enviar';
             const dMov = parseIsoDate(m.fecha_movimiento);
             const dFact = parseIsoDate(m.fecha_facturacion);
@@ -2856,13 +2889,19 @@
             } else {
                 const div = document.createElement('div');
                 div.className = 'tabla-scroll-wrap';
-                if (table.closest('.subseccion-proyecto')) div.classList.add('tabla-scroll-nested');
+                if (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle')) {
+                    div.classList.add('tabla-scroll-expand');
+                } else if (table.closest('.subseccion-proyecto')) {
+                    div.classList.add('tabla-scroll-nested');
+                }
                 table.parentNode.insertBefore(div, table);
                 div.appendChild(table);
                 wrap = div;
             }
         }
-        if (table.closest('.subseccion-proyecto') && !wrap.classList.contains('tabla-scroll-nested')) {
+        if (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle') && !wrap.classList.contains('tabla-scroll-expand')) {
+            wrap.classList.add('tabla-scroll-expand');
+        } else if (table.closest('.subseccion-proyecto') && !wrap.classList.contains('tabla-scroll-nested') && !wrap.classList.contains('tabla-scroll-expand')) {
             wrap.classList.add('tabla-scroll-nested');
         }
         aplicarStickyTheadOffsets(table);
@@ -2995,7 +3034,10 @@
         if (!ths.length) return;
 
         const tableId = obtenerIdTabla(table);
-        const skipSaved = table.id === 'tabla-movimientos-grid';
+        const skipSaved = table.id === 'tabla-movimientos-grid'
+            || /^ep-tabla-/.test(table.id)
+            || /^g-tabla-/.test(table.id)
+            || /^ent-tabla-/.test(table.id);
         const saved = skipSaved ? null : leerAnchosGuardados(tableId);
         const visible = ths.some(th => th.offsetWidth > 0);
         if (!visible && !saved) {
@@ -4299,6 +4341,14 @@
         actualizarIconosOrdenDetalleTabla(`ep-tabla-${proyectoId}`, _proyEpOrdenCol, _proyEpOrdenDir);
         actualizarIconosOrdenDetalleTabla(`g-tabla-${proyectoId}`, _proyGastoOrdenCol, _proyGastoOrdenDir);
         actualizarIconosOrdenDetalleTabla(`ent-tabla-${proyectoId}`, _proyEntOrdenCol, _proyEntOrdenDir);
+        requestAnimationFrame(() => autoAjustarAnchosTablasDetalleProyecto(proyectoId));
+    }
+
+    function autoAjustarAnchosTablasDetalleProyecto(proyectoId) {
+        [`ep-tabla-${proyectoId}`, `g-tabla-${proyectoId}`, `ent-tabla-${proyectoId}`].forEach(id => {
+            const table = document.getElementById(id);
+            if (table) autoAjustarAnchosTabla(table);
+        });
     }
 
     function ordenarDetalleEp(col) {
@@ -4829,7 +4879,7 @@
             <div class="proyecto-detalle-scroll">
                 <div class="subseccion-proyecto p-3">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-file-invoice-dollar"></i> Estados de pago</h6><button class="btn btn-sm btn-teal" onclick="abrirEstadoPago(${id})">+ ESTADO DE PAGO</button></div>
-                    <table id="ep-tabla-${id}" class="table table-hover table-panel table-compact mb-0"><thead><tr>
+                    <table id="ep-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
                         ${thSortDetalle('fecha_movimiento', 'Fecha', `ordenarDetalleEp('fecha_movimiento')`)}
                         ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleEp('descripcion')`)}
                         ${thSortDetalle('fecha_estado_pago', 'Estado de pago', `ordenarDetalleEp('fecha_estado_pago')`)}
@@ -4843,7 +4893,7 @@
                 </div>
                 <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0"><i class="fa-solid fa-receipt"></i> Gastos</h6><button class="btn btn-sm btn-dark" onclick="abrirGasto(${id})">+ GASTO</button></div>
-                    <table id="g-tabla-${id}" class="table table-hover table-panel table-compact mb-0"><thead><tr>
+                    <table id="g-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
                         ${thSortDetalle('fecha_movimiento', 'Fecha', `ordenarDetalleGasto('fecha_movimiento')`)}
                         ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleGasto('descripcion')`)}
                         ${thSortDetalle('destino', 'Cuenta', `ordenarDetalleGasto('destino')`)}
@@ -4854,7 +4904,7 @@
                 </div>
                 <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-truck-fast"></i> Programación de entregas</h6><button class="btn btn-sm btn-teal" onclick="agregarEntrega(${id})">+ ENTREGA</button></div>
-                    <table id="ent-tabla-${id}" class="table table-hover table-panel table-compact mb-0"><thead><tr>
+                    <table id="ent-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
                         <th style="width:2rem"></th>
                         ${thSortDetalle('fecha_entrega', 'Fecha entrega', `ordenarDetalleEntrega('fecha_entrega')`)}
                         ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleEntrega('descripcion')`)}
@@ -4888,11 +4938,12 @@
         actualizarSeleccionProyUI();
         await cargarDetalleProyecto(id);
         requestAnimationFrame(() => {
-            panel.querySelectorAll('table.table').forEach(t => {
+            panel.querySelectorAll('table.table-proy-detalle').forEach(t => {
                 t.dataset.colResizeInit = '';
                 t.dataset.colResizePending = '1';
             });
             initTablasRedimensionablesEn(panel);
+            autoAjustarAnchosTablasDetalleProyecto(id);
         });
     }
 
@@ -6025,8 +6076,10 @@
         const total = data.total || 0;
         if (total === 0 || items.length >= total) return data;
 
+        const requestedAll = /(?:^|&)per_page=0(?:&|$)/.test(queryString);
         const perPage = data.per_page || 0;
-        if (perPage === 0 && items.length < total) {
+
+        if (requestedAll && items.length < total && perPage <= 1) {
             const fallback = new URLSearchParams(queryString);
             fallback.set('per_page', '500');
             fallback.set('page', '1');
@@ -6074,22 +6127,26 @@
                 : '';
             const montoCls = claseMontoMov(m);
             const gc = `guardarFilaMovimiento(${m.id})`;
-            return `<tr class="mov-row${issues.length ? ' mov-row-warning' : ''}" data-id="${m.id}" data-clase="${m.clase}">
+            const esEp = esEstadoPagoMov(m);
+            const claseRow = esEp ? 'estado_pago' : m.clase;
+            return `<tr class="mov-row${issues.length ? ' mov-row-warning' : ''}" data-id="${m.id}" data-clase="${claseRow}">
             <td class="text-center">${warnHtml}</td>
             <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
             <td class="mov-col-proyecto" data-field="proyecto_id"><select class="form-select cell-edit fw-bold" onchange="${gc}">${optsSelect(proys, 'id', 'nombre', m.proyecto_id, '— Admin —')}</select></td>
             <td class="mov-col-monto" data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm ${montoCls}" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
-            <td data-field="status_pago">${m.clase === 'estado_pago'
+            <td data-field="status_pago"${esEp ? ` class="${claseStatusPagoSelect(m.status_pago || 'Por enviar')}"` : ''}>${esEp
                 ? selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)
                 : m.clase === 'gasto'
                 ? `<select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsStatusGasto(m.status_pago)}</select>`
+                : m.status_pago
+                ? badgeStatusPago(m.status_pago)
                 : '<span class="text-muted small">—</span>'}</td>
             <td data-field="fecha_estado_pago">${inputFechaMov(m.fecha_estado_pago, gc)}</td>
             <td data-field="fecha_facturacion">${inputFechaMov(m.fecha_facturacion, gc)}</td>
             <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
             <td data-field="origen_id"><select class="form-select cell-edit" onchange="${gc}">${optsSelect(_cuentasCache, 'id', 'nombre', m.origen_id)}</select></td>
             <td data-field="destino_id"><select class="form-select cell-edit" onchange="${gc}">${optsSelect(_cuentasCache, 'id', 'nombre', m.destino_id)}</select></td>
-            <td data-field="numero_factura"><input type="text" class="form-control cell-edit cell-edit-sm" value="${esc(m.numero_factura)}" onchange="${gc}" ${m.clase !== 'estado_pago' ? 'placeholder="—"' : ''}></td>
+            <td data-field="numero_factura"><input type="text" class="form-control cell-edit cell-edit-sm" value="${esc(m.numero_factura)}" onchange="${gc}" ${!esEp ? 'placeholder="—"' : ''}></td>
             <td data-field="estado"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}"><option value="Activo" ${m.estado==='Activo'?'selected':''}>Activo</option><option value="Archivado" ${m.estado==='Archivado'?'selected':''}>Archivado</option></select></td>
             <td><span class="badge bg-light text-dark">${movimientoTipoLabel(m)}</span></td>
             <td class="text-end pe-2"><button type="button" class="btn btn-sm btn-outline-danger btn-accion" onclick="event.stopPropagation(); borrarMovimientoGlobal(${m.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button></td>

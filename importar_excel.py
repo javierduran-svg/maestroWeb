@@ -23,6 +23,7 @@ from bootstrap import (
     ESTADOS_PROPUESTA,
 )
 from contabilidad import calcular_transaccion, recalcular_proyecto
+from common import _inferir_clase_movimiento
 
 app = create_app()
 
@@ -213,14 +214,6 @@ def _mapear_transaccion(valor) -> str:
     if 'egreso' in v:
         return 'Egreso'
     return 'Transferencia'
-
-
-def _inferir_clase(transaccion: str, origen_nombre: str, destino_nombre: str, proyecto_id) -> str:
-    if proyecto_id and transaccion == 'Ingreso' and _normalizar(origen_nombre) == 'clientes':
-        return 'estado_pago'
-    if proyecto_id and transaccion == 'Egreso':
-        return 'gasto'
-    return 'general'
 
 
 def _seed_cuentas_base(empresa_id: int):
@@ -789,7 +782,7 @@ def importar_desde_excel(
             if transaccion == 'Transferencia':
                 transaccion = calcular_transaccion(origen.categoria, destino.categoria)
 
-            clase = _inferir_clase(transaccion, origen.nombre, destino.nombre, proyecto_id)
+            clase = _inferir_clase_movimiento(transaccion, origen.nombre, destino.nombre, proyecto_id)
             desc = str(row.get('descripcion', '')).strip()
             if desc.lower() == 'nan':
                 desc = None
