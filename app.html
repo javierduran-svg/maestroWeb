@@ -379,6 +379,22 @@
         .table-movimientos .cell-edit { padding: 0.1rem 0.28rem; font-size: 0.75rem; min-height: 1.35rem; }
         .table-movimientos .mov-filtro { padding: 0.12rem 0.28rem; font-size: 0.72rem; min-height: 1.4rem; }
         .table-movimientos tbody tr.mov-row td { height: 26px; }
+        .table-movimientos .cell-edit-date.mov-fecha-futura { color: #adb5bd; }
+        .table-movimientos .cell-edit-date.mov-fecha-hoy { font-weight: 700; color: #198754; }
+        .table-movimientos select.status-pago-por-enviar,
+        .badge.status-pago-por-enviar { background-color: #e9ecef; color: #495057; }
+        .table-movimientos select.status-pago-programado,
+        .badge.status-pago-programado { background-color: #0d6efd; color: #fff; }
+        .table-movimientos select.status-pago-enviado,
+        .badge.status-pago-enviado { background-color: #ffc107; color: #212529; }
+        .table-movimientos select.status-pago-facturado,
+        .badge.status-pago-facturado { background-color: #198754; color: #fff; }
+        .table-movimientos select.status-pago-pagado,
+        .badge.status-pago-pagado { background-color: #0f5132; color: #fff; }
+        .table-movimientos select.status-pago-cedida,
+        .badge.status-pago-cedida { background-color: #dc3545; color: #fff; }
+        .table-movimientos select.status-pago-otro,
+        .badge.status-pago-otro { background-color: #495057; color: #fff; }
         .mov-sel-hint { font-size: 0.75rem; color: #868e96; }
         .table-proyectos tbody tr.proyecto-row { cursor: pointer; }
         .table-proyectos tbody tr.proyecto-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
@@ -1304,6 +1320,10 @@
                     <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalMovimiento" onclick="cargarCuentas()">+ MOVIMIENTO</button>
                 </div>
                 <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
+                    <div class="input-group input-group-sm" style="max-width: 280px;">
+                        <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                        <input type="text" class="form-control" id="filtroMovBuscar" placeholder="Buscar movimientos…" oninput="debounceRenderMovimientos()">
+                    </div>
                     <small class="text-muted" id="movContador">—</small>
                     <small class="text-teal fw-medium d-none" id="movSeleccionInfo"></small>
                     <span class="mov-sel-hint d-none d-md-inline">Clic · Shift rango · Ctrl alternar</span>
@@ -1332,29 +1352,22 @@
                             <tr class="mov-filtros">
                                 <th></th>
                                 <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovProyecto" onchange="renderMovimientos(true)"><option value="">Todos</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovProyecto" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovMonto" placeholder="Monto" oninput="debounceRenderMovimientos()"></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovStatusPago" onchange="renderMovimientos(true)"><option value="">Todos</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovStatusPago" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPago" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
                                 <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFact" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovDesc" placeholder="Buscar…" oninput="debounceRenderMovimientos()"></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovOrigen" onchange="renderMovimientos(true)"><option value="">Todos</option></select></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovDestino" onchange="renderMovimientos(true)"><option value="">Todos</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovOrigen" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovDestino" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovFactura" placeholder="N°" oninput="debounceRenderMovimientos()"></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovEstado" onchange="renderMovimientos(true)"><option value="">Todos</option><option value="Activo">Activo</option><option value="Archivado">Archivado</option></select></th>
-                                <th><select class="form-select mov-filtro" id="filtroMovTipo" onchange="renderMovimientos(true)"><option value="">Todos</option><option value="estado_pago">Est. pago</option><option value="gasto">Gasto</option><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option><option value="Transferencia">Transferencia</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovEstado" onchange="renderMovimientos()"><option value="">Todos</option><option value="Activo">Activo</option><option value="Archivado">Archivado</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovTipo" onchange="renderMovimientos()"><option value="">Todos</option><option value="estado_pago">Est. pago</option><option value="gasto">Gasto</option><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option><option value="Transferencia">Transferencia</option></select></th>
                                 <th></th>
                             </tr>
                         </thead>
                         <tbody id="tabla-movimientos"></tbody>
                     </table>
-                </div>
-                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top bg-light" id="movPagination">
-                    <small class="text-muted" id="movPageInfo"></small>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary" id="btnMovPrev" onclick="cambiarPaginaMovimientos(-1)">Anterior</button>
-                        <button type="button" class="btn btn-outline-secondary" id="btnMovNext" onclick="cambiarPaginaMovimientos(1)">Siguiente</button>
-                    </div>
                 </div>
             </section>
 
@@ -2078,6 +2091,7 @@
                         <label class="form-label small fw-bold">Status estado de pago</label>
                         <select class="form-select" id="epStatusPago">
                             <option value="Por enviar">Por enviar</option>
+                            <option value="Programado">Programado</option>
                             <option value="Enviado">Enviado</option>
                             <option value="Facturado">Facturado</option>
                             <option value="Pagado">Pagado</option>
@@ -2223,10 +2237,8 @@
     let _proyItems = [];
     let _proyFilterTimer = null;
     let _proyFetchSeq = 0;
-    let _movPage = 1;
-    let _movPerPage = 50;
+    let _movPerPage = 500;
     let _movTotal = 0;
-    let _movPages = 1;
     let _movItems = [];
     let _movFilterTimer = null;
     let _simUtilTimer = null;
@@ -2702,8 +2714,28 @@
         return issues;
     }
 
-    function inputFechaMov(valor, onchange) {
-        return `<input type="text" class="form-control cell-edit cell-edit-sm cell-edit-date" value="${esc(fmtFechaMov(valor))}" placeholder="dd-mm-aaaa" onchange="${onchange}">`;
+    function inputFechaMov(valor, onchange, estiloFecha = false) {
+        const cls = estiloFecha ? claseFechaMov(valor) : '';
+        return `<input type="text" class="form-control cell-edit cell-edit-sm cell-edit-date${cls ? ' ' + cls : ''}" value="${esc(fmtFechaMov(valor))}" placeholder="dd-mm-aaaa" onchange="${estiloFecha ? 'actualizarClaseFechaMovInput(this); ' : ''}${onchange}">`;
+    }
+
+    function claseFechaMov(iso) {
+        if (!iso) return '';
+        const d = parseIsoDate(iso);
+        if (!d) return '';
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        d.setHours(0, 0, 0, 0);
+        if (d > hoy) return 'mov-fecha-futura';
+        if (d.getTime() === hoy.getTime()) return 'mov-fecha-hoy';
+        return '';
+    }
+
+    function actualizarClaseFechaMovInput(inp) {
+        if (!inp) return;
+        inp.classList.remove('mov-fecha-futura', 'mov-fecha-hoy');
+        const cls = claseFechaMov(parseFechaMov(inp.value));
+        if (cls) inp.classList.add(cls);
     }
 
     function optsSelect(items, valKey, labelKey, selected, emptyLabel) {
@@ -2716,6 +2748,28 @@
         return _statusGastoCache.map(s =>
             `<option value="${esc(s.value)}" ${String(s.value) === String(selected || '') ? 'selected' : ''}>${esc(s.label)}</option>`
         ).join('');
+    }
+
+    function claseStatusPagoSelect(s) {
+        const map = {
+            'Por enviar': 'status-pago-por-enviar',
+            'Programado': 'status-pago-programado',
+            'Enviado': 'status-pago-enviado',
+            'Facturado': 'status-pago-facturado',
+            'Pagado': 'status-pago-pagado',
+            'Cedida': 'status-pago-cedida',
+        };
+        return map[s] || 'status-pago-otro';
+    }
+
+    function actualizarClaseStatusPagoSelect(sel) {
+        if (!sel) return;
+        sel.className = 'form-select cell-edit cell-edit-sm ' + claseStatusPagoSelect(sel.value);
+    }
+
+    function selectStatusPagoHtml(selected, onchange) {
+        const cls = claseStatusPagoSelect(selected || 'Por enviar');
+        return `<select class="form-select cell-edit cell-edit-sm ${cls}" onchange="actualizarClaseStatusPagoSelect(this); ${onchange}">${optsStatusPago(selected || 'Por enviar')}</select>`;
     }
 
     function optsStatusPago(selected, vacio) {
@@ -2739,8 +2793,14 @@
 
     function badgeStatusPago(s) {
         if (!s) return '<span class="text-muted">—</span>';
-        const cls = { 'Por enviar': 'bg-secondary', 'Enviado': 'bg-info text-dark', 'Facturado': 'bg-primary',
-            'Pagado': 'badge-activo', 'Cedida': 'bg-warning text-dark' }[s] || 'bg-light text-dark';
+        const cls = {
+            'Por enviar': 'status-pago-por-enviar',
+            'Programado': 'status-pago-programado',
+            'Enviado': 'status-pago-enviado',
+            'Facturado': 'status-pago-facturado',
+            'Pagado': 'status-pago-pagado',
+            'Cedida': 'status-pago-cedida',
+        }[s] || 'status-pago-otro';
         return `<span class="badge ${cls}">${esc(s)}</span>`;
     }
 
@@ -2844,6 +2904,32 @@
         col.style.width = Math.max(TABLA_COL_MIN_ANCHO, Math.round(widthPx)) + 'px';
     }
 
+    function autoAjustarAnchosTabla(table) {
+        if (!table) return;
+        const headerRow = table.querySelector('thead tr:first-child');
+        if (!headerRow) return;
+        const ths = [...headerRow.children].filter(el => el.tagName === 'TH');
+        if (!ths.length) return;
+        const cg = asegurarColgroup(table, ths.length);
+        const prevLayout = table.style.tableLayout;
+        const prevWidth = table.style.width;
+        table.classList.remove('table-redimensionable');
+        table.style.tableLayout = 'auto';
+        table.style.width = 'max-content';
+        ths.forEach((th, i) => {
+            let maxW = th.scrollWidth;
+            const filterRow = table.querySelector('thead tr.mov-filtros');
+            if (filterRow?.children[i]) maxW = Math.max(maxW, filterRow.children[i].scrollWidth);
+            table.querySelectorAll(`tbody tr td:nth-child(${i + 1})`).forEach(td => {
+                maxW = Math.max(maxW, td.scrollWidth);
+            });
+            cg.children[i].style.width = Math.max(TABLA_COL_MIN_ANCHO, Math.ceil(maxW) + 6) + 'px';
+        });
+        table.style.tableLayout = prevLayout;
+        table.style.width = prevWidth;
+        table.classList.add('table-redimensionable');
+    }
+
     function anchoInicialColumna(th, index, total) {
         const inline = th.style.width;
         if (inline) return parseInt(inline, 10) || TABLA_COL_MIN_ANCHO;
@@ -2892,7 +2978,8 @@
         if (!ths.length) return;
 
         const tableId = obtenerIdTabla(table);
-        const saved = leerAnchosGuardados(tableId);
+        const skipSaved = table.id === 'tabla-movimientos-grid';
+        const saved = skipSaved ? null : leerAnchosGuardados(tableId);
         const visible = ths.some(th => th.offsetWidth > 0);
         if (!visible && !saved) {
             table.dataset.colResizePending = '1';
@@ -4240,12 +4327,12 @@
             return items.map(m => {
                 const gc = `guardarFilaProyectoMovimiento(${m.id}, ${proyectoId})`;
                 return `<tr class="proy-mov-row" data-id="${m.id}" data-clase="estado_pago">
-                <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc)}</td>
+                <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
                 <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
                 <td data-field="fecha_estado_pago">${inputFechaMov(m.fecha_estado_pago, gc)}</td>
                 <td data-field="fecha_facturacion">${inputFechaMov(m.fecha_facturacion, gc)}</td>
                 <td data-field="numero_factura"><input type="text" class="form-control cell-edit cell-edit-sm" value="${esc(m.numero_factura)}" onchange="${gc}"></td>
-                <td data-field="status_pago"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsStatusPago(m.status_pago || 'Por enviar')}</select></td>
+                <td data-field="status_pago">${selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)}</td>
                 <td data-field="condicion_pago_dias"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsCondicionPago(m.condicion_pago_dias || 30)}</select></td>
                 <td data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm mov-monto-ingreso" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
                 <td class="text-end">${botonesAccion(proyectoId, clase, m.id)}</td>
@@ -4255,7 +4342,7 @@
         return items.map(m => {
             const gc = `guardarFilaProyectoMovimiento(${m.id}, ${proyectoId})`;
             return `<tr class="proy-mov-row" data-id="${m.id}" data-clase="gasto">
-            <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc)}</td>
+            <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
             <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
             <td data-field="destino_id"><select class="form-select cell-edit" onchange="${gc}">${optsSelect(_cuentasGasto, 'id', 'nombre', m.destino_id)}</select></td>
             <td data-field="status_pago"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsStatusGasto(m.status_pago)}</select></td>
@@ -5834,11 +5921,13 @@
     }
 
     function leerFiltrosMovimientos() {
+        const buscar = document.getElementById('filtroMovBuscar')?.value.trim().toLowerCase() || '';
+        const descCol = document.getElementById('filtroMovDesc').value.trim().toLowerCase();
         return {
             fecha_movimiento: parseFechaMov(document.getElementById('filtroMovFecha').value),
             fecha_estado_pago: parseFechaMov(document.getElementById('filtroMovFechaPago').value),
             fecha_facturacion: parseFechaMov(document.getElementById('filtroMovFechaFact').value),
-            descripcion: document.getElementById('filtroMovDesc').value.trim().toLowerCase(),
+            descripcion: buscar || descCol,
             origen_id: document.getElementById('filtroMovOrigen').value,
             destino_id: document.getElementById('filtroMovDestino').value,
             proyecto_id: document.getElementById('filtroMovProyecto').value,
@@ -5852,15 +5941,16 @@
 
     function movFiltrosActivos() {
         const f = leerFiltrosMovimientos();
+        const buscar = document.getElementById('filtroMovBuscar')?.value.trim() || '';
         return !!(f.fecha_movimiento || f.fecha_estado_pago || f.fecha_facturacion || f.descripcion
             || f.origen_id || f.destino_id || f.proyecto_id || f.monto || f.numero_factura
-            || f.status_pago || f.estado || f.tipo);
+            || f.status_pago || f.estado || f.tipo || buscar);
     }
 
     function buildMovimientosQueryParams() {
         const f = leerFiltrosMovimientos();
         const p = new URLSearchParams();
-        p.set('page', String(_movPage));
+        p.set('page', '1');
         p.set('per_page', String(_movPerPage));
         p.set('sort', _movOrdenCol);
         p.set('order', _movOrdenDir);
@@ -5881,34 +5971,13 @@
 
     function debounceRenderMovimientos() {
         clearTimeout(_movFilterTimer);
-        _movFilterTimer = setTimeout(() => renderMovimientos(true), 300);
-    }
-
-    function renderMovPagination() {
-        const info = document.getElementById('movPageInfo');
-        const prev = document.getElementById('btnMovPrev');
-        const next = document.getElementById('btnMovNext');
-        if (!info) return;
-        if (!_movTotal) {
-            info.textContent = '';
-        } else {
-            const from = (_movPage - 1) * _movPerPage + 1;
-            const to = Math.min(_movPage * _movPerPage, _movTotal);
-            info.textContent = `${from}–${to} de ${_movTotal} · página ${_movPage}/${_movPages}`;
-        }
-        if (prev) prev.disabled = _movPage <= 1;
-        if (next) next.disabled = _movPage >= _movPages;
-    }
-
-    function cambiarPaginaMovimientos(delta) {
-        _movPage = Math.max(1, Math.min(_movPages, _movPage + delta));
-        renderMovimientos();
+        _movFilterTimer = setTimeout(() => renderMovimientos(), 300);
     }
 
     function ordenarMovimientos(col) {
         if (_movOrdenCol === col) _movOrdenDir = _movOrdenDir === 'asc' ? 'desc' : 'asc';
         else { _movOrdenCol = col; _movOrdenDir = 'asc'; }
-        renderMovimientos(true);
+        renderMovimientos();
     }
 
     function actualizarIconosOrdenMov() {
@@ -5924,13 +5993,15 @@
     }
 
     function limpiarFiltrosMovimientos() {
-        ['filtroMovFecha','filtroMovFechaPago','filtroMovFechaFact','filtroMovDesc','filtroMovMonto','filtroMovFactura'].forEach(id => document.getElementById(id).value = '');
+        ['filtroMovFecha','filtroMovFechaPago','filtroMovFechaFact','filtroMovDesc','filtroMovMonto','filtroMovFactura','filtroMovBuscar'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         ['filtroMovOrigen','filtroMovDestino','filtroMovProyecto','filtroMovStatusPago','filtroMovEstado','filtroMovTipo'].forEach(id => document.getElementById(id).value = '');
-        renderMovimientos(true);
+        renderMovimientos();
     }
 
-    async function renderMovimientos(resetPage = false) {
-        if (resetPage) _movPage = 1;
+    async function renderMovimientos() {
         const seq = ++_movFetchSeq;
         const proys = await fetchProyectosSelect();
         const res = await apiFetch('/api/movimientos?' + buildMovimientosQueryParams());
@@ -5938,13 +6009,6 @@
         const data = await res.json();
         _movItems = data.items || [];
         _movTotal = data.total || 0;
-        _movPage = data.page || 1;
-        _movPages = data.pages || 1;
-        _movPerPage = data.per_page || 50;
-        if (!_movItems.length && _movTotal > 0 && _movPage > 1) {
-            _movPage = _movPages;
-            return renderMovimientos();
-        }
         const lista = _movItems;
         actualizarIconosOrdenMov();
         _movVisibleIds = lista.map(m => m.id);
@@ -5955,10 +6019,9 @@
             contador.textContent = !_movTotal
                 ? 'Sin movimientos'
                 : filtros
-                    ? `${_movTotal} coincidencia${_movTotal !== 1 ? 's' : ''}`
+                    ? `${lista.length} de ${_movTotal} coincidencia${_movTotal !== 1 ? 's' : ''}`
                     : `${_movTotal} movimiento${_movTotal !== 1 ? 's' : ''}`;
         }
-        renderMovPagination();
 
         document.getElementById('tabla-movimientos').innerHTML = lista.length ? lista.map(m => {
             const issues = validarMovimiento(m);
@@ -5969,11 +6032,11 @@
             const gc = `guardarFilaMovimiento(${m.id})`;
             return `<tr class="mov-row${issues.length ? ' mov-row-warning' : ''}" data-id="${m.id}" data-clase="${m.clase}">
             <td class="text-center">${warnHtml}</td>
-            <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc)}</td>
+            <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
             <td class="mov-col-proyecto" data-field="proyecto_id"><select class="form-select cell-edit fw-bold" onchange="${gc}">${optsSelect(proys, 'id', 'nombre', m.proyecto_id, '— Admin —')}</select></td>
             <td class="mov-col-monto" data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm ${montoCls}" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
             <td data-field="status_pago">${m.clase === 'estado_pago'
-                ? `<select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsStatusPago(m.status_pago || 'Por enviar')}</select>`
+                ? selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)
                 : m.clase === 'gasto'
                 ? `<select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsStatusGasto(m.status_pago)}</select>`
                 : '<span class="text-muted small">—</span>'}</td>
@@ -5989,25 +6052,12 @@
         </tr>`;
         }).join('') : `<tr><td colspan="14" class="text-center text-muted py-4">${_movTotal ? 'Ningún movimiento coincide con los filtros' : 'Sin movimientos'}</td></tr>`;
         actualizarSeleccionMovUI();
-    }
-
-    async function calcularPaginaMovimientosParaFecha(isoDate) {
-        if (_movOrdenCol !== 'fecha_movimiento') return _movPage;
-        const base = new Date(isoDate + 'T12:00:00');
-        const p = new URLSearchParams();
-        p.set('per_page', '1');
-        p.set('page', '1');
-        p.set('sort', 'fecha_movimiento');
-        p.set('order', _movOrdenDir);
-        if (_movOrdenDir === 'desc') {
-            p.set('fecha_desde', fechaLocalIso(addDaysDate(base, 1)));
-        } else {
-            p.set('fecha_hasta', fechaLocalIso(addDaysDate(base, -1)));
-        }
-        const res = await apiFetch('/api/movimientos?' + p);
-        const data = await res.json();
-        const beforeCount = data.total || 0;
-        return Math.max(1, Math.floor(beforeCount / _movPerPage) + 1);
+        requestAnimationFrame(() => {
+            const table = document.getElementById('tabla-movimientos-grid');
+            if (!table) return;
+            autoAjustarAnchosTabla(table);
+            if (table.dataset.colResizeInit !== '1') initTablaRedimensionable(table);
+        });
     }
 
     function scrollMovimientosAFecha(isoDate) {
@@ -6034,9 +6084,6 @@
         await poblarFiltrosMovimientosSelects();
         initMovimientosTabla();
         const scrollPending = _movScrollToTodayPending;
-        if (scrollPending && !movFiltrosActivos()) {
-            _movPage = await calcularPaginaMovimientosParaFecha(fechaLocalIso());
-        }
         await renderMovimientos();
         if (scrollPending) {
             _movScrollToTodayPending = false;

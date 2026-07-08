@@ -12,7 +12,7 @@ import json
 from flask import jsonify, request, send_file, abort, session, has_request_context
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import cast, func, String, text, inspect
+from sqlalchemy import cast, func, String, text, inspect, or_
 from sqlalchemy.orm import aliased
 import logging
 from datetime import datetime, date, timedelta
@@ -118,7 +118,7 @@ SERVICIOS = [
     'CON EE Y CAI', 'ASESOR CER CES', 'ENTIDAD EVALUADORA CER CES',
     'CEV CALIFICACION', 'CALIFICACION',
 ]
-STATUS_PAGO = ['Por enviar', 'Enviado', 'Facturado', 'Pagado', 'Cedida']
+STATUS_PAGO = ['Por enviar', 'Programado', 'Enviado', 'Facturado', 'Pagado', 'Cedida']
 STATUS_GASTO = ['', STATUS_GASTO_PROGRAMADO]
 ESTADOS_EP_GANTT = ['Pendiente', 'Facturado', 'Pagado']
 ESTADOS_ENTREGA = ['Por Hacer', 'Hecho']
@@ -1660,7 +1660,18 @@ def _ordenar_proyectos(query, sort: str | None, order: str | None):
 def _filtrar_movimientos_query(query, args):
     search = (args.get('search') or args.get('descripcion') or '').strip()
     if search:
-        query = query.filter(Movimiento.descripcion.ilike(f'%{search}%'))
+        pattern = f'%{search}%'
+        filtros = [
+            Movimiento.descripcion.ilike(pattern),
+            Movimiento.numero_factura.ilike(pattern),
+            Movimiento.centro_costo.ilike(pattern),
+        ]
+        monto_digits = _solo_digitos(search)
+        if monto_digits:
+            filtros.append(
+                cast(func.round(Movimiento.monto_pesos), String).like(f'%{monto_digits}%')
+            )
+        query = query.filter(or_(*filtros))
     status_pago = args.get('status_pago')
     if status_pago:
         query = query.filter(Movimiento.status_pago == status_pago)

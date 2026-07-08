@@ -125,7 +125,7 @@ def _fecha_movimiento_ingreso(m) -> date:
 
 
 # Estados de pago aún no cobrados; se usan para proyección de ingresos futuros.
-_STATUS_INGRESO_PROYECTABLE = frozenset({'Por enviar', 'Enviado', 'Facturado'})
+_STATUS_INGRESO_PROYECTABLE = frozenset({'Por enviar', 'Programado', 'Enviado', 'Facturado'})
 
 
 def _es_ingreso_proyectado(m) -> bool:

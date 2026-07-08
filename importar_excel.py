@@ -188,6 +188,8 @@ def _mapear_status_pago(clase: str, row, fecha_ep, fecha_fact) -> str | None:
         return 'Facturado'
     if 'enviad' in v:
         return 'Enviado'
+    if 'programad' in v:
+        return 'Programado'
     if 'por enviar' in v or 'pendiente' in v:
         return 'Por enviar'
     if fecha_ep:
