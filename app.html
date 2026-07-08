@@ -377,68 +377,97 @@
             overflow-y: visible;
             overflow-x: hidden;
         }
-        .proyecto-detalle-tabs .btn { font-size: 0.72rem; padding: 0.2rem 0.55rem; }
-        .proyecto-detalle-tabs .btn.active { background: var(--teal-green); border-color: var(--teal-green); color: #fff; }
-        .proy-timeline-wrap { padding: 1rem 1.25rem 1.5rem; min-height: 220px; }
+        .proy-timeline-wrap { padding: 0.5rem 0.25rem 0.75rem; min-height: 200px; }
         .proy-timeline-empty { text-align: center; color: #adb5bd; padding: 2.5rem 1rem; font-size: 0.8125rem; }
-        .proy-timeline { position: relative; padding: 0.5rem 0 0.25rem; }
-        .proy-timeline-axis { position: relative; height: 1px; background: #dee2e6; margin: 0 0 0.35rem; }
+        .proy-timeline { position: relative; padding: 0.25rem 0 0.5rem; }
+        .proy-timeline-axis { position: relative; height: 22px; margin: 0 0 0.5rem; }
+        .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #dee2e6; }
         .proy-timeline-axis-tick {
-            position: absolute; top: -4px; width: 1px; height: 9px;
-            background: #ced4da; transform: translateX(-50%);
+            position: absolute; bottom: 0; width: 1px; height: 8px;
+            background: rgba(0,128,128,0.35); transform: translateX(-50%);
         }
         .proy-timeline-axis-label {
-            position: absolute; top: 10px; transform: translateX(-50%);
-            font-size: 0.62rem; color: #868e96; white-space: nowrap;
+            position: absolute; bottom: 10px; left: 0;
+            font-size: 0.68rem; color: #6c757d; white-space: nowrap;
+            transform: none; text-align: left;
         }
-        .proy-timeline-tracks { position: relative; margin-top: 2rem; }
-        .proy-timeline-track { position: relative; margin-bottom: 2.75rem; }
-        .proy-timeline-track:last-child { margin-bottom: 0.5rem; }
+        .proy-timeline-tracks { position: relative; }
+        .proy-timeline-track { position: relative; margin-bottom: 1.5rem; }
+        .proy-timeline-track:last-child { margin-bottom: 0.25rem; }
         .proy-timeline-track-label {
             font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-            letter-spacing: 0.04em; color: #868e96; margin-bottom: 0.65rem;
+            letter-spacing: 0.04em; color: var(--teal-green); margin-bottom: 0.5rem;
         }
+        .proy-timeline-track-billing .proy-timeline-track-label { color: #c76a00; }
         .proy-timeline-rail {
-            position: relative; height: 2px; border-radius: 1px; margin: 3.5rem 0;
-            background: linear-gradient(90deg, rgba(0,128,128,0.15) 0%, rgba(0,128,128,0.35) 50%, rgba(0,128,128,0.15) 100%);
+            position: relative; min-height: 88px; margin: 0;
         }
-        .proy-timeline-track-billing .proy-timeline-rail {
-            background: linear-gradient(90deg, rgba(253,126,20,0.12) 0%, rgba(253,126,20,0.3) 50%, rgba(253,126,20,0.12) 100%);
+        .proy-timeline-months {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .proy-timeline-month {
+            position: absolute; top: 0; bottom: 0;
+            background: rgba(0,128,128,0.04);
+        }
+        .proy-timeline-month-alt { background: rgba(0,128,128,0.09); }
+        .proy-timeline-track-billing .proy-timeline-month { background: rgba(253,126,20,0.05); }
+        .proy-timeline-track-billing .proy-timeline-month-alt { background: rgba(253,126,20,0.11); }
+        .proy-timeline-rail-line {
+            position: absolute; left: 0; right: 0; top: 50%;
+            height: 5px; border-radius: 3px; z-index: 1;
+            transform: translateY(-50%);
+            background: linear-gradient(90deg, rgba(0,128,128,0.25) 0%, var(--teal-green) 50%, rgba(0,128,128,0.25) 100%);
+            box-shadow: 0 1px 2px rgba(0,128,128,0.12);
+        }
+        .proy-timeline-track-billing .proy-timeline-rail-line {
+            background: linear-gradient(90deg, rgba(253,126,20,0.2) 0%, #fd7e14 50%, rgba(253,126,20,0.2) 100%);
+            box-shadow: 0 1px 2px rgba(253,126,20,0.12);
+        }
+        .proy-timeline-events {
+            position: absolute; inset: 0; z-index: 2;
         }
         .proy-timeline-event {
-            position: absolute; top: 50%; transform: translate(-50%, -50%); z-index: 1;
+            position: absolute; top: 50%; left: 0;
+            transform: translateY(-50%);
+            z-index: 1; width: 0;
         }
+        .proy-timeline-event.dragging { z-index: 5; }
         .proy-timeline-dot {
-            width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff;
-            box-shadow: 0 0 0 1px rgba(0,0,0,0.08); margin: 0 auto; position: relative; z-index: 2;
+            position: absolute; left: 0; top: 50%;
+            width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.12);
+            transform: translate(-50%, -50%); z-index: 3;
             cursor: grab; touch-action: none;
         }
         .proy-timeline-dot:active,
         .proy-timeline-event.dragging .proy-timeline-dot { cursor: grabbing; }
         .proy-timeline-dot.dot-entrega { background: #2563eb; }
-        .proy-timeline-dot.dot-tarea { background: #0ea5e9; width: 7px; height: 7px; }
+        .proy-timeline-dot.dot-tarea { background: #0ea5e9; width: 12px; height: 12px; }
         .proy-timeline-dot.dot-ep { background: var(--teal-green); }
         .proy-timeline-dot.dot-facturacion { background: #ffc107; }
         .proy-timeline-dot.dot-pago { background: #198754; }
         .proy-timeline-callout {
-            position: absolute; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center;
-            pointer-events: none; max-width: 120px;
+            position: absolute; left: 0; pointer-events: none;
+            max-width: 140px; min-width: 48px;
         }
-        .proy-timeline-event.callout-above .proy-timeline-callout { bottom: calc(100% + 2px); flex-direction: column-reverse; }
-        .proy-timeline-event.callout-below .proy-timeline-callout { top: calc(100% + 2px); }
-        .proy-timeline-leader { width: 1px; background: #e9ecef; flex-shrink: 0; height: 18px; }
+        .proy-timeline-event[data-side="above"] .proy-timeline-callout {
+            bottom: calc(50% + 10px + var(--lane-offset, 0px));
+        }
+        .proy-timeline-event[data-side="below"] .proy-timeline-callout {
+            top: calc(50% + 10px + var(--lane-offset, 0px));
+        }
         .proy-timeline-label {
-            font-size: 0.65rem; line-height: 1.25; color: #495057; text-align: center;
+            font-size: 0.68rem; line-height: 1.3; color: #343a40; text-align: left;
             overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+            white-space: normal;
         }
-        .proy-timeline-label-date { display: block; font-size: 0.58rem; color: #adb5bd; margin-top: 0.1rem; }
+        .proy-timeline-label-date { display: block; font-size: 0.62rem; color: #868e96; margin-top: 0.12rem; }
         .proy-timeline-leyenda {
             display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.68rem; color: #6c757d;
-            margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #eef1f3;
+            margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px solid #eef1f3;
         }
         .proy-timeline-leyenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
-        .proy-timeline-leyenda i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .proy-timeline-leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .subseccion-proyecto .cell-edit,
         .subseccion-proyecto .cell-edit.form-select {
             border: none; box-shadow: none; background: transparent; border-radius: 0;
@@ -2380,7 +2409,6 @@
     let _proyTareaOrdenCol = 'fecha_limite';
     let _proyTareaOrdenDir = 'asc';
     let _proyDetalleCache = { proyectoId: null, movs: [], entregas: [] };
-    let _proyDetalleTab = 'detalle';
     let _proyTareasCache = new Map();
     let _proyVisibleIds = [];
     let _proySeleccionados = new Set();
@@ -4586,7 +4614,7 @@
         _proyDetalleCache = { proyectoId, movs: movs || [], entregas: entregas || [] };
         await cargarTareasProyectoTimeline(proyectoId);
         renderTablasDetalleProyecto(proyectoId);
-        if (_proyDetalleTab === 'timeline') renderProyectoTimeline(proyectoId);
+        renderProyectoTimeline(proyectoId);
         await restaurarTareasExpandidas(proyectoId);
     }
 
@@ -5092,19 +5120,63 @@
         return meses;
     }
 
+    function proyTimelineGenerarMesBands(meses) {
+        if (!meses.length) return '';
+        return meses.map((m, i) => {
+            const nextPct = i + 1 < meses.length ? meses[i + 1].pct : 100;
+            const width = Math.max(0, nextPct - m.pct);
+            const alt = i % 2 === 1 ? ' proy-timeline-month-alt' : '';
+            return `<div class="proy-timeline-month${alt}" style="left:${m.pct.toFixed(3)}%;width:${width.toFixed(3)}%"></div>`;
+        }).join('');
+    }
+
     function proyTimelineHtmlEvento(ev, idx, desde, hasta) {
         const pct = proyTimelineFechaPct(ev.fecha, desde, hasta);
-        const calloutCls = ev.track === 1 ? 'callout-above' : 'callout-below';
+        const side = ev.track === 1 ? 'above' : 'below';
         const label = esc(ev.label);
         const fechaLbl = esc(fmtFechaMov(ev.fecha));
-        return `<div class="proy-timeline-event ${calloutCls}" style="left:${pct.toFixed(3)}%"
-            data-id="${ev.id}" data-tipo="${ev.tipo}" data-field="${esc(ev.field)}" data-fecha="${esc(ev.fecha)}" data-track="${ev.track}">
+        return `<div class="proy-timeline-event" style="left:${pct.toFixed(3)}%"
+            data-id="${ev.id}" data-tipo="${ev.tipo}" data-field="${esc(ev.field)}" data-fecha="${esc(ev.fecha)}" data-track="${ev.track}" data-side="${side}">
+            <div class="proy-timeline-dot ${ev.dotClass}" title="${label} · ${fechaLbl}"></div>
             <div class="proy-timeline-callout">
                 <span class="proy-timeline-label">${label}<span class="proy-timeline-label-date">${fechaLbl}</span></span>
-                <span class="proy-timeline-leader"></span>
             </div>
-            <div class="proy-timeline-dot ${ev.dotClass}" title="${label} · ${fechaLbl}"></div>
         </div>`;
+    }
+
+    function proyTimelineLayoutLabels(rail) {
+        const railRect = rail.getBoundingClientRect();
+        if (railRect.width <= 0) return;
+        const laneHeight = 30;
+        const gapPct = 0.8;
+        const groups = [
+            { side: 'above', events: [] },
+            { side: 'below', events: [] },
+        ];
+        rail.querySelectorAll('.proy-timeline-event').forEach(evEl => {
+            const side = evEl.dataset.side || 'above';
+            const group = groups.find(g => g.side === side);
+            if (group) group.events.push(evEl);
+        });
+        let maxLanes = 1;
+        groups.forEach(({ events }) => {
+            events.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
+            const lanes = [];
+            events.forEach(evEl => {
+                const callout = evEl.querySelector('.proy-timeline-callout');
+                if (!callout) return;
+                const pct = parseFloat(evEl.style.left) || 0;
+                const widthPx = Math.max(callout.offsetWidth || 0, callout.scrollWidth || 0, 48);
+                const widthPct = (widthPx / railRect.width) * 100;
+                let lane = 0;
+                while (lane < lanes.length && pct < lanes[lane]) lane++;
+                if (lane === lanes.length) lanes.push(0);
+                lanes[lane] = pct + widthPct + gapPct;
+                callout.style.setProperty('--lane-offset', (lane * laneHeight) + 'px');
+                maxLanes = Math.max(maxLanes, lane + 1);
+            });
+        });
+        rail.style.minHeight = (88 + Math.max(0, maxLanes - 1) * laneHeight) + 'px';
     }
 
     function proyTimelineInitDrag(wrap, proyectoId, desde, hasta) {
@@ -5124,37 +5196,54 @@
                     id: Number(evEl.dataset.id),
                     fechaOrig: evEl.dataset.fecha,
                     pointerId: e.pointerId,
+                    rafId: null,
+                    pendingX: null,
                 };
             });
         });
         if (wrap.dataset.dragBound === '1') return;
         wrap.dataset.dragBound = '1';
+        const applyDragPosition = () => {
+            const drag = _proyTimelineDrag;
+            if (!drag || drag.pendingX == null) return;
+            const rect = drag.rail.getBoundingClientRect();
+            if (rect.width <= 0) return;
+            const pct = ((drag.pendingX - rect.left) / rect.width) * 100;
+            const clamped = Math.max(0, Math.min(100, pct));
+            drag.evEl.style.left = clamped.toFixed(3) + '%';
+            const nuevaFecha = proyTimelinePctFecha(clamped, drag.desde, drag.hasta);
+            const dateEl = drag.evEl.querySelector('.proy-timeline-label-date');
+            if (dateEl) dateEl.textContent = fmtFechaMov(nuevaFecha);
+            drag.rafId = null;
+        };
         wrap.addEventListener('pointermove', (e) => {
             if (!_proyTimelineDrag || _proyTimelineDrag.proyectoId !== proyectoId) return;
             if (e.pointerId !== _proyTimelineDrag.pointerId) return;
-            const rect = _proyTimelineDrag.rail.getBoundingClientRect();
-            if (rect.width <= 0) return;
-            const pct = ((e.clientX - rect.left) / rect.width) * 100;
-            const clamped = Math.max(0, Math.min(100, pct));
-            _proyTimelineDrag.evEl.style.left = clamped.toFixed(3) + '%';
-            const nuevaFecha = proyTimelinePctFecha(clamped, _proyTimelineDrag.desde, _proyTimelineDrag.hasta);
-            const dateEl = _proyTimelineDrag.evEl.querySelector('.proy-timeline-label-date');
-            if (dateEl) dateEl.textContent = fmtFechaMov(nuevaFecha);
+            _proyTimelineDrag.pendingX = e.clientX;
+            if (!_proyTimelineDrag.rafId) {
+                _proyTimelineDrag.rafId = requestAnimationFrame(applyDragPosition);
+            }
         });
         wrap.addEventListener('pointerup', async (e) => {
             if (!_proyTimelineDrag || _proyTimelineDrag.proyectoId !== proyectoId) return;
             if (e.pointerId !== _proyTimelineDrag.pointerId) return;
             const drag = _proyTimelineDrag;
+            if (drag.rafId) cancelAnimationFrame(drag.rafId);
             _proyTimelineDrag = null;
             drag.evEl.classList.remove('dragging');
             try { drag.evEl.querySelector('.proy-timeline-dot')?.releasePointerCapture(e.pointerId); } catch (_) {}
-            const pct = parseFloat(drag.evEl.style.left);
+            const rect = drag.rail.getBoundingClientRect();
+            const pct = rect.width > 0
+                ? Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100))
+                : parseFloat(drag.evEl.style.left);
+            drag.evEl.style.left = pct.toFixed(3) + '%';
             const nuevaFecha = proyTimelinePctFecha(pct, drag.desde, drag.hasta);
             if (nuevaFecha === drag.fechaOrig) return;
             await proyTimelineGuardarFecha(drag, nuevaFecha, proyectoId);
         });
         wrap.addEventListener('pointercancel', () => {
             if (_proyTimelineDrag?.proyectoId === proyectoId) {
+                if (_proyTimelineDrag.rafId) cancelAnimationFrame(_proyTimelineDrag.rafId);
                 _proyTimelineDrag.evEl.classList.remove('dragging');
                 _proyTimelineDrag.evEl.style.left = proyTimelineFechaPct(_proyTimelineDrag.fechaOrig, _proyTimelineDrag.desde, _proyTimelineDrag.hasta).toFixed(3) + '%';
                 _proyTimelineDrag = null;
@@ -5214,20 +5303,29 @@
             `<span class="proy-timeline-axis-tick" style="left:${m.pct.toFixed(3)}%"></span>
              <span class="proy-timeline-axis-label" style="left:${m.pct.toFixed(3)}%">${esc(m.label)}</span>`
         ).join('');
+        const monthBands = proyTimelineGenerarMesBands(meses);
 
         wrap.innerHTML = `<div class="proy-timeline" id="proy-timeline-${proyectoId}">
-            <div class="proy-timeline-axis">${axisTicks}</div>
+            <div class="proy-timeline-axis"><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
             <div class="proy-timeline-tracks">
                 <div class="proy-timeline-track">
                     <div class="proy-timeline-track-label">Entregas · Tareas · Estados de pago</div>
                     <div class="proy-timeline-rail" data-track="1">
-                        ${track1.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                        <div class="proy-timeline-months">${monthBands}</div>
+                        <div class="proy-timeline-rail-line"></div>
+                        <div class="proy-timeline-events">
+                            ${track1.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                        </div>
                     </div>
                 </div>
                 <div class="proy-timeline-track proy-timeline-track-billing">
                     <div class="proy-timeline-track-label">Facturación · Pago</div>
                     <div class="proy-timeline-rail" data-track="2">
-                        ${track2.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                        <div class="proy-timeline-months">${monthBands}</div>
+                        <div class="proy-timeline-rail-line"></div>
+                        <div class="proy-timeline-events">
+                            ${track2.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -5242,6 +5340,7 @@
 
         wrap.dataset.desde = desde.toISOString();
         wrap.dataset.hasta = hasta.toISOString();
+        wrap.querySelectorAll('.proy-timeline-rail').forEach(rail => proyTimelineLayoutLabels(rail));
         proyTimelineInitDrag(wrap, proyectoId, desde, hasta);
 
         if (!_proyTimelineObservers.has(proyectoId)) {
@@ -5262,19 +5361,33 @@
     function htmlPanelDetalleProyecto(p) {
         const id = p.id;
         const subtitulo = [p.cliente, p.servicio].filter(Boolean).map(esc).join(' · ');
-        const tabDetalleActive = _proyDetalleTab !== 'timeline';
         return `<div class="proyecto-detalle-header px-3 py-2 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2 flex-wrap min-w-0">
                     <h6 class="mb-0 text-teal fw-medium text-truncate"><i class="fa-solid fa-diagram-project me-1"></i> ${esc(p.nombre)}</h6>
                     ${subtitulo ? `<small class="text-muted">${subtitulo}</small>` : ''}
                 </div>
-                <div class="btn-group proyecto-detalle-tabs" role="group">
-                    <button type="button" class="btn btn-sm btn-outline-secondary${tabDetalleActive ? ' active' : ''}" onclick="setProyectoDetalleTab('detalle', ${id})"><i class="fa-solid fa-table-list me-1"></i> Detalle</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary${!tabDetalleActive ? ' active' : ''}" onclick="setProyectoDetalleTab('timeline', ${id})"><i class="fa-solid fa-timeline me-1"></i> Timeline</button>
-                </div>
             </div>
-            <div class="proyecto-detalle-scroll${tabDetalleActive ? '' : ' d-none'}" id="proyecto-detalle-tab-detalle">
+            <div class="proyecto-detalle-scroll" id="proyecto-detalle-content">
                 <div class="subseccion-proyecto p-3">
+                    <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-truck-fast"></i> Programación de entregas</h6><button class="btn btn-sm btn-teal" onclick="agregarEntrega(${id})">+ ENTREGA</button></div>
+                    <table id="ent-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
+                        <th style="width:2rem"></th>
+                        ${thSortDetalle('fecha_entrega', 'Fecha entrega', `ordenarDetalleEntrega('fecha_entrega')`)}
+                        ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleEntrega('descripcion')`)}
+                        ${thSortDetalle('status', 'Status', `ordenarDetalleEntrega('status')`)}
+                        <th></th>
+                    </tr></thead><tbody id="ent-body-${id}"><tr><td colspan="5" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
+                </div>
+                <div class="subseccion-proyecto p-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                        <h6 class="mb-0 text-teal"><i class="fa-solid fa-timeline me-1"></i> Timeline</h6>
+                        <small class="text-muted" style="font-size:0.68rem">Arrastre un punto para cambiar la fecha</small>
+                    </div>
+                    <div class="proy-timeline-wrap" id="proy-timeline-wrap-${id}">
+                        <div class="proy-timeline-empty"><i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando timeline…</div>
+                    </div>
+                </div>
+                <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-file-invoice-dollar"></i> Estados de pago</h6><button class="btn btn-sm btn-teal" onclick="abrirEstadoPago(${id})">+ ESTADO DE PAGO</button></div>
                     <table id="ep-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
                         ${thSortDetalle('fecha_movimiento', 'Fecha', `ordenarDetalleEp('fecha_movimiento')`)}
@@ -5299,38 +5412,7 @@
                         <th></th>
                     </tr></thead><tbody id="g-body-${id}"><tr><td colspan="6" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
                 </div>
-                <div class="subseccion-proyecto p-3 border-top">
-                    <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-truck-fast"></i> Programación de entregas</h6><button class="btn btn-sm btn-teal" onclick="agregarEntrega(${id})">+ ENTREGA</button></div>
-                    <table id="ent-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
-                        <th style="width:2rem"></th>
-                        ${thSortDetalle('fecha_entrega', 'Fecha entrega', `ordenarDetalleEntrega('fecha_entrega')`)}
-                        ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleEntrega('descripcion')`)}
-                        ${thSortDetalle('status', 'Status', `ordenarDetalleEntrega('status')`)}
-                        <th></th>
-                    </tr></thead><tbody id="ent-body-${id}"><tr><td colspan="5" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
-                </div>
-            </div>
-            <div class="proyecto-detalle-scroll${tabDetalleActive ? ' d-none' : ''}" id="proyecto-detalle-tab-timeline">
-                <div class="px-3 pt-2"><small class="text-muted" style="font-size:0.68rem">Arrastre un punto para cambiar la fecha</small></div>
-                <div class="proy-timeline-wrap" id="proy-timeline-wrap-${id}">
-                    <div class="proy-timeline-empty"><i class="fa-solid fa-spinner fa-spin me-1"></i> Cargando timeline…</div>
-                </div>
             </div>`;
-    }
-
-    function setProyectoDetalleTab(tab, proyectoId) {
-        _proyDetalleTab = tab;
-        const tabDetalle = document.getElementById('proyecto-detalle-tab-detalle');
-        const tabTimeline = document.getElementById('proyecto-detalle-tab-timeline');
-        const btns = document.querySelectorAll('.proyecto-detalle-tabs .btn');
-        if (tabDetalle) tabDetalle.classList.toggle('d-none', tab !== 'detalle');
-        if (tabTimeline) tabTimeline.classList.toggle('d-none', tab !== 'timeline');
-        btns.forEach((btn, i) => {
-            const isDetalle = i === 0;
-            btn.classList.toggle('active', (tab === 'detalle' && isDetalle) || (tab === 'timeline' && !isDetalle));
-        });
-        if (tab === 'timeline' && proyectoId) renderProyectoTimeline(proyectoId);
-        else if (tab === 'detalle' && proyectoId) requestAnimationFrame(() => autoAjustarAnchosTablasDetalleProyecto(proyectoId));
     }
 
     function ocultarDetalleProyecto() {
@@ -5359,10 +5441,6 @@
         actualizarSeleccionProyUI();
         await cargarDetalleProyecto(id);
         requestAnimationFrame(() => {
-            if (_proyDetalleTab === 'timeline') {
-                renderProyectoTimeline(id);
-                return;
-            }
             panel.querySelectorAll('table.table-proy-detalle').forEach(t => {
                 t.dataset.colResizeInit = '';
                 t.dataset.colResizePending = '1';
