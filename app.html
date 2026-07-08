@@ -391,6 +391,14 @@
             font-size: 0.68rem; color: #6c757d; white-space: nowrap;
             transform: none; text-align: left;
         }
+        .proy-timeline-body { position: relative; }
+        .proy-timeline-today-line {
+            position: absolute; top: 0; bottom: 0;
+            width: 2px; background: #dc3545;
+            transform: translateX(-50%); z-index: 6;
+            pointer-events: none; opacity: 0.9;
+            box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.15);
+        }
         .proy-timeline-tracks { position: relative; }
         .proy-timeline-track { position: relative; margin-bottom: 1.5rem; }
         .proy-timeline-track:last-child { margin-bottom: 0.25rem; }
@@ -451,7 +459,7 @@
         .proy-timeline-dot.dot-pago { background: #198754; }
         .proy-timeline-callout {
             position: absolute; left: 0; pointer-events: none;
-            max-width: 140px; min-width: 48px;
+            width: max-content; max-width: none; min-width: 48px;
         }
         .proy-timeline-event[data-side="above"] .proy-timeline-callout {
             bottom: calc(50% + 10px + var(--lane-offset, 0px));
@@ -460,11 +468,15 @@
             top: calc(50% + 10px + var(--lane-offset, 0px));
         }
         .proy-timeline-label {
-            font-size: 0.68rem; line-height: 1.3; color: #343a40; text-align: left;
-            overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
-            white-space: normal;
+            font-size: 0.68rem; line-height: 1.35; color: #343a40; text-align: left;
+            white-space: nowrap; display: inline-block;
+            background: rgba(255, 255, 255, 0.92); padding: 0.1rem 0.3rem;
+            border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.04);
         }
-        .proy-timeline-label-date { display: block; font-size: 0.62rem; color: #868e96; margin-top: 0.12rem; }
+        .proy-timeline-label-date {
+            display: inline; font-size: 0.62rem; color: #868e96;
+            margin-left: 0.35rem; white-space: nowrap;
+        }
         .proy-timeline-leyenda {
             display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.68rem; color: #6c757d;
             margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px solid #eef1f3;
@@ -869,8 +881,20 @@
         }
         .entrega-tareas-wrap {
             border-left: 3px solid var(--teal-green);
+            overflow-x: hidden;
+            min-width: 0;
+            max-width: 100%;
         }
-        .entrega-tareas-wrap .table { font-size: 0.78rem; }
+        .entrega-tareas-wrap .tabla-scroll-wrap {
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: hidden;
+        }
+        .table-proy-detalle .entrega-tareas-row > td {
+            overflow: hidden;
+            max-width: 0;
+            padding: 0;
+        }
         .badge-tarea-pendiente { background: #e9ecef; color: #495057; }
         .badge-tarea-proceso { background: #fff3cd; color: #664d03; }
         .badge-tarea-hecho { background: #d1e7dd; color: #0f5132; }
@@ -3004,7 +3028,7 @@
             } else {
                 const div = document.createElement('div');
                 div.className = 'tabla-scroll-wrap';
-                if (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle')) {
+                if (table.closest('.entrega-tareas-wrap') || (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle'))) {
                     div.classList.add('tabla-scroll-expand');
                 } else if (table.closest('.subseccion-proyecto')) {
                     div.classList.add('tabla-scroll-nested');
@@ -3014,7 +3038,7 @@
                 wrap = div;
             }
         }
-        if (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle') && !wrap.classList.contains('tabla-scroll-expand')) {
+        if ((table.closest('.entrega-tareas-wrap') || (table.closest('.subseccion-proyecto') && table.classList.contains('table-proy-detalle'))) && !wrap.classList.contains('tabla-scroll-expand')) {
             wrap.classList.add('tabla-scroll-expand');
         } else if (table.closest('.subseccion-proyecto') && !wrap.classList.contains('tabla-scroll-nested') && !wrap.classList.contains('tabla-scroll-expand')) {
             wrap.classList.add('tabla-scroll-nested');
@@ -3115,6 +3139,9 @@
         if (/^ent-tabla-/.test(table.id)) {
             return [0.05, 0.14, 0.52, 0.2, 0.09].slice(0, nCols);
         }
+        if (/^tareas-tabla-/.test(table.id)) {
+            return [0.38, 0.24, 0.14, 0.14, 0.1].slice(0, nCols);
+        }
         return Array(nCols).fill(1 / nCols);
     }
 
@@ -3186,7 +3213,8 @@
         const skipSaved = table.id === 'tabla-movimientos-grid'
             || /^ep-tabla-/.test(table.id)
             || /^g-tabla-/.test(table.id)
-            || /^ent-tabla-/.test(table.id);
+            || /^ent-tabla-/.test(table.id)
+            || /^tareas-tabla-/.test(table.id);
         const saved = skipSaved ? null : leerAnchosGuardados(tableId);
         const visible = ths.some(th => th.offsetWidth > 0);
         if (!visible && !saved) {
@@ -4498,6 +4526,11 @@
             const table = document.getElementById(id);
             if (table) autoAjustarAnchosTablaProyDetalle(table);
         });
+        document.querySelectorAll(`#ent-body-${proyectoId} table[id^="tareas-tabla-"]`).forEach(table => {
+            if (!table.closest('.entrega-tareas-row')?.classList.contains('d-none')) {
+                inicializarTablaTareasEntrega(table.id.replace('tareas-tabla-', ''));
+            }
+        });
     }
 
     function ordenarDetalleEp(col) {
@@ -4527,12 +4560,23 @@
         renderTareasEntrega(entregaId, proyectoId);
     }
 
+    function inicializarTablaTareasEntrega(entregaId) {
+        const table = document.getElementById(`tareas-tabla-${entregaId}`);
+        if (!table) return;
+        prepararTablaScrollSticky(table);
+        table.dataset.colResizeInit = '';
+        table.dataset.colResizePending = '';
+        initTablaRedimensionable(table);
+        autoAjustarAnchosTablaProyDetalle(table);
+    }
+
     function renderTareasEntrega(entregaId, proyectoId) {
         const tareas = _proyTareasCache.get(entregaId) || [];
         const ordenadas = ordenarListaDetalleProyecto(tareas, _proyTareaOrdenCol, _proyTareaOrdenDir, getterTareaDetalle);
         const body = document.getElementById(`tareas-body-${entregaId}`);
         if (body) body.innerHTML = filasTareas(ordenadas, entregaId, proyectoId);
         actualizarIconosOrdenDetalleTabla(`tareas-tabla-${entregaId}`, _proyTareaOrdenCol, _proyTareaOrdenDir);
+        requestAnimationFrame(() => inicializarTablaTareasEntrega(entregaId));
     }
 
     function filasMovimientos(items, proyectoId, clase, vacio) {
@@ -4661,13 +4705,13 @@
                         <small class="text-muted fw-medium"><i class="fa-solid fa-list-check text-teal me-1"></i> Tareas</small>
                         <button type="button" class="btn btn-sm btn-teal" onclick="agregarTarea(${entregaId}, ${proyectoId})"><i class="fa-solid fa-plus"></i> Agregar tarea</button>
                     </div>
-                    <table id="tareas-tabla-${entregaId}" class="table table-hover table-panel table-compact mb-0">
+                    <table id="tareas-tabla-${entregaId}" class="table table-hover table-panel table-proy-detalle mb-0">
                         <thead><tr>
                             ${thSortDetalle('descripcion', 'Tarea', `ordenarDetalleTarea(${entregaId}, 'descripcion', ${proyectoId})`)}
                             ${thSortDetalle('asignado', 'Asignada a', `ordenarDetalleTarea(${entregaId}, 'asignado', ${proyectoId})`)}
                             ${thSortDetalle('fecha_limite', 'Fecha límite', `ordenarDetalleTarea(${entregaId}, 'fecha_limite', ${proyectoId})`)}
                             ${thSortDetalle('status', 'Status', `ordenarDetalleTarea(${entregaId}, 'status', ${proyectoId})`)}
-                            <th class="text-end" style="width:3rem"></th>
+                            <th class="text-end"></th>
                         </tr></thead>
                         <tbody id="tareas-body-${entregaId}"><tr><td colspan="5" class="text-center text-muted py-2">Cargando…</td></tr></tbody>
                     </table>
@@ -5156,8 +5200,9 @@
     function proyTimelineLayoutLabels(rail) {
         const railRect = rail.getBoundingClientRect();
         if (railRect.width <= 0) return;
-        const laneHeight = 30;
-        const gapPct = 0.8;
+        const laneHeight = 22;
+        const minGapPx = 10;
+        const minGapPct = (minGapPx / railRect.width) * 100;
         const groups = [
             { side: 'above', events: [] },
             { side: 'below', events: [] },
@@ -5167,25 +5212,32 @@
             const group = groups.find(g => g.side === side);
             if (group) group.events.push(evEl);
         });
-        let maxLanes = 1;
-        groups.forEach(({ events }) => {
+        let maxAbove = 1;
+        let maxBelow = 1;
+        groups.forEach(({ side, events }) => {
+            events.forEach(evEl => {
+                const callout = evEl.querySelector('.proy-timeline-callout');
+                if (callout) callout.style.setProperty('--lane-offset', '0px');
+            });
             events.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
             const lanes = [];
             events.forEach(evEl => {
                 const callout = evEl.querySelector('.proy-timeline-callout');
                 if (!callout) return;
                 const pct = parseFloat(evEl.style.left) || 0;
-                const widthPx = Math.max(callout.offsetWidth || 0, callout.scrollWidth || 0, 48);
+                const widthPx = Math.max(callout.scrollWidth, callout.offsetWidth, 48);
                 const widthPct = (widthPx / railRect.width) * 100;
                 let lane = 0;
-                while (lane < lanes.length && pct < lanes[lane]) lane++;
+                while (lane < lanes.length && pct < lanes[lane] - minGapPct * 0.25) lane++;
                 if (lane === lanes.length) lanes.push(0);
-                lanes[lane] = pct + widthPct + gapPct;
+                lanes[lane] = pct + widthPct + minGapPct;
                 callout.style.setProperty('--lane-offset', (lane * laneHeight) + 'px');
-                maxLanes = Math.max(maxLanes, lane + 1);
+                if (side === 'above') maxAbove = Math.max(maxAbove, lane + 1);
+                else maxBelow = Math.max(maxBelow, lane + 1);
             });
         });
-        rail.style.minHeight = (88 + Math.max(0, maxLanes - 1) * laneHeight) + 'px';
+        const extraLanes = Math.max(maxAbove, maxBelow);
+        rail.style.minHeight = (88 + Math.max(0, extraLanes - 1) * laneHeight) + 'px';
     }
 
     function proyTimelineInitDrag(wrap, proyectoId, desde, hasta) {
@@ -5320,27 +5372,37 @@
              <span class="proy-timeline-axis-label" style="left:${m.pct.toFixed(3)}%">${esc(m.label)}</span>`
         ).join('');
         const monthBands = proyTimelineGenerarMesBands(meses);
+        const hoyIso = fechaLocalIso();
+        const hoy = parseIsoDate(hoyIso);
+        const showTodayLine = hoy && hoy >= desde && hoy <= hasta;
+        const todayPct = proyTimelineFechaPct(hoyIso, desde, hasta);
+        const todayLineHtml = showTodayLine
+            ? `<div class="proy-timeline-today-line" style="left:${todayPct.toFixed(3)}%" title="Hoy"></div>`
+            : '';
 
         wrap.innerHTML = `<div class="proy-timeline" id="proy-timeline-${proyectoId}">
-            <div class="proy-timeline-axis"><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
-            <div class="proy-timeline-tracks">
-                <div class="proy-timeline-track">
-                    <div class="proy-timeline-track-label">Entregas · Tareas</div>
-                    <div class="proy-timeline-rail" data-track="1">
-                        <div class="proy-timeline-months">${monthBands}</div>
-                        <div class="proy-timeline-rail-line"></div>
-                        <div class="proy-timeline-events">
-                            ${track1.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+            <div class="proy-timeline-body">
+                ${todayLineHtml}
+                <div class="proy-timeline-axis"><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
+                <div class="proy-timeline-tracks">
+                    <div class="proy-timeline-track">
+                        <div class="proy-timeline-track-label">Entregas · Tareas</div>
+                        <div class="proy-timeline-rail" data-track="1">
+                            <div class="proy-timeline-months">${monthBands}</div>
+                            <div class="proy-timeline-rail-line"></div>
+                            <div class="proy-timeline-events">
+                                ${track1.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="proy-timeline-track proy-timeline-track-billing">
-                    <div class="proy-timeline-track-label">Estados de pago · Facturación · Pago</div>
-                    <div class="proy-timeline-rail" data-track="2">
-                        <div class="proy-timeline-months">${monthBands}</div>
-                        <div class="proy-timeline-rail-line"></div>
-                        <div class="proy-timeline-events">
-                            ${track2.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                    <div class="proy-timeline-track proy-timeline-track-billing">
+                        <div class="proy-timeline-track-label">Estados de pago · Facturación · Pago</div>
+                        <div class="proy-timeline-rail" data-track="2">
+                            <div class="proy-timeline-months">${monthBands}</div>
+                            <div class="proy-timeline-rail-line"></div>
+                            <div class="proy-timeline-events">
+                                ${track2.map((ev, i) => proyTimelineHtmlEvento(ev, i, desde, hasta)).join('')}
+                            </div>
                         </div>
                     </div>
                 </div>
