@@ -380,16 +380,33 @@
         .proy-timeline-wrap { padding: 0.5rem 0.25rem 0.75rem; min-height: 200px; }
         .proy-timeline-empty { text-align: center; color: #adb5bd; padding: 2.5rem 1rem; font-size: 0.8125rem; }
         .proy-timeline { position: relative; padding: 0.25rem 0 0.5rem; }
-        .proy-timeline-axis { position: relative; height: 22px; margin: 0 0 0.5rem; }
-        .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #dee2e6; }
+        .proy-timeline-axis { position: relative; height: 22px; margin: 0 0 0.5rem; border-radius: 2px; overflow: hidden; }
+        .proy-timeline-axis-years {
+            position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .proy-timeline-axis-year {
+            position: absolute; top: 0; bottom: 0;
+            background: rgba(0,128,128,0.14);
+            border-left: 1px solid rgba(0,128,128,0.22);
+        }
+        .proy-timeline-axis-year:first-child { border-left: none; }
+        .proy-timeline-axis-year-alt { background: rgba(253,126,20,0.14); border-left-color: rgba(253,126,20,0.28); }
+        .proy-timeline-axis-year-label {
+            position: absolute; left: 3px; top: 0;
+            font-size: 0.6rem; font-weight: 700; line-height: 1;
+            color: rgba(0,100,100,0.55); letter-spacing: 0.03em;
+            pointer-events: none;
+        }
+        .proy-timeline-axis-year-alt .proy-timeline-axis-year-label { color: rgba(180,90,0,0.6); }
+        .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #dee2e6; z-index: 1; }
         .proy-timeline-axis-tick {
             position: absolute; bottom: 0; width: 1px; height: 8px;
-            background: rgba(0,128,128,0.35); transform: translateX(-50%);
+            background: rgba(0,128,128,0.35); transform: translateX(-50%); z-index: 1;
         }
         .proy-timeline-axis-label {
             position: absolute; bottom: 10px; left: 0;
-            font-size: 0.68rem; color: #6c757d; white-space: nowrap;
-            transform: none; text-align: left;
+            font-size: 0.68rem; color: #495057; white-space: nowrap;
+            transform: none; text-align: left; z-index: 1;
         }
         .proy-timeline-body { position: relative; }
         .proy-timeline-today-line {
@@ -409,6 +426,7 @@
         .proy-timeline-track-billing .proy-timeline-track-label { color: #c76a00; }
         .proy-timeline-rail {
             position: relative; min-height: 88px; margin: 0;
+            --rail-line-top: 50%;
         }
         .proy-timeline-months {
             position: absolute; inset: 0; pointer-events: none; z-index: 0;
@@ -421,7 +439,7 @@
         .proy-timeline-track-billing .proy-timeline-month { background: rgba(253,126,20,0.05); }
         .proy-timeline-track-billing .proy-timeline-month-alt { background: rgba(253,126,20,0.11); }
         .proy-timeline-rail-line {
-            position: absolute; left: 0; right: 0; top: 50%;
+            position: absolute; left: 0; right: 0; top: var(--rail-line-top, 50%);
             height: 5px; border-radius: 3px; z-index: 1;
             transform: translateY(-50%);
             background: linear-gradient(90deg, rgba(0,128,128,0.25) 0%, var(--teal-green) 50%, rgba(0,128,128,0.25) 100%);
@@ -435,7 +453,7 @@
             position: absolute; inset: 0; z-index: 2;
         }
         .proy-timeline-event {
-            position: absolute; top: 50%; left: 0;
+            position: absolute; top: var(--rail-line-top, 50%); left: 0;
             transform: translateY(-50%);
             z-index: 1; width: 0;
         }
@@ -5157,9 +5175,10 @@
         const meses = [];
         let cur = new Date(desde.getFullYear(), desde.getMonth(), 1);
         while (cur <= hasta) {
-            const pct = proyTimelineFechaPct(cur.toISOString().slice(0, 10), desde, hasta);
+            const pct = proyTimelineFechaPct(fechaLocalIso(cur), desde, hasta);
             meses.push({
                 pct,
+                year: cur.getFullYear(),
                 label: cur.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }),
             });
             cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
@@ -5177,9 +5196,38 @@
         }).join('');
     }
 
+    function proyTimelineGenerarYearBands(desde, hasta) {
+        const bands = [];
+        const startYear = desde.getFullYear();
+        const endYear = hasta.getFullYear();
+        let yearIdx = 0;
+        for (let year = startYear; year <= endYear; year++) {
+            const yearStartDt = new Date(year, 0, 1);
+            const yearEndDt = new Date(year + 1, 0, 1);
+            const bandStart = yearStartDt < desde ? desde : yearStartDt;
+            const bandEnd = yearEndDt > hasta ? hasta : yearEndDt;
+            if (bandStart.getTime() >= bandEnd.getTime()) continue;
+
+            const left = proyTimelineFechaPct(fechaLocalIso(bandStart), desde, hasta);
+            const rightPct = yearEndDt > hasta
+                ? proyTimelineFechaPct(fechaLocalIso(hasta), desde, hasta)
+                : proyTimelineFechaPct(fechaLocalIso(yearEndDt), desde, hasta);
+            const width = Math.max(0.001, rightPct - left);
+            const alt = yearIdx % 2 === 1 ? ' proy-timeline-axis-year-alt' : '';
+            bands.push(
+                `<div class="proy-timeline-axis-year${alt}" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%">` +
+                `<span class="proy-timeline-axis-year-label">${year}</span></div>`
+            );
+            yearIdx++;
+        }
+        return bands.join('');
+    }
+
     function proyTimelineLabelSide(ev) {
         if (ev.tipo === 'entrega') return 'above';
         if (ev.tipo === 'tarea') return 'below';
+        if (ev.tipo === 'ep_mov' || ev.tipo === 'facturacion') return 'above';
+        if (ev.tipo === 'pago') return 'below';
         return 'below';
     }
 
@@ -5200,7 +5248,10 @@
     function proyTimelineLayoutLabels(rail) {
         const railRect = rail.getBoundingClientRect();
         if (railRect.width <= 0) return;
-        const laneHeight = 22;
+        const laneHeight = 24;
+        const lineGap = 10;
+        const edgePad = 8;
+        const minRailHeight = 88;
         const minGapPx = 10;
         const minGapPct = (minGapPx / railRect.width) * 100;
         const groups = [
@@ -5236,8 +5287,12 @@
                 else maxBelow = Math.max(maxBelow, lane + 1);
             });
         });
-        const extraLanes = Math.max(maxAbove, maxBelow);
-        rail.style.minHeight = (88 + Math.max(0, extraLanes - 1) * laneHeight) + 'px';
+        const aboveSpace = lineGap + maxAbove * laneHeight + edgePad;
+        const belowSpace = lineGap + maxBelow * laneHeight + edgePad;
+        const totalHeight = Math.max(minRailHeight, aboveSpace + belowSpace);
+        const linePct = (aboveSpace / totalHeight) * 100;
+        rail.style.minHeight = totalHeight + 'px';
+        rail.style.setProperty('--rail-line-top', linePct.toFixed(2) + '%');
     }
 
     function proyTimelineInitDrag(wrap, proyectoId, desde, hasta) {
@@ -5280,6 +5335,7 @@
             const dotEl = drag.evEl.querySelector('.proy-timeline-dot');
             if (dotEl) dotEl.title = drag.label + ' · ' + fmtFechaMov(nuevaFecha);
             drag.rafId = null;
+            proyTimelineLayoutLabels(drag.rail);
         };
         wrap.addEventListener('pointermove', (e) => {
             if (!_proyTimelineDrag || _proyTimelineDrag.proyectoId !== proyectoId) return;
@@ -5303,6 +5359,7 @@
                 : parseFloat(drag.evEl.style.left);
             drag.evEl.style.left = pct.toFixed(3) + '%';
             const nuevaFecha = proyTimelinePctFecha(pct, drag.desde, drag.hasta);
+            proyTimelineLayoutLabels(drag.rail);
             if (nuevaFecha === drag.fechaOrig) return;
             await proyTimelineGuardarFecha(drag, nuevaFecha, proyectoId);
         });
@@ -5371,6 +5428,7 @@
             `<span class="proy-timeline-axis-tick" style="left:${m.pct.toFixed(3)}%"></span>
              <span class="proy-timeline-axis-label" style="left:${m.pct.toFixed(3)}%">${esc(m.label)}</span>`
         ).join('');
+        const yearBands = proyTimelineGenerarYearBands(desde, hasta);
         const monthBands = proyTimelineGenerarMesBands(meses);
         const hoyIso = fechaLocalIso();
         const hoy = parseIsoDate(hoyIso);
@@ -5383,7 +5441,7 @@
         wrap.innerHTML = `<div class="proy-timeline" id="proy-timeline-${proyectoId}">
             <div class="proy-timeline-body">
                 ${todayLineHtml}
-                <div class="proy-timeline-axis"><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
+                <div class="proy-timeline-axis"><div class="proy-timeline-axis-years">${yearBands}</div><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
                 <div class="proy-timeline-tracks">
                     <div class="proy-timeline-track">
                         <div class="proy-timeline-track-label">Entregas · Tareas</div>
