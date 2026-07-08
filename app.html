@@ -1540,11 +1540,11 @@
                         <thead>
                             <tr>
                                 <th style="width:32px" title="Alertas"></th>
-                                <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarMovimientos('fecha_movimiento')">Movimiento <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarMovimientos('fecha_movimiento')">Fecha movimiento <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="proyecto" onclick="ordenarMovimientos('proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="monto" onclick="ordenarMovimientos('monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="status_pago" onclick="ordenarMovimientos('status_pago')">St. pago <i class="fa-solid fa-sort sort-icon"></i></th>
-                                <th class="mov-th-sort" data-col="fecha_estado_pago" onclick="ordenarMovimientos('fecha_estado_pago')">Estado de pago <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort" data-col="fecha_estado_pago" onclick="ordenarMovimientos('fecha_estado_pago')">Fecha estado de pago <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="fecha_facturacion" onclick="ordenarMovimientos('fecha_facturacion')">Facturacion <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="descripcion" onclick="ordenarMovimientos('descripcion')">Descripción <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="origen" onclick="ordenarMovimientos('origen')">Origen <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -2288,7 +2288,7 @@
             <input type="hidden" id="epProyectoId"><input type="hidden" id="epMovId">
             <div class="row g-3">
                 <div class="col-md-4"><label class="form-label small fw-bold">Fecha movimiento</label><input type="date" class="form-control" id="epFecha" required></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Fecha estado pago</label><input type="date" class="form-control" id="epFechaPago"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Fecha estado de pago</label><input type="date" class="form-control" id="epFechaPago"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Fecha facturación</label><input type="date" class="form-control" id="epFechaFact"></div>
                 <div class="col-md-6"><label class="form-label small fw-bold">Monto ($)</label><input type="number" class="form-control" id="epMonto" required></div>
                     <div class="col-md-6"><label class="form-label small fw-bold">N° Factura</label><input type="text" class="form-control" id="epNumFact"></div>
@@ -2345,7 +2345,7 @@
         <div class="modal-body p-4">
             <div class="row g-3">
                 <div class="col-md-4"><label class="form-label small fw-bold">Fecha movimiento</label><input type="date" class="form-control" id="fechaM" required></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Fecha estado pago</label><input type="date" class="form-control" id="fechaPagoM"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Fecha estado de pago</label><input type="date" class="form-control" id="fechaPagoM"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Fecha facturación</label><input type="date" class="form-control" id="fechaFactM"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Monto ($)</label><input type="number" class="form-control" id="montoM" required></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">N° Factura</label><input type="text" class="form-control" id="numFactM"></div>
@@ -5098,11 +5098,11 @@
     const _proyTimelineObservers = new Map();
     const PROY_TIMELINE_TIPOS = ['entrega', 'tarea', 'ep_mov', 'facturacion', 'pago'];
     const PROY_TIMELINE_LEYENDA = [
-        { tipo: 'entrega', label: 'Entrega', color: '#2563eb' },
-        { tipo: 'tarea', label: 'Tarea', color: '#0ea5e9' },
-        { tipo: 'ep_mov', label: 'Estado de pago', color: 'var(--teal-green)' },
-        { tipo: 'facturacion', label: 'Facturación', color: '#ffc107' },
-        { tipo: 'pago', label: 'Pago', color: '#198754' },
+        { tipo: 'entrega', label: 'Entrega', color: '#2563eb', title: 'Fecha de entrega' },
+        { tipo: 'tarea', label: 'Tarea', color: '#0ea5e9', title: 'Fecha límite de tarea' },
+        { tipo: 'ep_mov', label: 'Estado de pago', color: 'var(--teal-green)', title: 'Fecha movimiento' },
+        { tipo: 'facturacion', label: 'Facturación', color: '#ffc107', title: 'Fecha facturación' },
+        { tipo: 'pago', label: 'Pago', color: '#198754', title: 'Fecha estado de pago' },
     ];
     const _proyTimelineTipoVisibilidad = new Map();
 
@@ -5151,7 +5151,8 @@
         return PROY_TIMELINE_LEYENDA.map(item => {
             const hidden = !vis[item.tipo];
             const cls = hidden ? 'proy-timeline-leyenda-item is-hidden' : 'proy-timeline-leyenda-item';
-            const title = hidden ? 'Clic para mostrar' : 'Clic para ocultar';
+            const hint = item.title ? `${item.title} · ` : '';
+            const title = hint + (hidden ? 'Clic para mostrar' : 'Clic para ocultar');
             return `<span class="${cls}" role="button" tabindex="0" title="${title}"
                 onclick="proyTimelineToggleTipo(${proyectoId}, '${item.tipo}')"
                 onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();proyTimelineToggleTipo(${proyectoId}, '${item.tipo}')}">
@@ -5622,9 +5623,9 @@
                 <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0 text-teal"><i class="fa-solid fa-file-invoice-dollar"></i> Estados de pago</h6><button class="btn btn-sm btn-teal" onclick="abrirEstadoPago(${id})">+ ESTADO DE PAGO</button></div>
                     <table id="ep-tabla-${id}" class="table table-hover table-panel table-proy-detalle mb-0"><thead><tr>
-                        ${thSortDetalle('fecha_movimiento', 'Fecha', `ordenarDetalleEp('fecha_movimiento')`)}
+                        ${thSortDetalle('fecha_movimiento', 'Fecha movimiento', `ordenarDetalleEp('fecha_movimiento')`)}
                         ${thSortDetalle('descripcion', 'Descripción', `ordenarDetalleEp('descripcion')`)}
-                        ${thSortDetalle('fecha_estado_pago', 'Estado de pago', `ordenarDetalleEp('fecha_estado_pago')`)}
+                        ${thSortDetalle('fecha_estado_pago', 'Fecha estado de pago', `ordenarDetalleEp('fecha_estado_pago')`)}
                         ${thSortDetalle('fecha_facturacion', 'Facturacion', `ordenarDetalleEp('fecha_facturacion')`)}
                         ${thSortDetalle('numero_factura', 'N° Fact.', `ordenarDetalleEp('numero_factura')`)}
                         ${thSortDetalle('status_pago', 'Status', `ordenarDetalleEp('status_pago')`)}
