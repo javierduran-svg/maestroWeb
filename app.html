@@ -380,7 +380,7 @@
         .proy-timeline-wrap { padding: 0.5rem 0.25rem 0.75rem; min-height: 200px; }
         .proy-timeline-empty { text-align: center; color: #adb5bd; padding: 2.5rem 1rem; font-size: 0.8125rem; }
         .proy-timeline { position: relative; padding: 0.25rem 0 0.5rem; }
-        .proy-timeline-axis { position: relative; height: 22px; margin: 0 0 0.5rem; border-radius: 2px; overflow: hidden; }
+        .proy-timeline-axis { position: relative; height: 34px; margin: 0 0 0.5rem; border-radius: 2px; overflow: hidden; }
         .proy-timeline-axis-years {
             position: absolute; inset: 0; pointer-events: none; z-index: 0;
         }
@@ -390,21 +390,25 @@
             border-left: 1px solid rgba(0,128,128,0.22);
         }
         .proy-timeline-axis-year:first-child { border-left: none; }
-        .proy-timeline-axis-year-alt { background: rgba(253,126,20,0.14); border-left-color: rgba(253,126,20,0.28); }
+        .proy-timeline-axis-year-alt { background: #f5f5f5; border-left-color: rgba(0,0,0,0.08); }
+        .proy-timeline-axis-year-labels {
+            position: absolute; left: 0; right: 0; top: 0; height: 14px;
+            pointer-events: none; z-index: 2;
+        }
         .proy-timeline-axis-year-label {
-            position: absolute; left: 3px; top: 0;
-            font-size: 0.6rem; font-weight: 700; line-height: 1;
-            color: rgba(0,100,100,0.55); letter-spacing: 0.03em;
+            position: absolute; top: 2px;
+            font-size: 0.62rem; font-weight: 700; line-height: 1;
+            color: rgba(0,100,100,0.65); letter-spacing: 0.03em;
+            transform: translateX(-50%); white-space: nowrap;
             pointer-events: none;
         }
-        .proy-timeline-axis-year-alt .proy-timeline-axis-year-label { color: rgba(180,90,0,0.6); }
-        .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: #dee2e6; z-index: 1; }
+        .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 14px; height: 1px; background: #dee2e6; z-index: 1; }
         .proy-timeline-axis-tick {
-            position: absolute; bottom: 0; width: 1px; height: 8px;
+            position: absolute; bottom: 0; width: 1px; height: 5px;
             background: rgba(0,128,128,0.35); transform: translateX(-50%); z-index: 1;
         }
         .proy-timeline-axis-label {
-            position: absolute; bottom: 10px; left: 0;
+            position: absolute; bottom: 6px; left: 0;
             font-size: 0.68rem; color: #495057; white-space: nowrap;
             transform: none; text-align: left; z-index: 1;
         }
@@ -499,8 +503,16 @@
             display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; font-size: 0.68rem; color: #6c757d;
             margin-top: 0.75rem; padding-top: 0.65rem; border-top: 1px solid #eef1f3;
         }
-        .proy-timeline-leyenda span { display: inline-flex; align-items: center; gap: 0.35rem; }
-        .proy-timeline-leyenda i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .proy-timeline-leyenda-item {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            cursor: pointer; user-select: none; border-radius: 4px;
+            padding: 0.1rem 0.25rem; transition: opacity 0.15s ease, background 0.15s ease;
+        }
+        .proy-timeline-leyenda-item:hover { background: rgba(0, 0, 0, 0.04); }
+        .proy-timeline-leyenda-item:focus-visible { outline: 2px solid var(--teal-green); outline-offset: 1px; }
+        .proy-timeline-leyenda-item.is-hidden { opacity: 0.5; text-decoration: line-through; }
+        .proy-timeline-leyenda-item.is-hidden i { opacity: 0.35; }
+        .proy-timeline-leyenda-item i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .subseccion-proyecto .cell-edit,
         .subseccion-proyecto .cell-edit.form-select {
             border: none; box-shadow: none; background: transparent; border-radius: 0;
@@ -5084,6 +5096,68 @@
 
     let _proyTimelineDrag = null;
     const _proyTimelineObservers = new Map();
+    const PROY_TIMELINE_TIPOS = ['entrega', 'tarea', 'ep_mov', 'facturacion', 'pago'];
+    const PROY_TIMELINE_LEYENDA = [
+        { tipo: 'entrega', label: 'Entrega', color: '#2563eb' },
+        { tipo: 'tarea', label: 'Tarea', color: '#0ea5e9' },
+        { tipo: 'ep_mov', label: 'Estado de pago', color: 'var(--teal-green)' },
+        { tipo: 'facturacion', label: 'Facturación', color: '#ffc107' },
+        { tipo: 'pago', label: 'Pago', color: '#198754' },
+    ];
+    const _proyTimelineTipoVisibilidad = new Map();
+
+    function proyTimelineVisStorageKey(proyectoId) {
+        return `proyTimelineVis_${proyectoId}`;
+    }
+
+    function proyTimelineDefaultVisibilidad() {
+        return Object.fromEntries(PROY_TIMELINE_TIPOS.map(t => [t, true]));
+    }
+
+    function proyTimelineGetVisibilidad(proyectoId) {
+        if (_proyTimelineTipoVisibilidad.has(proyectoId)) {
+            return _proyTimelineTipoVisibilidad.get(proyectoId);
+        }
+        const vis = proyTimelineDefaultVisibilidad();
+        try {
+            const stored = localStorage.getItem(proyTimelineVisStorageKey(proyectoId));
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                PROY_TIMELINE_TIPOS.forEach(t => {
+                    if (typeof parsed[t] === 'boolean') vis[t] = parsed[t];
+                });
+            }
+        } catch (_) {}
+        _proyTimelineTipoVisibilidad.set(proyectoId, vis);
+        return vis;
+    }
+
+    function proyTimelineSetVisibilidad(proyectoId, vis) {
+        _proyTimelineTipoVisibilidad.set(proyectoId, vis);
+        try {
+            localStorage.setItem(proyTimelineVisStorageKey(proyectoId), JSON.stringify(vis));
+        } catch (_) {}
+    }
+
+    function proyTimelineToggleTipo(proyectoId, tipo) {
+        const vis = { ...proyTimelineGetVisibilidad(proyectoId) };
+        vis[tipo] = !vis[tipo];
+        proyTimelineSetVisibilidad(proyectoId, vis);
+        renderProyectoTimeline(proyectoId);
+    }
+
+    function proyTimelineHtmlLeyenda(proyectoId) {
+        const vis = proyTimelineGetVisibilidad(proyectoId);
+        return PROY_TIMELINE_LEYENDA.map(item => {
+            const hidden = !vis[item.tipo];
+            const cls = hidden ? 'proy-timeline-leyenda-item is-hidden' : 'proy-timeline-leyenda-item';
+            const title = hidden ? 'Clic para mostrar' : 'Clic para ocultar';
+            return `<span class="${cls}" role="button" tabindex="0" title="${title}"
+                onclick="proyTimelineToggleTipo(${proyectoId}, '${item.tipo}')"
+                onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();proyTimelineToggleTipo(${proyectoId}, '${item.tipo}')}">
+                <i style="background:${item.color}"></i> ${esc(item.label)}</span>`;
+        }).join('');
+    }
 
     async function cargarTareasProyectoTimeline(proyectoId) {
         const entregas = _proyDetalleCache.proyectoId === proyectoId ? (_proyDetalleCache.entregas || []) : [];
@@ -5179,7 +5253,7 @@
             meses.push({
                 pct,
                 year: cur.getFullYear(),
-                label: cur.toLocaleDateString('es-CL', { month: 'short', year: '2-digit' }),
+                label: cur.toLocaleDateString('es-CL', { month: 'short' }).replace(/\./g, '').trim(),
             });
             cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
         }
@@ -5215,12 +5289,35 @@
             const width = Math.max(0.001, rightPct - left);
             const alt = yearIdx % 2 === 1 ? ' proy-timeline-axis-year-alt' : '';
             bands.push(
-                `<div class="proy-timeline-axis-year${alt}" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%">` +
-                `<span class="proy-timeline-axis-year-label">${year}</span></div>`
+                `<div class="proy-timeline-axis-year${alt}" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%"></div>`
             );
             yearIdx++;
         }
         return bands.join('');
+    }
+
+    function proyTimelineGenerarYearLabels(desde, hasta) {
+        const labels = [];
+        const startYear = desde.getFullYear();
+        const endYear = hasta.getFullYear();
+        for (let year = startYear; year <= endYear; year++) {
+            const yearStartDt = new Date(year, 0, 1);
+            const yearEndDt = new Date(year + 1, 0, 1);
+            const bandStart = yearStartDt < desde ? desde : yearStartDt;
+            const bandEnd = yearEndDt > hasta ? hasta : yearEndDt;
+            if (bandStart.getTime() >= bandEnd.getTime()) continue;
+
+            const left = proyTimelineFechaPct(fechaLocalIso(bandStart), desde, hasta);
+            const rightPct = yearEndDt > hasta
+                ? proyTimelineFechaPct(fechaLocalIso(hasta), desde, hasta)
+                : proyTimelineFechaPct(fechaLocalIso(yearEndDt), desde, hasta);
+            const width = Math.max(0.001, rightPct - left);
+            const center = left + width / 2;
+            labels.push(
+                `<span class="proy-timeline-axis-year-label" style="left:${center.toFixed(3)}%">${year}</span>`
+            );
+        }
+        return labels.join('');
     }
 
     function proyTimelineLabelSide(ev) {
@@ -5412,23 +5509,28 @@
     function renderProyectoTimeline(proyectoId) {
         const wrap = document.getElementById(`proy-timeline-wrap-${proyectoId}`);
         if (!wrap) return;
-        const events = proyTimelineCollectEvents();
-        const fechas = events.map(e => e.fecha).filter(Boolean);
-        const { desde, hasta } = proyTimelineCalcRango(fechas);
-        const meses = proyTimelineGenerarMeses(desde, hasta);
-        const track1 = events.filter(e => e.track === 1);
-        const track2 = events.filter(e => e.track === 2);
-
-        if (!events.length) {
+        const allEvents = proyTimelineCollectEvents();
+        if (!allEvents.length) {
             wrap.innerHTML = '<div class="proy-timeline-empty"><i class="fa-regular fa-calendar me-1"></i> Sin eventos con fecha en este proyecto</div>';
             return;
         }
+        const vis = proyTimelineGetVisibilidad(proyectoId);
+        const events = allEvents.filter(e => vis[e.tipo] !== false);
+        const fechasVisibles = events.map(e => e.fecha).filter(Boolean);
+        const fechasRango = fechasVisibles.length
+            ? fechasVisibles
+            : allEvents.map(e => e.fecha).filter(Boolean);
+        const { desde, hasta } = proyTimelineCalcRango(fechasRango);
+        const meses = proyTimelineGenerarMeses(desde, hasta);
+        const track1 = events.filter(e => e.track === 1);
+        const track2 = events.filter(e => e.track === 2);
 
         const axisTicks = meses.map(m =>
             `<span class="proy-timeline-axis-tick" style="left:${m.pct.toFixed(3)}%"></span>
              <span class="proy-timeline-axis-label" style="left:${m.pct.toFixed(3)}%">${esc(m.label)}</span>`
         ).join('');
         const yearBands = proyTimelineGenerarYearBands(desde, hasta);
+        const yearLabels = proyTimelineGenerarYearLabels(desde, hasta);
         const monthBands = proyTimelineGenerarMesBands(meses);
         const hoyIso = fechaLocalIso();
         const hoy = parseIsoDate(hoyIso);
@@ -5441,7 +5543,7 @@
         wrap.innerHTML = `<div class="proy-timeline" id="proy-timeline-${proyectoId}">
             <div class="proy-timeline-body">
                 ${todayLineHtml}
-                <div class="proy-timeline-axis"><div class="proy-timeline-axis-years">${yearBands}</div><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
+                <div class="proy-timeline-axis"><div class="proy-timeline-axis-years">${yearBands}</div><div class="proy-timeline-axis-year-labels">${yearLabels}</div><div class="proy-timeline-axis-line"></div>${axisTicks}</div>
                 <div class="proy-timeline-tracks">
                     <div class="proy-timeline-track">
                         <div class="proy-timeline-track-label">Entregas · Tareas</div>
@@ -5465,13 +5567,7 @@
                     </div>
                 </div>
             </div>
-            <div class="proy-timeline-leyenda">
-                <span><i style="background:#2563eb"></i> Entrega</span>
-                <span><i style="background:#0ea5e9"></i> Tarea</span>
-                <span><i style="background:var(--teal-green)"></i> Estado de pago</span>
-                <span><i style="background:#ffc107"></i> Facturación</span>
-                <span><i style="background:#198754"></i> Pago</span>
-            </div>
+            <div class="proy-timeline-leyenda">${proyTimelineHtmlLeyenda(proyectoId)}</div>
         </div>`;
 
         wrap.dataset.desde = desde.toISOString();
