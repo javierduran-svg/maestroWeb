@@ -94,6 +94,101 @@ def _finalizar_pausa(reg: RegistroTiempo, ahora: datetime):
         reg.ultimo_inicio = None
 
 
+def _parse_datetime(val):
+    if not val:
+        return None
+    if isinstance(val, datetime):
+        return val
+    try:
+        s = str(val).strip()
+        if s.endswith('Z'):
+            s = s[:-1]
+        return datetime.fromisoformat(s)
+    except (ValueError, TypeError):
+        return None
+
+
+def _obtener_registro_tiempo(eid: int, reg_id: int):
+    return RegistroTiempo.query.filter_by(empresa_id=eid, id=reg_id).first()
+
+
+def _validar_trabajador_tiempo(eid: int, trabajador_id):
+    if not trabajador_id:
+        return None, 'trabajador_id requerido'
+    trab = Trabajador.query.filter_by(empresa_id=eid, id=int(trabajador_id)).first()
+    if not trab:
+        return None, 'trabajador_id inválido'
+    return trab, None
+
+
+def _aplicar_datos_registro_tiempo(reg: RegistroTiempo, data: dict, eid: int, ahora: datetime | None = None):
+    """Aplica campos editables a un registro; retorna error str o None."""
+    ahora = ahora or datetime.utcnow()
+
+    if 'trabajador_id' in data:
+        trab, err = _validar_trabajador_tiempo(eid, data['trabajador_id'])
+        if err:
+            return err
+        reg.trabajador_id = trab.id
+
+    refs_keys = ('proyecto_id', 'entrega_id', 'tarea_id')
+    if any(k in data for k in refs_keys):
+        proyecto_id = data.get('proyecto_id', reg.proyecto_id)
+        entrega_id = data.get('entrega_id', reg.entrega_id)
+        tarea_id = data.get('tarea_id', reg.tarea_id)
+        if 'entrega_id' in data and data['entrega_id'] in (None, '', 0):
+            entrega_id = None
+            tarea_id = None
+        if 'tarea_id' in data and data['tarea_id'] in (None, '', 0):
+            tarea_id = None
+        refs, val_err = _validar_refs_tiempo(eid, proyecto_id, entrega_id, tarea_id)
+        if val_err:
+            return val_err
+        reg.proyecto_id = refs['proyecto_id']
+        reg.entrega_id = refs['entrega_id']
+        reg.tarea_id = refs['tarea_id']
+
+    if 'inicio' in data:
+        inicio = _parse_datetime(data['inicio'])
+        if not inicio:
+            return 'inicio inválido'
+        reg.inicio = inicio
+
+    if 'fin' in data:
+        fin = _parse_datetime(data['fin']) if data['fin'] else None
+        if data['fin'] and not fin:
+            return 'fin inválido'
+        reg.fin = fin
+
+    if 'duracion_segundos' in data:
+        try:
+            reg.duracion_segundos = max(0, int(data['duracion_segundos']))
+        except (TypeError, ValueError):
+            return 'duracion_segundos inválido'
+        if reg.estado == 'activo':
+            reg.ultimo_inicio = ahora
+
+    if 'estado' in data:
+        nuevo_estado = data['estado']
+        if nuevo_estado not in ESTADOS_REGISTRO_TIEMPO:
+            return f'estado debe ser uno de: {", ".join(ESTADOS_REGISTRO_TIEMPO)}'
+        if reg.estado == 'activo' and nuevo_estado != 'activo':
+            _finalizar_pausa(reg, ahora)
+        if nuevo_estado == 'activo' and reg.estado != 'activo':
+            reg.ultimo_inicio = ahora
+        if nuevo_estado == 'finalizado' and not reg.fin:
+            reg.fin = ahora
+        reg.estado = nuevo_estado
+
+    if 'notas' in data:
+        reg.notas = (data.get('notas') or '')[:2000] or None
+
+    if reg.fin and reg.inicio and reg.fin < reg.inicio:
+        return 'fin no puede ser anterior a inicio'
+
+    return None
+
+
 @bp.route('/api/time-tracker/activo', methods=['GET'])
 def obtener_registro_activo():
     eid, err = _requiere_empresa()
@@ -241,6 +336,106 @@ def listar_registros_tiempo():
     registros = query.order_by(RegistroTiempo.inicio.desc(), RegistroTiempo.id.desc()).limit(500).all()
     ahora = datetime.utcnow()
     return jsonify([_registro_tiempo_a_dict(r, ahora) for r in registros])
+
+
+@bp.route('/api/time-tracker/registros', methods=['POST'])
+def crear_registro_tiempo():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+
+    data = request.json or {}
+    trab, val_err = _validar_trabajador_tiempo(eid, data.get('trabajador_id'))
+    if val_err:
+        return jsonify({'error': val_err}), 400
+
+    refs, val_err = _validar_refs_tiempo(
+        eid, data.get('proyecto_id'), data.get('entrega_id'), data.get('tarea_id'),
+    )
+    if val_err:
+        return jsonify({'error': val_err}), 400
+
+    inicio = _parse_datetime(data.get('inicio'))
+    if not inicio:
+        return jsonify({'error': 'inicio requerido'}), 400
+
+    fin = _parse_datetime(data.get('fin')) if data.get('fin') else None
+    if data.get('fin') and not fin:
+        return jsonify({'error': 'fin inválido'}), 400
+
+    estado = data.get('estado') or 'finalizado'
+    if estado not in ESTADOS_REGISTRO_TIEMPO:
+        return jsonify({'error': f'estado debe ser uno de: {", ".join(ESTADOS_REGISTRO_TIEMPO)}'}), 400
+
+    duracion = 0
+    if 'duracion_segundos' in data and data['duracion_segundos'] is not None:
+        try:
+            duracion = max(0, int(data['duracion_segundos']))
+        except (TypeError, ValueError):
+            return jsonify({'error': 'duracion_segundos inválido'}), 400
+    elif fin:
+        duracion = max(0, int((fin - inicio).total_seconds()))
+    elif data.get('duracion_segundos') is not None:
+        duracion = max(0, int(data['duracion_segundos']))
+
+    if fin and fin < inicio:
+        return jsonify({'error': 'fin no puede ser anterior a inicio'}), 400
+
+    if estado in ('activo', 'pausado') and _registro_activo_query(eid, trab.id).first():
+        return jsonify({'error': 'El trabajador ya tiene un registro activo o en pausa'}), 409
+
+    ahora = datetime.utcnow()
+    reg = RegistroTiempo(
+        empresa_id=eid,
+        trabajador_id=trab.id,
+        proyecto_id=refs['proyecto_id'],
+        entrega_id=refs['entrega_id'],
+        tarea_id=refs['tarea_id'],
+        inicio=inicio,
+        fin=fin,
+        duracion_segundos=duracion,
+        estado=estado,
+        ultimo_inicio=ahora if estado == 'activo' else None,
+        notas=(data.get('notas') or '')[:2000] or None,
+    )
+    db.session.add(reg)
+    db.session.commit()
+    return jsonify({'mensaje': 'Registro creado', 'registro': _registro_tiempo_a_dict(reg)}), 201
+
+
+@bp.route('/api/time-tracker/registros/<int:reg_id>', methods=['PUT'])
+def actualizar_registro_tiempo(reg_id):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+
+    reg = _obtener_registro_tiempo(eid, reg_id)
+    if not reg:
+        return jsonify({'error': 'Registro no encontrado'}), 404
+
+    data = request.json or {}
+    ahora = datetime.utcnow()
+    val_err = _aplicar_datos_registro_tiempo(reg, data, eid, ahora)
+    if val_err:
+        return jsonify({'error': val_err}), 400
+
+    db.session.commit()
+    return jsonify({'mensaje': 'Registro actualizado', 'registro': _registro_tiempo_a_dict(reg, ahora)})
+
+
+@bp.route('/api/time-tracker/registros/<int:reg_id>', methods=['DELETE'])
+def eliminar_registro_tiempo(reg_id):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+
+    reg = _obtener_registro_tiempo(eid, reg_id)
+    if not reg:
+        return jsonify({'error': 'Registro no encontrado'}), 404
+
+    db.session.delete(reg)
+    db.session.commit()
+    return jsonify({'mensaje': 'Registro eliminado'})
 
 
 @bp.route('/api/time-tracker/resumen', methods=['GET'])

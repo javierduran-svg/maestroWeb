@@ -1119,6 +1119,9 @@
         #time-tracker-widget .tt-estado.tt-estado-activo { color: var(--teal-green); font-weight: 600; }
         #time-tracker-widget .tt-estado.tt-estado-pausado { color: #856404; font-weight: 600; }
         #view-time-tracker .tabla-scroll-wrap { --tabla-scroll-max: min(52vh, 480px); }
+        #tabla-time-tracker-grid .cell-edit { padding: 0.1rem 0.28rem; font-size: 0.75rem; min-height: 1.35rem; min-width: 0; width: 100%; max-width: 100%; }
+        #tabla-time-tracker-grid td { vertical-align: middle; }
+        #tabla-time-tracker-grid .tt-col-acciones { white-space: nowrap; width: 72px; }
         .tt-resumen-card { border-left: 3px solid var(--teal-green); }
     </style>
 </head>
@@ -1950,7 +1953,10 @@
                         <h5 class="mb-0">Time Tracker</h5>
                         <small class="text-muted" id="ttRegistrosContador">Registros de tiempo por proyecto y persona</small>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="cargarTimeTrackerRegistros()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-teal" onclick="abrirRegistroTiempoModal()"><i class="fa-solid fa-plus"></i> Nuevo registro</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="cargarTimeTrackerRegistros()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+                    </div>
                 </div>
                 <div class="p-3 border-bottom bg-light">
                     <div class="d-flex flex-wrap align-items-end gap-2">
@@ -1999,6 +2005,8 @@
                                 <th>Fin</th>
                                 <th class="text-end">Duración</th>
                                 <th>Estado</th>
+                                <th>Notas</th>
+                                <th class="tt-col-acciones"></th>
                             </tr></thead>
                             <tbody id="tabla-time-tracker"></tbody>
                         </table>
@@ -2361,6 +2369,27 @@
     </div></div>
 </div>
 
+<div class="modal fade" id="modalRegistroTiempo" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Nuevo registro de tiempo</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label small fw-bold">Usuario</label><select class="form-select" id="ttModalTrabajador" required></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Proyecto</label><select class="form-select" id="ttModalProyecto" required onchange="cargarEntregasModalRegistroTiempo()"></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Entrega</label><select class="form-select" id="ttModalEntrega" onchange="cargarTareasModalRegistroTiempo()"><option value="">—</option></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Tarea</label><select class="form-select" id="ttModalTarea"><option value="">—</option></select></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Inicio</label><input type="datetime-local" class="form-control" id="ttModalInicio" required></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Fin</label><input type="datetime-local" class="form-control" id="ttModalFin"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Duración (HH:MM:SS)</label><input type="text" class="form-control font-monospace" id="ttModalDuracion" placeholder="00:00:00"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Estado</label><select class="form-select" id="ttModalEstado"><option value="finalizado" selected>Finalizado</option><option value="activo">En curso</option><option value="pausado">Pausado</option></select></div>
+                <div class="col-md-8"><label class="form-label small fw-bold">Notas</label><input type="text" class="form-control" id="ttModalNotas" maxlength="2000"></div>
+            </div>
+            <div id="ttModalMsg" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer border-0"><button class="btn btn-teal px-5" onclick="guardarRegistroTiempoModal()">GUARDAR</button></div>
+    </div></div>
+</div>
+
 <div class="modal fade" id="modalTrabajador" tabindex="-1">
     <div class="modal-dialog modal-lg"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloModalTrabajador">Nuevo Trabajador</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
@@ -2494,6 +2523,10 @@
     let _ttTimerInterval = null;
     let _ttProyectosCache = [];
     let _ttModoVista = 'lista';
+    let _ttTrabajadoresTablaCache = [];
+    let _ttProyectosTablaCache = [];
+    let _ttEntregasCache = {};
+    let _ttTareasCache = {};
     const TT_POS_KEY = 'timeTrackerWidgetPos';
     const TT_COLLAPSED_KEY = 'timeTrackerCollapsed';
     const PROYECTOS_SPLIT_KEY = 'proyectosSplitTopPx';
@@ -8136,6 +8169,281 @@
         return estado || '—';
     }
 
+    function ttOptsEstado(selected) {
+        return ['activo', 'pausado', 'finalizado'].map(e =>
+            `<option value="${e}"${e === selected ? ' selected' : ''}>${esc(ttEstadoLabel(e))}</option>`
+        ).join('');
+    }
+
+    function isoToDatetimeLocal(iso) {
+        if (!iso) return '';
+        const d = new Date(iso.endsWith('Z') ? iso : iso + 'Z');
+        if (Number.isNaN(d.getTime())) return '';
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function datetimeLocalToIso(val) {
+        if (!val) return null;
+        const d = new Date(val);
+        if (Number.isNaN(d.getTime())) return null;
+        return d.toISOString().slice(0, 19);
+    }
+
+    function parseDuracionTiempo(str) {
+        if (!str || !String(str).trim()) return null;
+        const parts = String(str).trim().split(':').map(p => parseInt(p, 10));
+        if (parts.some(n => Number.isNaN(n))) return null;
+        if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        if (parts.length === 2) return parts[0] * 3600 + parts[1] * 60;
+        if (parts.length === 1) return parts[0];
+        return null;
+    }
+
+    async function ttCargarEntregas(proyectoId) {
+        if (!proyectoId) return [];
+        const key = String(proyectoId);
+        if (_ttEntregasCache[key]) return _ttEntregasCache[key];
+        const res = await apiFetch(`/api/proyectos/${proyectoId}/entregas`);
+        const entregas = await res.json();
+        _ttEntregasCache[key] = entregas || [];
+        return _ttEntregasCache[key];
+    }
+
+    async function ttCargarTareas(entregaId) {
+        if (!entregaId) return [];
+        const key = String(entregaId);
+        if (_ttTareasCache[key]) return _ttTareasCache[key];
+        const res = await apiFetch(`/api/entregas/${entregaId}/tareas`);
+        const tareas = await res.json();
+        _ttTareasCache[key] = tareas || [];
+        return _ttTareasCache[key];
+    }
+
+    function ttOptsTrabajadores(selectedId) {
+        return _ttTrabajadoresTablaCache.map(t =>
+            `<option value="${t.id}"${String(t.id) === String(selectedId) ? ' selected' : ''}>${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
+        ).join('');
+    }
+
+    function ttOptsProyectos(selectedId) {
+        return _ttProyectosTablaCache.map(p =>
+            `<option value="${p.id}"${String(p.id) === String(selectedId) ? ' selected' : ''}>${esc(p.nombre)}</option>`
+        ).join('');
+    }
+
+    function ttOptsEntregas(entregas, selectedId, currentLabel) {
+        let opts = '<option value="">—</option>';
+        if (selectedId && !(entregas || []).some(e => String(e.id) === String(selectedId))) {
+            opts += `<option value="${selectedId}" selected>${esc(currentLabel || 'Entrega')}</option>`;
+        }
+        opts += (entregas || []).map(e => {
+            const lbl = (e.descripcion || 'Entrega') + (e.fecha_entrega ? ` (${e.fecha_entrega})` : '');
+            return `<option value="${e.id}"${String(e.id) === String(selectedId) ? ' selected' : ''}>${esc(lbl)}</option>`;
+        }).join('');
+        return opts;
+    }
+
+    function ttOptsTareas(tareas, selectedId, currentLabel) {
+        let opts = '<option value="">—</option>';
+        if (selectedId && !(tareas || []).some(t => String(t.id) === String(selectedId))) {
+            opts += `<option value="${selectedId}" selected>${esc(currentLabel || 'Tarea')}</option>`;
+        }
+        opts += (tareas || []).map(t =>
+            `<option value="${t.id}"${String(t.id) === String(selectedId) ? ' selected' : ''}>${esc(t.descripcion || 'Tarea')}</option>`
+        ).join('');
+        return opts;
+    }
+
+    function leerPayloadFilaRegistroTiempo(regId) {
+        const row = document.querySelector(`tr[data-tt-id="${regId}"]`);
+        if (!row) return null;
+        const get = field => row.querySelector(`[data-field="${field}"]`)?.value;
+        const durStr = get('duracion');
+        const durParsed = parseDuracionTiempo(durStr);
+        const payload = {
+            trabajador_id: get('trabajador_id'),
+            proyecto_id: get('proyecto_id'),
+            entrega_id: get('entrega_id') || null,
+            tarea_id: get('tarea_id') || null,
+            inicio: datetimeLocalToIso(get('inicio')),
+            fin: datetimeLocalToIso(get('fin')),
+            estado: get('estado'),
+            notas: get('notas') || '',
+        };
+        if (durParsed !== null) payload.duracion_segundos = durParsed;
+        return payload;
+    }
+
+    async function guardarFilaRegistroTiempo(regId) {
+        const payload = leerPayloadFilaRegistroTiempo(regId);
+        if (!payload) return;
+        const row = document.querySelector(`tr[data-tt-id="${regId}"]`);
+        try {
+            const res = await apiFetch(`/api/time-tracker/registros/${regId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al guardar');
+            if (row) row.classList.remove('table-warning');
+            if (_ttRegistroActivo && String(_ttRegistroActivo.id) === String(regId)) {
+                await refrescarRegistroActivoTimeTracker();
+            }
+        } catch (e) {
+            alert(e.message || 'No se pudo guardar el registro');
+            if (row) row.classList.add('table-warning');
+        }
+    }
+
+    async function onCambioProyectoFilaTT(regId) {
+        const row = document.querySelector(`tr[data-tt-id="${regId}"]`);
+        if (!row) return;
+        const selEnt = row.querySelector('[data-field="entrega_id"]');
+        const selTar = row.querySelector('[data-field="tarea_id"]');
+        const proyectoId = row.querySelector('[data-field="proyecto_id"]')?.value;
+        if (selEnt) selEnt.innerHTML = '<option value="">—</option>';
+        if (selTar) selTar.innerHTML = '<option value="">—</option>';
+        if (proyectoId) {
+            const entregas = await ttCargarEntregas(proyectoId);
+            if (selEnt) selEnt.innerHTML = ttOptsEntregas(entregas, '', '');
+        }
+        await guardarFilaRegistroTiempo(regId);
+    }
+
+    async function onCambioEntregaFilaTT(regId) {
+        const row = document.querySelector(`tr[data-tt-id="${regId}"]`);
+        if (!row) return;
+        const selTar = row.querySelector('[data-field="tarea_id"]');
+        const entregaId = row.querySelector('[data-field="entrega_id"]')?.value;
+        if (selTar) selTar.innerHTML = '<option value="">—</option>';
+        if (entregaId) {
+            const tareas = await ttCargarTareas(entregaId);
+            if (selTar) selTar.innerHTML = ttOptsTareas(tareas, '', '');
+        }
+        await guardarFilaRegistroTiempo(regId);
+    }
+
+    async function poblarSelectsEntregaTareaFila(regId, proyectoId, entregaId, tareaId, entregaLabel, tareaLabel) {
+        const row = document.querySelector(`tr[data-tt-id="${regId}"]`);
+        if (!row) return;
+        const selEnt = row.querySelector('[data-field="entrega_id"]');
+        const selTar = row.querySelector('[data-field="tarea_id"]');
+        if (!selEnt || !selTar) return;
+        const entregas = proyectoId ? await ttCargarEntregas(proyectoId) : [];
+        selEnt.innerHTML = ttOptsEntregas(entregas, entregaId, entregaLabel);
+        const tareas = entregaId ? await ttCargarTareas(entregaId) : [];
+        selTar.innerHTML = ttOptsTareas(tareas, tareaId, tareaLabel);
+    }
+
+    function renderFilaRegistroTiempo(r) {
+        return `<tr data-tt-id="${r.id}">
+            <td><select class="form-select form-select-sm cell-edit" data-field="trabajador_id" onchange="guardarFilaRegistroTiempo(${r.id})">${ttOptsTrabajadores(r.trabajador_id)}</select></td>
+            <td><select class="form-select form-select-sm cell-edit" data-field="proyecto_id" onchange="onCambioProyectoFilaTT(${r.id})">${ttOptsProyectos(r.proyecto_id)}</select></td>
+            <td><select class="form-select form-select-sm cell-edit" data-field="entrega_id" onchange="onCambioEntregaFilaTT(${r.id})">${ttOptsEntregas([], r.entrega_id, r.entrega_descripcion)}</select></td>
+            <td><select class="form-select form-select-sm cell-edit" data-field="tarea_id" onchange="guardarFilaRegistroTiempo(${r.id})">${ttOptsTareas([], r.tarea_id, r.tarea_descripcion)}</select></td>
+            <td><input type="datetime-local" class="form-control form-control-sm cell-edit" data-field="inicio" value="${esc(isoToDatetimeLocal(r.inicio))}" onchange="guardarFilaRegistroTiempo(${r.id})"></td>
+            <td><input type="datetime-local" class="form-control form-control-sm cell-edit" data-field="fin" value="${esc(isoToDatetimeLocal(r.fin))}" onchange="guardarFilaRegistroTiempo(${r.id})"></td>
+            <td class="text-end"><input type="text" class="form-control form-control-sm cell-edit font-monospace text-end" data-field="duracion" value="${esc(fmtDuracionTiempo(r.duracion_segundos))}" onchange="guardarFilaRegistroTiempo(${r.id})" style="max-width:90px;margin-left:auto"></td>
+            <td><select class="form-select form-select-sm cell-edit" data-field="estado" onchange="guardarFilaRegistroTiempo(${r.id})">${ttOptsEstado(r.estado)}</select></td>
+            <td><input type="text" class="form-control form-control-sm cell-edit" data-field="notas" value="${esc(r.notas || '')}" onchange="guardarFilaRegistroTiempo(${r.id})"></td>
+            <td class="tt-col-acciones">
+                <button type="button" class="btn btn-outline-danger btn-accion" onclick="borrarRegistroTiempo(${r.id})" title="Borrar"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }
+
+    async function abrirRegistroTiempoModal() {
+        document.getElementById('ttModalMsg').textContent = '';
+        const selT = document.getElementById('ttModalTrabajador');
+        const selP = document.getElementById('ttModalProyecto');
+        selT.innerHTML = _ttTrabajadoresTablaCache.map(t =>
+            `<option value="${t.id}">${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
+        ).join('');
+        selP.innerHTML = '<option value="">— Seleccione —</option>' + _ttProyectosTablaCache.map(p =>
+            `<option value="${p.id}">${esc(p.nombre)}</option>`
+        ).join('');
+        document.getElementById('ttModalEntrega').innerHTML = '<option value="">—</option>';
+        document.getElementById('ttModalTarea').innerHTML = '<option value="">—</option>';
+        const now = new Date();
+        document.getElementById('ttModalInicio').value = isoToDatetimeLocal(now.toISOString());
+        document.getElementById('ttModalFin').value = '';
+        document.getElementById('ttModalDuracion').value = '';
+        document.getElementById('ttModalEstado').value = 'finalizado';
+        document.getElementById('ttModalNotas').value = '';
+        new bootstrap.Modal(document.getElementById('modalRegistroTiempo')).show();
+    }
+
+    async function cargarEntregasModalRegistroTiempo() {
+        const proyectoId = document.getElementById('ttModalProyecto')?.value;
+        const selEnt = document.getElementById('ttModalEntrega');
+        const selTar = document.getElementById('ttModalTarea');
+        selEnt.innerHTML = '<option value="">—</option>';
+        selTar.innerHTML = '<option value="">—</option>';
+        if (!proyectoId) return;
+        const entregas = await ttCargarEntregas(proyectoId);
+        selEnt.innerHTML = ttOptsEntregas(entregas, '', '');
+    }
+
+    async function cargarTareasModalRegistroTiempo() {
+        const entregaId = document.getElementById('ttModalEntrega')?.value;
+        const selTar = document.getElementById('ttModalTarea');
+        selTar.innerHTML = '<option value="">—</option>';
+        if (!entregaId) return;
+        const tareas = await ttCargarTareas(entregaId);
+        selTar.innerHTML = ttOptsTareas(tareas, '', '');
+    }
+
+    async function guardarRegistroTiempoModal() {
+        const msg = document.getElementById('ttModalMsg');
+        const trabajadorId = document.getElementById('ttModalTrabajador')?.value;
+        const proyectoId = document.getElementById('ttModalProyecto')?.value;
+        const inicio = datetimeLocalToIso(document.getElementById('ttModalInicio')?.value);
+        if (!trabajadorId || !proyectoId || !inicio) {
+            if (msg) msg.innerHTML = '<span class="text-danger">Usuario, proyecto e inicio son requeridos</span>';
+            return;
+        }
+        const payload = {
+            trabajador_id: trabajadorId,
+            proyecto_id: proyectoId,
+            entrega_id: document.getElementById('ttModalEntrega')?.value || null,
+            tarea_id: document.getElementById('ttModalTarea')?.value || null,
+            inicio,
+            fin: datetimeLocalToIso(document.getElementById('ttModalFin')?.value),
+            estado: document.getElementById('ttModalEstado')?.value || 'finalizado',
+            notas: document.getElementById('ttModalNotas')?.value || '',
+        };
+        const durParsed = parseDuracionTiempo(document.getElementById('ttModalDuracion')?.value);
+        if (durParsed !== null) payload.duracion_segundos = durParsed;
+        try {
+            const res = await apiFetch('/api/time-tracker/registros', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear');
+            bootstrap.Modal.getInstance(document.getElementById('modalRegistroTiempo')).hide();
+            await cargarTimeTrackerRegistros();
+        } catch (e) {
+            if (msg) msg.innerHTML = `<span class="text-danger">${esc(e.message || 'Error al crear')}</span>`;
+        }
+    }
+
+    async function borrarRegistroTiempo(id) {
+        if (!confirm('¿Eliminar este registro de tiempo?')) return;
+        const res = await apiFetch(`/api/time-tracker/registros/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'No se pudo eliminar'); return; }
+        if (_ttRegistroActivo && String(_ttRegistroActivo.id) === String(id)) {
+            _ttRegistroActivo = null;
+            detenerTimeTrackerTimer();
+            actualizarTimeTrackerWidgetUi();
+        }
+        await cargarTimeTrackerRegistros();
+    }
+
     function detenerTimeTrackerTimer() {
         if (_ttTimerInterval) {
             clearInterval(_ttTimerInterval);
@@ -8479,6 +8787,7 @@
 
         const resP = await apiFetch('/api/proyectos?per_page=500&status=Activo&sort=nombre&order=asc');
         const proys = normalizarListaApi(await resP.json());
+        _ttProyectosTablaCache = proys;
         const prevP = selP.value;
         selP.innerHTML = proys.length
             ? '<option value="">Todos</option>' + proys.map(p =>
@@ -8490,6 +8799,7 @@
         const resT = await apiFetch('/api/personal');
         const dataT = await resT.json();
         const trabs = dataT.trabajadores || [];
+        _ttTrabajadoresTablaCache = trabs;
         const prevT = selT.value;
         selT.innerHTML = '<option value="">Todos</option>' + trabs.map(t =>
             `<option value="${t.id}">${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
@@ -8517,16 +8827,14 @@
             const tbody = document.getElementById('tabla-time-tracker');
             if (contador) contador.textContent = `${registros.length} registro(s)`;
             if (!tbody) return;
-            tbody.innerHTML = registros.length ? registros.map(r => `<tr>
-                <td>${esc(r.trabajador_nombre)}</td>
-                <td>${esc(r.proyecto_nombre)}</td>
-                <td>${esc(r.entrega_descripcion || '—')}</td>
-                <td>${esc(r.tarea_descripcion || '—')}</td>
-                <td>${esc(fmtDateTimeIso(r.inicio))}</td>
-                <td>${esc(fmtDateTimeIso(r.fin))}</td>
-                <td class="text-end font-monospace">${esc(fmtDuracionTiempo(r.duracion_segundos))}</td>
-                <td>${esc(ttEstadoLabel(r.estado))}</td>
-            </tr>`).join('') : '<tr><td colspan="8" class="text-muted text-center py-4">Sin registros</td></tr>';
+            if (!registros.length) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-muted text-center py-4">Sin registros</td></tr>';
+                return;
+            }
+            tbody.innerHTML = registros.map(r => renderFilaRegistroTiempo(r)).join('');
+            registros.forEach(r => {
+                poblarSelectsEntregaTareaFila(r.id, r.proyecto_id, r.entrega_id, r.tarea_id, r.entrega_descripcion, r.tarea_descripcion);
+            });
             return;
         }
 
