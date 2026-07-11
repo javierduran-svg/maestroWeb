@@ -2595,10 +2595,10 @@
                         <div class="prop-side-body">
                             <div class="prop-compact-grid">
                                 <div class="prop-field span-2"><label>Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
-                                <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="onPropCampoTemplate()"></div>
-                                <div class="prop-field span-2 prop-subheading">Datos</div>
                                 <div class="prop-field"><label>N°</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
                                 <div class="prop-field"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2 prop-subheading">Datos</div>
                                 <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
                                 <div class="prop-field span-2"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="onPropCampoTemplate()"></div>
@@ -7081,6 +7081,19 @@
         return _propCalcConfig?.servicio === 'CES';
     }
 
+    // Entidad Evaluadora CES (EEV): honorarios por etapa/entregable editables,
+    // SIN fórmula de potencia sobre superficie y SIN bloque de "otros gastos"
+    // (aranceles EA/EE), ya que B-green ES la Entidad Evaluadora.
+    function esServicioCesEvaluadora() {
+        return _propCalcConfig?.servicio === 'CES Evaluadora';
+    }
+
+    // Modo de tabla con UF editable por fila (label + UF), usado tanto por CES
+    // (entregables prorrateados) como por CES Evaluadora (honorarios por etapa).
+    function esModoTablaUf() {
+        return esServicioCes() || esServicioCesEvaluadora();
+    }
+
     // Coeficientes de la fórmula de honorarios CES (potencia sobre superficie).
     // Fuente: fórmula Excel del usuario -> base = 22,516 * (m²^0,3571).
     // La base corresponde al nivel Destacado (factor 1,0); Certificado = 0,85 y
@@ -7218,6 +7231,21 @@
         recomputeCesFilas();
     }
 
+    // Filas por defecto para CES Evaluadora: un entregable por cada honorario
+    // definido en la config (Precertificación / Certificación / Visita de obra),
+    // con su UF editable directamente (sin fórmula de superficie).
+    function crearFilasEvaluadoraDefault() {
+        const filas = _propCalcConfig?.filas || [];
+        const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+        _propCalcFilas = filas.map(f => ({
+            label: f.label || 'Entregable',
+            m2,
+            cantidad: 1,
+            uf_unidad: parseFloat(f.uf_unidad) || 0,
+            share: 0,
+        }));
+    }
+
     function onCesParamChange() {
         recomputeCesFilas();
         renderCalcPropuesta();
@@ -7226,7 +7254,7 @@
     }
 
     function agregarFilaCalcPropuesta(fila = null) {
-        if (esServicioCes()) {
+        if (esModoTablaUf()) {
             const m2 = fila?.m2 ?? (parseFloat(document.getElementById('propM2').value) || 0);
             _propCalcFilas.push({
                 label: fila?.label || 'Nuevo entregable',
@@ -7287,7 +7315,7 @@
     function renderCalcPropuesta() {
         const body = document.getElementById('propCalcUnidadesBody');
         if (!body) return;
-        const ces = esServicioCes();
+        const ces = esModoTablaUf();
         body.innerHTML = _propCalcFilas.map((f, i) => {
             const sub = subtotalFilaPropuesta(f);
             if (ces) {
@@ -7410,6 +7438,10 @@
             if (nivel) partes.push(`nivel ${nivel}`);
             if (tipo) partes.push(tipo);
             return partes.length ? partes.join(', ') : 'el proyecto';
+        }
+        if (esServicioCesEvaluadora()) {
+            const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+            return m2 ? `una superficie de ${fmtUfNum(m2)} m²` : 'el proyecto';
         }
         const filas = _propCalcFilas.filter(f => f.cantidad > 0);
         if (!filas.length) return 'las unidades del proyecto';
@@ -7922,6 +7954,11 @@
             crearFilasCesDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
+        } else if (esServicioCesEvaluadora()) {
+            cesControls?.classList.add('d-none');
+            crearFilasEvaluadoraDefault();
+            renderCalcPropuesta();
+            recalcularPropuesta();
         } else {
             cesControls?.classList.add('d-none');
             if (!_propCalcFilas.length) {
@@ -7942,6 +7979,14 @@
             recomputeCesFilas();
             renderCalcPropuesta();
             recalcularPropuesta();
+            sincronizarDatosEnTemplate();
+            return;
+        }
+        if (esServicioCesEvaluadora()) {
+            // Los honorarios de evaluación son por etapa (no dependen de m²);
+            // solo refrescamos la descripción del proyecto en la plantilla.
+            _propCalcFilas.forEach(f => { f.m2 = parseFloat(document.getElementById('propM2').value) || 0; });
+            renderCalcPropuesta();
             sincronizarDatosEnTemplate();
             return;
         }

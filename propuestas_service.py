@@ -142,6 +142,36 @@ ARANCEL_CES_EE = [
     {'m2': 100000, 'uf': 170},
 ]
 
+# ---------------------------------------------------------------------------
+# CES Evaluadora — Entidad Evaluadora Externa (EEV) del sistema CES
+# ---------------------------------------------------------------------------
+# En este servicio B-green actúa como Entidad Evaluadora (EE) acreditada ante
+# el Instituto de la Construcción. A diferencia del servicio de asesoría CES,
+# los honorarios NO se derivan de la fórmula de potencia sobre la superficie,
+# sino de un arancel de evaluación por etapa/entregable.
+#
+# Los valores por defecto replican la referencia P1913 (Hospital Instituto
+# Nacional del Cáncer, ~85.494 m², Certificación Destacada, formato
+# Hospitales): Evaluación Precertificación 124 UF, Evaluación Certificación
+# 100 UF y Visita de obra 50 UF. Son totalmente editables en la calculadora.
+#
+# NOTA: al ser B-green la propia Entidad Evaluadora, NO se incluye el bloque de
+# "otros gastos" (aranceles EA/EE) que sí aplica al servicio de asesoría CES:
+# el arancel de la Entidad Evaluadora ES el honorario de esta propuesta.
+FILAS_CES_EVALUADORA = [
+    {'label': 'Honorarios Evaluación Precertificación (Etapa Diseño)', 'uf_unidad': 124},
+    {'label': 'Honorarios Evaluación Certificación (Etapa Construcción)', 'uf_unidad': 100},
+    {'label': 'Visita de obra (Etapa Construcción)', 'uf_unidad': 50},
+]
+
+# Forma de pago: pago anticipado de costos y honorarios en cada revisión. Las
+# proporciones por defecto corresponden a 124 / 100 / 50 UF sobre el total 274.
+ETAPAS_PAGO_CES_EVALUADORA = [
+    {'codigo': 'A', 'nombre': 'Evaluación Precertificación', 'porcentaje': 45.26},
+    {'codigo': 'B', 'nombre': 'Evaluación Certificación', 'porcentaje': 36.50},
+    {'codigo': 'C', 'nombre': 'Visita de obra', 'porcentaje': 18.24},
+]
+
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -304,7 +334,128 @@ Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación d
 </div>
 </div>"""
 
-TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT, 'CES': TEMPLATE_CES}
+TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Propuesta de Evaluación — Entidad Evaluadora CES (EEV)</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Resumen</h3>
+<p>La presente propuesta tiene por objetivo la <strong>evaluación como Entidad Evaluadora (EE)</strong> del proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong> dentro del proceso de Certificación Edificio Sustentable (CES), correspondiente a <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong>.</p>
+<p><strong>Descripción de la propuesta</strong></p>
+<p>
+&#9679; <strong>Servicio:</strong> Entidad Evaluadora CES.<br>
+&#9679; <strong>Formato:</strong> Hospitales.<br>
+&#9679; <strong>Nivel:</strong> Certificación Destacada.
+</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica de Evaluación</h3>
+<p>Sistema Nacional de Certificación de Calidad Ambiental y Eficiencia Energética para Edificios de Uso Público (CES).</p>
+
+<h4>1. Introducción</h4>
+<p>La Certificación Edificio Sustentable (CES), otorgada por el Instituto de la Construcción, es un sistema nacional voluntario de certificación de edificios, tanto de uso público como privado, cuyo propósito es evaluar, calificar y certificar el nivel de sustentabilidad ambiental de una edificación abordando las siguientes seis categorías:</p>
+<p>
+&#9679; <strong>Calidad del Ambiente Interior</strong> (confort térmico, lumínico, acústico y calidad del aire).<br>
+&#9679; <strong>Energía</strong> (demanda y consumo, eficiencia de los sistemas activos).<br>
+&#9679; <strong>Agua</strong> (reducción del consumo de agua potable y riego).<br>
+&#9679; <strong>Residuos</strong> (gestión de residuos de la construcción y de la operación).<br>
+&#9679; <strong>Gestión</strong> (operación, mantención y control del edificio).<br>
+&#9679; <strong>Innovación</strong> (estrategias sustentables adicionales).
+</p>
+<p>bgreen Chile es Entidad Evaluadora (EE) del sistema de certificación CES, somos una empresa acreditada ante la Entidad Administradora del sistema (Instituto de la Construcción). Contamos con las competencias técnicas, experiencia institucional y profesional exigidas por el Manual de Operación.</p>
+<p>De acuerdo con las exigencias del sistema CES, nuestra labor se rige bajo el <strong>Principio de Neutralidad</strong>: Actuamos de forma estrictamente neutral respecto al cumplimiento de los requerimientos. Acotamos nuestro quehacer a verificar y comunicar de manera imparcial si el proyecto cumple o no cumple con las exigencias.</p>
+
+<h4>2. Alcance de los Servicios por Etapa</h4>
+<p>La evaluación se estructurará utilizando la Herramienta de Evaluación oficial en formato Microsoft&reg; Excel, verificando el universo de 23 variables del sistema (15 requerimientos obligatorios y 33 voluntarios).</p>
+
+<p><strong>Etapa 1: Precertificación (Fase de Diseño o Construcción)</strong></p>
+<p>Aplica a proyectos con diseño de arquitectura y especialidades terminado o en etapa de construcción. Se evalúa el desempeño proyectado de la arquitectura pasiva y los sistemas activos.</p>
+<p>&#9679; <strong>Revisión de Requerimientos Obligatorios:</strong> Evaluación del cumplimiento técnico binario ("Línea Base" o Paso/No Paso). Incluye verificar el factor de luz día mínimo (FLD), las tasas mínimas de ventilación mecánica, la transmitancia térmica de la envolvente (U), los sellos exteriores de carpintería, la reducción del 20% en consumo de agua potable y riego, y las medidas de mitigación en construcción (Art. 5.8.3 OGUC).</p>
+<p>&#9679; <strong>Revisión de Requerimientos Voluntarios (Estrategias de Puntaje):</strong> Auditoría mediante la Herramienta de Cálculo oficial o simulaciones dinámicas entregadas por el Asesor. Se validan los puntos solicitados en confort térmico pasivo, autonomía de iluminación (sDA), reducción avanzada de demanda energética, uso de Energías Renovables No Convencionales (ERNC) y materiales con eco-etiquetas (declaración de energía y agua incorporada).</p>
+
+<p><strong>Etapa 2: Certificación (Fase de Edificio Terminado)</strong></p>
+<p>Aplica una vez que el edificio cuenta con la Recepción Definitiva Total por parte de la Dirección de Obras Municipales (DOM). Consiste en la recopilación de antecedentes finales y la ejecución de la auditoría en obra.</p>
+<p>&#9679; <strong>Evaluación en Obra (Metodología de Verificación):</strong> Dividimos el proceso de inspección según la visibilidad de las partidas, excluyendo el área vital primaria (estructuras o impermeabilizaciones ajenas al manual):</p>
+<p style="margin-left:24px">&#9675; <strong>Área Visible:</strong> Partidas expuestas al examen visual (luminarias, griferías, termostatos, ventanas). Se auditarán en terreno mediante un muestreo estadístico basado en el tamaño del lote (según tablas de adaptación ISO 2859-1 y NCh440).</p>
+<p style="margin-left:24px">&#9675; <strong>Área No Visible:</strong> Partidas que quedan ocultas (aislación térmica en muros/cubiertas, ductos). Su verificación se realizará mediante la revisión documental de las Medidas de Autocontrol y/o Inspección (MAI) de la constructora o de la ITO (cartillas de control, libro de obras, ensayos, registros fotográficos). Se exigirá el certificado del instalador según el Reglamento de Instalaciones Térmicas (RITCH).</p>
+
+<p><strong>Servicio Opcional: Sello "Plus Operación"</strong></p>
+<p>Sello voluntario e independiente para evaluar la gestión durante la fase operativa del edificio. Requiere el compromiso del cliente de entregar anualmente Informes de Auto-diagnóstico detallando consumos mensuales de energía, agua y encuestas de satisfacción de usuarios. Al 3er año de operación se gestionará la renovación del sello ante la Entidad Administradora tras demostrar el mejoramiento respecto a la línea base del año 1.</p>
+
+<p><strong>Contenido Detallado de los Informes de Revisión</strong></p>
+<p>Cada informe contiene las siguientes secciones:</p>
+<p>
+1. <strong>Cuadro Resumen de Evaluación:</strong> Estado consolidado de los requerimientos obligatorios e indicación del nivel de certificación proyectado (Edificio Certificado, Destacada o Sobresaliente).<br>
+2. <strong>Matriz de Requerimientos Obligatorios:</strong> Desglose pormenorizado con el indicador verificado, la metodología de cálculo seleccionada (prescriptiva o prestacional) y la declaración explícita de Cumple o No Cumple.<br>
+3. <strong>Matriz de Asignación de Puntaje (Voluntarios):</strong> Tabla comparativa entre el puntaje al que opta el cliente y el puntaje neto validado por la Entidad Evaluadora tras auditar las memorias y modelaciones dinámicas.<br>
+4. <strong>Anexo Documental de Respaldo:</strong> Recopilación e indexación de las solicitudes, actas de observaciones emitidas, bitácoras fotográficas de terreno (para certificación) y los oficios de respuesta enviados por el cliente.
+</p>
+
+<h4>3. Plazos Oficiales de Revisión (Días Hábiles)</h4>
+<p>Los tiempos de procesamiento están regulados por el Manual de Operación CES. No se consideran días corridos, sino días hábiles:</p>
+<table class="prop-tabla">
+<thead>
+<tr><th>Fase del Proceso</th><th class="text-end">Plazo Entidad Evaluadora</th><th class="text-end">Plazo Cliente / Asesor</th><th class="text-end">Plazo Entidad Administradora</th></tr>
+</thead>
+<tbody>
+<tr><td colspan="4"><strong>Etapa de Pre Certificación</strong></td></tr>
+<tr><td>Generación de Acta de Observaciones (R1)</td><td class="text-end">20 días</td><td class="text-end">-</td><td class="text-end">-</td></tr>
+<tr><td>Respuesta a observaciones (Oficio de Respuestas)</td><td class="text-end">-</td><td class="text-end">20 días</td><td class="text-end">-</td></tr>
+<tr><td>Elaboración de Informe de Evaluación de Diseño (R2)</td><td class="text-end">10 días</td><td class="text-end">-</td><td class="text-end">-</td></tr>
+<tr><td>Período para interponer Apelación técnica</td><td class="text-end">-</td><td class="text-end">9 días</td><td class="text-end">-</td></tr>
+<tr><td>Resolución de Apelación y Emisión de Pre-certificado</td><td class="text-end">-</td><td class="text-end">-</td><td class="text-end">10 días</td></tr>
+<tr><td colspan="4"><strong>Etapa de Certificación Final</strong></td></tr>
+<tr><td>Visita en obra y emisión de Acta de Observaciones</td><td class="text-end">20 días</td><td class="text-end">-</td><td class="text-end">-</td></tr>
+<tr><td>Respuesta a observaciones de terreno</td><td class="text-end">-</td><td class="text-end">20 días</td><td class="text-end">-</td></tr>
+<tr><td>Elaboración de Informe Final de Diseño y Construcción</td><td class="text-end">10 días</td><td class="text-end">-</td><td class="text-end">-</td></tr>
+<tr><td>Período para interponer Apelación final</td><td class="text-end">-</td><td class="text-end">9 días</td><td class="text-end">-</td></tr>
+<tr><td>Emisión de Certificado Final de Proyecto Construido</td><td class="text-end">-</td><td class="text-end">-</td><td class="text-end">10 días</td></tr>
+</tbody>
+</table>
+<p><strong>Nota de Vigencia y Modificaciones:</strong> El Pre-certificado de Diseño expira automáticamente a los 6 meses de obtenida la recepción municipal o al emitirse el certificado final. Si las obras no se inician en 2 años, deberá renovarse. Durante la operación, el cliente se obliga a declarar cualquier cambio menor o mayor (umbrales del 5% y 20% de la superficie o instalaciones) que pueda alterar el puntaje u obligar a repetir la certificación.</p>
+
+<h3 class="prop-doc-seccion">Propuesta Económica — Honorarios Profesionales</h3>
+<p>Los honorarios de evaluación se estructuran por etapa (Diseño y Construcción). Se considera el pago anticipado de los costos y honorarios en cada revisión.</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+
+<h4>Forma de pago</h4>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+<p class="text-muted">&#8226; El valor anterior no incluye una eventual revisión en etapa de apelación. En caso de requerirse una revisión de apelación, el costo es de 6 UF.<br>
+&#8226; Se considera emisión de factura exenta.</p>
+
+<div class="prop-doc-firma">
+  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <p>Socio B-green Chile<br>
+  Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Giro: Desarrollo de Consultorías y Arquitectura<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
+TEMPLATES_POR_SERVICIO = {
+    'CEV+RT': TEMPLATE_CEV_RT,
+    'CES': TEMPLATE_CES,
+    'CES Evaluadora': TEMPLATE_CES_EVALUADORA,
+}
 
 PROP_DOC_CSS = """
 body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
@@ -540,6 +691,14 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'arancel_ea': ARANCEL_CES_EA,
             'arancel_ee': ARANCEL_CES_EE,
             'iva': IVA_CES,
+            'template': None,
+            'format': 'html',
+        }
+    if servicio == 'CES Evaluadora':
+        return {
+            'servicio': 'CES Evaluadora',
+            'filas': FILAS_CES_EVALUADORA,
+            'etapas': ETAPAS_PAGO_CES_EVALUADORA,
             'template': None,
             'format': 'html',
         }
