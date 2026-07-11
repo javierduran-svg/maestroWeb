@@ -2613,7 +2613,7 @@
                                 <div class="prop-compact-grid">
                                     <div class="prop-field span-2"><label>Nivel certificación</label><select class="form-select form-select-sm" id="propCesNivel" onchange="onCesParamChange()"></select></div>
                                     <div class="prop-field span-2"><label>Tipo / versión CES</label><select class="form-select form-select-sm" id="propCesTipo" onchange="onCesParamChange()"></select></div>
-                                    <div class="prop-field"><label title="Tarifa base por superficie (nivel Certificado)">Base UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesBase" readonly title="Tarifa base referencial según superficie"></div>
+                                    <div class="prop-field"><label title="Base fórmula 22,516·m²^0,3571 (nivel Destacado)">Base UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesBase" readonly title="Base = 22,516 · superficie^0,3571 (nivel Destacado, factor 1,0)"></div>
                                     <div class="prop-field"><label>Total UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesTotal" readonly></div>
                                 </div>
                                 <p class="small text-muted mb-0">Valores referenciales; edite las UF por entregable en la tabla.</p>
@@ -2627,11 +2627,12 @@
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i></button>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-panel table-compact table-bordered mb-0 prop-calc-table" id="propCalcEtapas">
-                                    <thead><tr><th>Etapas</th><th class="text-end prop-calc-pct">%</th><th class="text-end">UF</th></tr></thead>
+                                <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table" id="propCalcEtapas">
+                                    <thead><tr><th>Etapas</th><th class="text-end prop-calc-pct">%</th><th class="text-end">UF</th><th></th></tr></thead>
                                     <tbody id="propCalcEtapasBody"></tbody>
-                                    <tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
+                                    <tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td><td></td></tr></tfoot>
                                 </table>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarEtapaPropuesta()"><i class="fa-solid fa-plus"></i></button>
                             </div>
                         </div>
                     </div>
@@ -7056,28 +7057,17 @@
         return _propCalcConfig?.servicio === 'CES';
     }
 
-    // Tarifa base CES REFERENCIAL: interpola linealmente por superficie total.
-    // Fuera del rango, clampa al primer tramo o extrapola con la pendiente final.
+    // Coeficientes de la fórmula de honorarios CES (potencia sobre superficie).
+    // Fuente: fórmula Excel del usuario -> base = 22,516 * (m²^0,3571).
+    // La base corresponde al nivel Destacado (factor 1,0); Certificado = 0,85 y
+    // Sobresaliente = 1,15 se aplican vía cesNivelFactor().
+    const CES_COEF = 22.516;
+    const CES_EXP = 0.3571;
+
+    // Base CES: curva de potencia por superficie total (nivel Destacado).
     function cesBasePorM2(m2) {
-        const br = _propCalcConfig?.brackets;
-        if (!br?.length) return 0;
-        const pts = [...br].map(t => ({ m2: +t.m2, uf: +t.uf })).sort((a, b) => a.m2 - b.m2);
-        if (m2 <= pts[0].m2) return pts[0].uf;
-        const last = pts[pts.length - 1];
-        if (m2 >= last.m2) {
-            const prev = pts[pts.length - 2] || pts[0];
-            if (last.m2 === prev.m2) return last.uf;
-            const pend = (last.uf - prev.uf) / (last.m2 - prev.m2);
-            return Math.max(0, last.uf + pend * (m2 - last.m2));
-        }
-        for (let i = 0; i < pts.length - 1; i++) {
-            const a = pts[i], b = pts[i + 1];
-            if (m2 >= a.m2 && m2 <= b.m2) {
-                if (b.m2 === a.m2) return a.uf;
-                return a.uf + (b.uf - a.uf) * (m2 - a.m2) / (b.m2 - a.m2);
-            }
-        }
-        return last.uf;
+        if (!m2 || m2 <= 0) return 0;
+        return CES_COEF * Math.pow(m2, CES_EXP);
     }
 
     function cesFactorSel(id, lista) {
@@ -7249,11 +7239,25 @@
                 <td><input type="text" class="form-control form-control-sm" value="${esc(cod + e.nombre)}" oninput="_propEtapasState[${i}].nombre=this.value.replace(/^[\d.]+\s*/, '');actualizarBloquesTemplate()"></td>
                 <td><input type="number" class="form-control form-control-sm text-end" value="${(e.porcentaje || 0).toFixed(2)}" min="0" max="100" step="0.01" oninput="_propEtapasState[${i}].porcentaje=parseFloat(this.value)||0;renderEtapasPropuesta();actualizarBloquesTemplate()"></td>
                 <td class="text-end">${fmtUfNum(monto)}</td>
+                <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarEtapaPropuesta(${i})" title="Quitar etapa"><i class="fa-solid fa-xmark"></i></button></td>
             </tr>`;
         }).join('');
         const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
         if (totalEtapasEl) totalEtapasEl.textContent = fmtUfNum(total);
-        initTablaColumnasResizables(document.getElementById('propCalcEtapas'), 'calcEtapas', [null, 80, 76], []);
+        initTablaColumnasResizables(document.getElementById('propCalcEtapas'), 'calcEtapas', [null, 80, 76, 32], []);
+    }
+
+    // Agrega una etapa/forma de pago editable (nombre, % y UF autocalculada).
+    function agregarEtapaPropuesta() {
+        _propEtapasState.push({ codigo: '', nombre: '', porcentaje: 0 });
+        renderEtapasPropuesta();
+        actualizarBloquesTemplate();
+    }
+
+    function eliminarEtapaPropuesta(idx) {
+        _propEtapasState.splice(idx, 1);
+        renderEtapasPropuesta();
+        actualizarBloquesTemplate();
     }
 
     function recalcularPropuesta() {
@@ -7474,6 +7478,7 @@
         if (!_propAnchosColumnas[key]) _propAnchosColumnas[key] = defaultWidths.slice();
         const saved = _propAnchosColumnas[key];
         if (key === 'calcEtapas' && saved[1] != null && saved[1] < 72) saved[1] = 80;
+        for (let i = saved.length; i < defaultWidths.length; i++) saved.push(defaultWidths[i]);
         let cg = table.querySelector('colgroup');
         if (!cg) {
             cg = document.createElement('colgroup');

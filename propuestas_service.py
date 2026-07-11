@@ -55,12 +55,10 @@ ETAPAS_PAGO_CEV_RT = [
 # ---------------------------------------------------------------------------
 # CES — Certificación Edificio Sustentable
 # ---------------------------------------------------------------------------
-# NOTA: CES no publica un arancel oficial de honorarios de asesoría. Los valores
-# de esta calculadora son REFERENCIALES / PLACEHOLDER y deben ser revisados por
-# el usuario. El único dato anclado proviene de la propuesta P2070 (referencia):
-# 1.250 m² -> 320 UF total para nivel "Edificio Certificado" (formato CES 1.2).
-# La curva es NO lineal (economías de escala: el UF/m² baja al crecer la
-# superficie) e interpola linealmente entre los tramos definidos.
+# NOTA: los honorarios CES se calculan en el frontend con una fórmula de
+# potencia: total = 22,516 * (superficie^0,3571) * factor_nivel * factor_tipo.
+# Estos brackets quedan solo como referencia histórica / retrocompatibilidad y
+# ya NO se usan para el cálculo (ver cesBasePorM2 en app.html).
 TARIFAS_CES = [
     {'m2': 500, 'uf': 180},
     {'m2': 1000, 'uf': 280},
@@ -71,12 +69,14 @@ TARIFAS_CES = [
 ]
 
 # Niveles de certificación CES (puntaje: Certificado ≥30, Destacado ≥54,5,
-# Sobresaliente ≥69,5). El factor es un multiplicador REFERENCIAL sobre la
-# tarifa base (mayor exigencia -> mayor esfuerzo de asesoría).
+# Sobresaliente ≥69,5). Los factores están anclados a la fórmula de honorarios
+# entregada por el usuario, donde la base (22,516 * m²^0,3571) corresponde al
+# nivel Destacado: Certificado = base*0,85, Destacado = base*1,0,
+# Sobresaliente = base*1,15.
 NIVELES_CES = [
-    {'label': 'Edificio Certificado', 'factor': 1.00},
-    {'label': 'Certificación Destacada', 'factor': 1.15},
-    {'label': 'Certificación Sobresaliente', 'factor': 1.30},
+    {'label': 'Edificio Certificado', 'factor': 0.85},
+    {'label': 'Certificación Destacada', 'factor': 1.00},
+    {'label': 'Certificación Sobresaliente', 'factor': 1.15},
 ]
 
 # Tipos/versiones de certificación CES (fuente: certificacionsustentable.cl).
