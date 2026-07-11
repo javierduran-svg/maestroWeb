@@ -2621,6 +2621,11 @@
                         </button>
                         <p class="small text-muted mb-0" id="propCalcAviso">Seleccione un servicio con calculadora.</p>
                         <div id="propCalcContenido" class="d-none prop-side-body">
+                            <div id="propRtControls" class="d-none mb-2">
+                                <div class="prop-compact-grid">
+                                    <div class="prop-field span-2"><label>Tipo de proyecto</label><select class="form-select form-select-sm" id="propRtTipoProyecto" onchange="onRtParamChange()"></select></div>
+                                </div>
+                            </div>
                             <div id="propCesControls" class="d-none mb-2">
                                 <div class="prop-compact-grid">
                                     <div class="prop-field span-2"><label>Nivel certificación</label><select class="form-select form-select-sm" id="propCesNivel" onchange="onCesParamChange()"></select></div>
@@ -2650,7 +2655,7 @@
                                 </table>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <div class="table-responsive">
+                            <div class="table-responsive" id="propEtapasWrap">
                                 <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table" id="propCalcEtapas">
                                     <thead><tr><th>Etapas</th><th class="text-end prop-calc-pct">%</th><th class="text-end">UF</th><th></th></tr></thead>
                                     <tbody id="propCalcEtapasBody"></tbody>
@@ -7088,6 +7093,24 @@
         return _propCalcConfig?.servicio === 'CES Evaluadora';
     }
 
+    // RT — Verificación de Reglamentación Térmica. Usa el mismo cálculo por
+    // unidad/superficie que CEV+RT (tarifaCevRtPorM2); el "tipo de proyecto" es
+    // descriptivo y solo se refleja en el documento.
+    function esServicioRt() {
+        return _propCalcConfig?.servicio === 'RT';
+    }
+
+    function poblarRtControles() {
+        const sel = document.getElementById('propRtTipoProyecto');
+        if (!sel) return;
+        sel.innerHTML = (_propCalcConfig?.tipos_proyecto || [])
+            .map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    }
+
+    function onRtParamChange() {
+        sincronizarDatosEnTemplate();
+    }
+
     // Modo de tabla con UF editable por fila (label + UF), usado tanto por CES
     // (entregables prorrateados) como por CES Evaluadora (honorarios por etapa).
     function esModoTablaUf() {
@@ -7231,19 +7254,34 @@
         recomputeCesFilas();
     }
 
-    // Filas por defecto para CES Evaluadora: un entregable por cada honorario
-    // definido en la config (Precertificación / Certificación / Visita de obra),
-    // con su UF editable directamente (sin fórmula de superficie).
+    // Redondea un valor UF a 2 decimales (evita ruido de la interpolación).
+    function _ufRound2(v) {
+        return Math.round((parseFloat(v) || 0) * 100) / 100;
+    }
+
+    // Filas por defecto para CES Evaluadora. Dos partes:
+    //   A) tipo 'arancel_ee': honorario de la Entidad Evaluadora, calculado
+    //      automáticamente desde la superficie (m²) con arancelCesEE().
+    //   B) tipo 'manual': visita de obra, valor UF definido por el usuario.
+    // Ambas quedan editables; solo la fila 'arancel_ee' se recalcula al
+    // cambiar la superficie.
     function crearFilasEvaluadoraDefault() {
         const filas = _propCalcConfig?.filas || [];
         const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
-        _propCalcFilas = filas.map(f => ({
-            label: f.label || 'Entregable',
-            m2,
-            cantidad: 1,
-            uf_unidad: parseFloat(f.uf_unidad) || 0,
-            share: 0,
-        }));
+        _propCalcFilas = filas.map(f => {
+            const tipo = f.tipo || 'manual';
+            const uf = (tipo === 'arancel_ee' && m2 > 0)
+                ? _ufRound2(arancelCesEE(m2))
+                : (parseFloat(f.uf_unidad) || 0);
+            return {
+                label: f.label || 'Entregable',
+                m2,
+                cantidad: 1,
+                uf_unidad: uf,
+                share: 0,
+                tipo,
+            };
+        });
     }
 
     function onCesParamChange() {
@@ -7343,6 +7381,9 @@
     function renderEtapasPropuesta() {
         const etapasBody = document.getElementById('propCalcEtapasBody');
         if (!etapasBody) return;
+        // CES Evaluadora no usa "Forma de pago" (etapas): no hay tabla que
+        // renderizar.
+        if (esServicioCesEvaluadora()) { etapasBody.innerHTML = ''; return; }
         const total = totalHonorariosPropuesta();
         etapasBody.innerHTML = _propEtapasState.map((e, i) => {
             const monto = total * (e.porcentaje || 0) / 100;
@@ -7399,6 +7440,11 @@
                 tipo: document.getElementById('propCesTipo')?.value || '',
             };
         }
+        if (esServicioRt()) {
+            payload.rt = {
+                tipo_proyecto: document.getElementById('propRtTipoProyecto')?.value || '',
+            };
+        }
         return JSON.stringify(payload);
     }
 
@@ -7413,6 +7459,10 @@
                 const tipoSel = document.getElementById('propCesTipo');
                 if (nivelSel && data.ces.nivel) nivelSel.value = data.ces.nivel;
                 if (tipoSel && data.ces.tipo) tipoSel.value = data.ces.tipo;
+            }
+            if (data.rt) {
+                const tipoProySel = document.getElementById('propRtTipoProyecto');
+                if (tipoProySel && data.rt.tipo_proyecto) tipoProySel.value = data.rt.tipo_proyecto;
             }
             if (data.anchos && typeof data.anchos === 'object') {
                 _propAnchosColumnas = { ..._propAnchosColumnas, ...data.anchos };
@@ -7466,6 +7516,7 @@
             fecha: fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value) || '—',
             numero: document.getElementById('propNumero').value || '—',
             unidades: descripcionUnidadesPropuesta(),
+            tipo_proyecto: esServicioRt() ? (document.getElementById('propRtTipoProyecto')?.value || '—') : '',
             total_uf: totalHonorariosPropuesta(),
         };
     }
@@ -7518,6 +7569,7 @@
             fecha: d.fecha,
             numero: 'P' + d.numero,
             unidades: d.unidades,
+            tipo_proyecto: d.tipo_proyecto,
         };
         for (const [prop, val] of Object.entries(map)) {
             editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
@@ -7543,6 +7595,7 @@
 
         const placeholders = {
             '{{UNIDADES_DESCRIPCION}}': d.unidades,
+            '{{TIPO_PROYECTO}}': d.tipo_proyecto,
             '{{PRESENTADO_POR}}': d.presentado_por,
             '{{PROYECTO}}': d.proyecto,
             '{{CLIENTE}}': d.cliente,
@@ -7803,6 +7856,7 @@
             '{{FECHA}}': esc(d.fecha),
             '{{NUMERO}}': esc(d.numero),
             '{{UNIDADES_DESCRIPCION}}': esc(d.unidades),
+            '{{TIPO_PROYECTO}}': esc(d.tipo_proyecto),
             '{{HONORARIOS_TABLA}}': tablaHonorariosPropuesta(),
             '{{PAGO_TABLA}}': tablaPagoPropuesta(),
             '{{OTROS_GASTOS_TABLA}}': esServicioCes() ? tablaOtrosGastosCes() : '',
@@ -7824,7 +7878,7 @@
                 honSec.insertAdjacentElement('afterend', div);
             }
         }
-        if (!editor.querySelector('#prop-bloque-pago')) {
+        if (!esServicioCesEvaluadora() && !editor.querySelector('#prop-bloque-pago')) {
             const pagoSec = [...editor.querySelectorAll('.prop-doc-seccion, h3, h4')].find(s => /forma de pago|condiciones de pago|pago/i.test(s.textContent));
             if (pagoSec) {
                 const div = document.createElement('div');
@@ -7853,7 +7907,7 @@
             hon.innerHTML = tablaHonorariosPropuesta();
             initTablaColumnasResizables(hon.querySelector('table'), 'honTpl', [null, 80, 90], []);
         }
-        if (pago) {
+        if (pago && !esServicioCesEvaluadora()) {
             pago.innerHTML = tablaPagoPropuesta();
             initTablaColumnasResizables(pago.querySelector('table'), 'pagoTpl', [null, 100], []);
         }
@@ -7948,19 +8002,32 @@
         document.getElementById('propUf').readOnly = true;
 
         const cesControls = document.getElementById('propCesControls');
+        const rtControls = document.getElementById('propRtControls');
+        // CES Evaluadora no usa la tabla de "Forma de pago" (etapas): se oculta.
+        document.getElementById('propEtapasWrap')?.classList.toggle('d-none', esServicioCesEvaluadora());
         if (esServicioCes()) {
             cesControls?.classList.remove('d-none');
+            rtControls?.classList.add('d-none');
             poblarCesControles();
             crearFilasCesDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
         } else if (esServicioCesEvaluadora()) {
             cesControls?.classList.add('d-none');
+            rtControls?.classList.add('d-none');
             crearFilasEvaluadoraDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
         } else {
             cesControls?.classList.add('d-none');
+            // RT reutiliza el cálculo por unidad de CEV+RT, más un selector de
+            // tipo de proyecto (descriptivo) que se refleja en el documento.
+            if (esServicioRt()) {
+                rtControls?.classList.remove('d-none');
+                poblarRtControles();
+            } else {
+                rtControls?.classList.add('d-none');
+            }
             if (!_propCalcFilas.length) {
                 const m2 = parseFloat(document.getElementById('propM2').value) || 140;
                 const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
@@ -7983,10 +8050,18 @@
             return;
         }
         if (esServicioCesEvaluadora()) {
-            // Los honorarios de evaluación son por etapa (no dependen de m²);
-            // solo refrescamos la descripción del proyecto en la plantilla.
-            _propCalcFilas.forEach(f => { f.m2 = parseFloat(document.getElementById('propM2').value) || 0; });
+            // El honorario de la Entidad Evaluadora (fila 'arancel_ee') se
+            // recalcula desde la superficie; la visita de obra ('manual') se
+            // conserva tal como la definió el usuario.
+            const m2 = parseFloat(document.getElementById('propM2').value) || 0;
+            _propCalcFilas.forEach(f => {
+                f.m2 = m2;
+                if (f.tipo === 'arancel_ee') {
+                    f.uf_unidad = m2 > 0 ? _ufRound2(arancelCesEE(m2)) : 0;
+                }
+            });
             renderCalcPropuesta();
+            recalcularPropuesta();
             sincronizarDatosEnTemplate();
             return;
         }

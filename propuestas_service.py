@@ -15,6 +15,7 @@ from models import PlantillaPropuesta, Propuesta
 SERVICIOS_PROPUESTA = [
     'CES',
     'CEV+RT',
+    'RT',
     'CVS',
     'CES Evaluadora',
     'Consultoría',
@@ -50,6 +51,26 @@ ETAPAS_PAGO_CEV_RT = [
     {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]', 'porcentaje': 33.33},
     {'codigo': '2.1', 'nombre': 'Pre Calificación', 'porcentaje': 33.33},
     {'codigo': '2.2', 'nombre': 'Calificación', 'porcentaje': 33.34},
+]
+
+# ---------------------------------------------------------------------------
+# RT — Verificación de Reglamentación Térmica (sin CEV)
+# ---------------------------------------------------------------------------
+# Reutiliza las tarifas por unidad/superficie de CEV+RT (TARIFAS_CEV_RT). No
+# existen tarifas específicas por tipo de proyecto: el "tipo de proyecto" es
+# descriptivo (aparece en el documento) y NO altera el cálculo de honorarios.
+TIPOS_PROYECTO_RT = [
+    'Residencial vivienda',
+    'Residencial Hotel',
+    'Salud',
+    'Educación',
+]
+
+# Etapas de pago para RT: solo el/los entregable(s) de Reglamentación Térmica
+# (informe DOM), ya que en este servicio no hay componente CEV.
+ETAPAS_PAGO_RT = [
+    {'codigo': '1', 'nombre': 'Anticipo (inicio de servicio)', 'porcentaje': 50.0},
+    {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]', 'porcentaje': 50.0},
 ]
 
 # ---------------------------------------------------------------------------
@@ -148,28 +169,22 @@ ARANCEL_CES_EE = [
 # En este servicio B-green actúa como Entidad Evaluadora (EE) acreditada ante
 # el Instituto de la Construcción. A diferencia del servicio de asesoría CES,
 # los honorarios NO se derivan de la fórmula de potencia sobre la superficie,
-# sino de un arancel de evaluación por etapa/entregable.
+# sino directamente del arancel de la Entidad Evaluadora (mismo tarifario
+# ARANCEL_CES_EE), interpolado por tramos según la superficie del proyecto.
 #
-# Los valores por defecto replican la referencia P1913 (Hospital Instituto
-# Nacional del Cáncer, ~85.494 m², Certificación Destacada, formato
-# Hospitales): Evaluación Precertificación 124 UF, Evaluación Certificación
-# 100 UF y Visita de obra 50 UF. Son totalmente editables en la calculadora.
+# El honorario se estructura en dos partes:
+#   A) Evaluación / Certificación Entidad Evaluadora: se calcula de forma
+#      automática desde la superficie (m²) usando ARANCEL_CES_EE. Es editable
+#      si el usuario desea sobre-escribir el valor sugerido (tipo 'arancel_ee').
+#   B) Visita de obra: valor en UF definido manualmente por el usuario. NO se
+#      calcula automáticamente (tipo 'manual').
 #
 # NOTA: al ser B-green la propia Entidad Evaluadora, NO se incluye el bloque de
 # "otros gastos" (aranceles EA/EE) que sí aplica al servicio de asesoría CES:
 # el arancel de la Entidad Evaluadora ES el honorario de esta propuesta.
 FILAS_CES_EVALUADORA = [
-    {'label': 'Honorarios Evaluación Precertificación (Etapa Diseño)', 'uf_unidad': 124},
-    {'label': 'Honorarios Evaluación Certificación (Etapa Construcción)', 'uf_unidad': 100},
-    {'label': 'Visita de obra (Etapa Construcción)', 'uf_unidad': 50},
-]
-
-# Forma de pago: pago anticipado de costos y honorarios en cada revisión. Las
-# proporciones por defecto corresponden a 124 / 100 / 50 UF sobre el total 274.
-ETAPAS_PAGO_CES_EVALUADORA = [
-    {'codigo': 'A', 'nombre': 'Evaluación Precertificación', 'porcentaje': 45.26},
-    {'codigo': 'B', 'nombre': 'Evaluación Certificación', 'porcentaje': 36.50},
-    {'codigo': 'C', 'nombre': 'Visita de obra', 'porcentaje': 18.24},
+    {'label': 'Evaluación / Certificación Entidad Evaluadora', 'uf_unidad': 29, 'tipo': 'arancel_ee'},
+    {'label': 'Visita de obra', 'uf_unidad': 50, 'tipo': 'manual'},
 ]
 
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
@@ -227,6 +242,70 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 
 <h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
 <p>Para definir el monto de los honorarios profesionales se asume que se contratan los 2 servicios descritos en la propuesta:</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+
+<h4>Forma de pago</h4>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+
+<div class="prop-doc-firma">
+  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES | Calificador Energético CEV.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
+TEMPLATE_RT = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Verificación de Reglamentación Térmica.</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Tipo de proyecto:</th><td data-prop="tipo_proyecto">{{TIPO_PROYECTO}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Introducción</h3>
+<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong>, correspondiente a un proyecto de tipo <strong data-prop="tipo_proyecto">{{TIPO_PROYECTO}}</strong>, y tiene por objetivo dar cumplimiento a los requerimientos normativos vigentes en materia de Reglamentación Térmica.</p>
+<p>El encargo considera la elaboración de los informes técnicos exigidos por la Dirección de Obras Municipales (DOM) para el ingreso y aprobación del proyecto, verificando el cumplimiento de la envolvente térmica de <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong> conforme al marco normativo vigente.</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>La presente propuesta técnica está orientada a verificar el cumplimiento normativo del proyecto en etapa de diseño en materia de Reglamentación Térmica.</p>
+
+<h4>Cumplimiento de la Reglamentación Térmica</h4>
+<p>Se elaborará un Informe de Cumplimiento de Reglamentación Térmica válido para presentación ante la Dirección de Obras Municipales (DOM), en el cual se verificará el cumplimiento del Artículo 4.1.10 de la OGUC, aplicable a edificaciones de uso residencial.</p>
+<p>El informe considerará los siguientes aspectos prescriptivos:</p>
+<p><strong>A. Desempeño térmico de la envolvente</strong><br>
+Se verificará el cumplimiento de los requisitos de transmitancia térmica máxima (U) o resistencia térmica mínima (Rt) exigidos para los distintos elementos de la envolvente térmica, incluyendo techumbres, muros perimetrales, pisos ventilados sobre exterior, sobrecimientos, puertas opacas y ventanas.</p>
+<p>Para ello, se entregará una memoria de cálculo detallada, que incluirá la caracterización completa de los materiales que componen la envolvente térmica (muros, techumbres, pisos, ventanas y puertas), considerando espesores, tipos de aislación térmica, soluciones constructivas, tipos de carpintería y especificaciones de vidrios.</p>
+<p>Asimismo, se realizará el cálculo de la transmitancia térmica (U) y de la resistencia térmica (Rt o R100) de todos los elementos de la envolvente, verificando adicionalmente los indicadores térmicos de los cristales según la orientación de las fachadas del proyecto, conforme a la normativa vigente.</p>
+<p><strong>B. Ausencia de riesgo de condensación</strong><br>
+Se desarrollará una memoria de cálculo de condensación superficial e intersticial, aplicando el método de Glaser, para todos los cerramientos del proyecto, incluyendo muros exteriores, cubiertas y pisos ventilados.</p>
+<p>El análisis permitirá verificar la ausencia de riesgo de condensación, asegurando el correcto desempeño higrotérmico de las soluciones constructivas propuestas.</p>
+<p><strong>C. Permeabilidad al aire e infiltraciones</strong><br>
+Se realizará una revisión de la permeabilidad al aire de puertas y ventanas, considerando clasificación de ventanas según infiltraciones de aire, evaluación de detalles constructivos de sellado y revisión de barreras de vapor y continuidad de la envolvente.</p>
+<p>La prueba de hermeticidad (blower door) no se encuentra incluida en la presente propuesta, pero podrá ser considerada como un servicio adicional si el mandante lo requiere.</p>
+<p><strong>D. Ventilación mínima según normativa vigente</strong><br>
+De acuerdo con la normativa actualizada, las viviendas deberán incorporar sistemas de ventilación activos, pasivos o mixtos, cumpliendo con las tasas mínimas de renovación de aire establecidas en la NCh 3308, así como con los requerimientos de extracción de aire en recintos húmedos.</p>
+<p>En este contexto, se propondrá un diseño conceptual de soluciones de ventilación adecuadas al proyecto, orientadas a asegurar el cumplimiento de la reglamentación térmica y a mejorar las condiciones de confort y calidad del aire interior de las viviendas.</p>
+
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Para definir el monto de los honorarios profesionales se considera el servicio de Verificación de Reglamentación Térmica descrito en la presente propuesta:</p>
 <div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
 
 <h4>Forma de pago</h4>
@@ -426,11 +505,8 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 <p><strong>Nota de Vigencia y Modificaciones:</strong> El Pre-certificado de Diseño expira automáticamente a los 6 meses de obtenida la recepción municipal o al emitirse el certificado final. Si las obras no se inician en 2 años, deberá renovarse. Durante la operación, el cliente se obliga a declarar cualquier cambio menor o mayor (umbrales del 5% y 20% de la superficie o instalaciones) que pueda alterar el puntaje u obligar a repetir la certificación.</p>
 
 <h3 class="prop-doc-seccion">Propuesta Económica — Honorarios Profesionales</h3>
-<p>Los honorarios de evaluación se estructuran por etapa (Diseño y Construcción). Se considera el pago anticipado de los costos y honorarios en cada revisión.</p>
+<p>Los honorarios de evaluación se derivan del arancel de la Entidad Evaluadora según la superficie del proyecto, más la visita de obra. Se considera el pago anticipado de los costos y honorarios en cada revisión.</p>
 <div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
-
-<h4>Forma de pago</h4>
-<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 <p class="text-muted">&#8226; El valor anterior no incluye una eventual revisión en etapa de apelación. En caso de requerirse una revisión de apelación, el costo es de 6 UF.<br>
 &#8226; Se considera emisión de factura exenta.</p>
@@ -453,6 +529,7 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 
 TEMPLATES_POR_SERVICIO = {
     'CEV+RT': TEMPLATE_CEV_RT,
+    'RT': TEMPLATE_RT,
     'CES': TEMPLATE_CES,
     'CES Evaluadora': TEMPLATE_CES_EVALUADORA,
 }
@@ -681,6 +758,15 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'template': None,
             'format': 'html',
         }
+    if servicio == 'RT':
+        return {
+            'servicio': 'RT',
+            'tarifas': TARIFAS_CEV_RT,
+            'etapas': ETAPAS_PAGO_RT,
+            'tipos_proyecto': TIPOS_PROYECTO_RT,
+            'template': None,
+            'format': 'html',
+        }
     if servicio == 'CES':
         return {
             'servicio': 'CES',
@@ -698,7 +784,8 @@ def get_config_calculadora(servicio: str) -> dict | None:
         return {
             'servicio': 'CES Evaluadora',
             'filas': FILAS_CES_EVALUADORA,
-            'etapas': ETAPAS_PAGO_CES_EVALUADORA,
+            'arancel_ee': ARANCEL_CES_EE,
+            'etapas': [],
             'template': None,
             'format': 'html',
         }
