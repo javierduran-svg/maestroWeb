@@ -465,14 +465,17 @@
         }
         #modalPropuesta #propCalcContenido .prop-calc-table .text-end { white-space: nowrap; }
         #modalPropuesta #propCalcContenido .prop-calc-table .prop-calc-total { font-size: 0.75rem; font-weight: 600; }
-        #modalPropuesta .prop-template-font-ctrl .prop-font-hint {
+        #modalPropuesta .prop-template-font-ctrl .prop-font-hint,
+        #modalPlantillaPropuesta .prop-template-font-ctrl .prop-font-hint {
             font-size: 0.68rem;
             color: #6c757d;
             white-space: nowrap;
             margin-right: 0.15rem;
         }
-        #modalPropuesta .prop-template-font-ctrl .prop-font-hint.text-warning { color: #b58100; }
-        #modalPropuesta .prop-template-font-ctrl .btn { min-width: 1.85rem; padding-left: 0.35rem; padding-right: 0.35rem; font-size: 0.72rem; }
+        #modalPropuesta .prop-template-font-ctrl .prop-font-hint.text-warning,
+        #modalPlantillaPropuesta .prop-template-font-ctrl .prop-font-hint.text-warning { color: #b58100; }
+        #modalPropuesta .prop-template-font-ctrl .prop-font-size-select,
+        #modalPlantillaPropuesta .prop-template-font-ctrl .prop-font-size-select { width: auto; min-width: 4.75rem; font-size: 0.72rem; padding: 0.15rem 1.5rem 0.15rem 0.4rem; }
         #modalPropuesta .prop-template-page-hint {
             flex-shrink: 0;
             text-align: right;
@@ -2631,14 +2634,9 @@
                         <div class="d-flex align-items-center gap-2">
                             <div class="prop-template-font-ctrl d-flex align-items-center" title="Tamaño de texto en selección">
                                 <span class="prop-font-hint" id="propFontHint">Seleccione texto y elija tamaño</span>
-                                <div class="btn-group btn-group-sm ms-1" role="group" aria-label="Tamaño de fuente">
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(8)" title="8 pt">8</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(9)" title="9 pt">9</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(10)" title="10 pt">10</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(11)" title="11 pt">11</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(12)" title="12 pt">12</button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(14)" title="14 pt">14</button>
-                                </div>
+                                <select id="propFontSizeSelect" class="form-select form-select-sm ms-1 prop-font-size-select" data-editor="propTemplate" data-hint="propFontHint" aria-label="Tamaño de fuente" onchange="onPropFontSizeSelectChange(this)">
+                                    <option value="">Tamaño</option>
+                                </select>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar completo desde datos"><i class="fa-solid fa-rotate"></i></button>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="abrirEditorPlantilla()" title="Editar plantilla del servicio"><i class="fa-solid fa-file-pen"></i></button>
@@ -2647,7 +2645,7 @@
                         </div>
                     </div>
                     <div class="prop-template-wrap">
-                        <div id="propTemplate" class="prop-template-editor" contenteditable="true" data-editado="0"></div>
+                        <div id="propTemplate" class="prop-template-editor" contenteditable="true" data-editado="0" onmouseup="actualizarPropFontSizeSelect()" onkeyup="actualizarPropFontSizeSelect()"></div>
                         <div class="prop-template-page-hint" aria-hidden="true">Página 1</div>
                     </div>
                 </main>
@@ -2663,7 +2661,15 @@
         <div class="modal-header"><h5 class="modal-title" id="tituloModalPlantilla">Editar plantilla</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-3">
             <p class="small text-muted mb-2">Vista del documento con marcadores como <code>{{PROYECTO}}</code>, <code>{{CLIENTE}}</code>, <code>{{HONORARIOS_TABLA}}</code>, etc. Edite directamente el texto formateado.</p>
-            <div id="plantillaPropuestaEditor" class="prop-template-editor" contenteditable="true" data-servicio=""></div>
+            <div class="d-flex align-items-center justify-content-end mb-2">
+                <div class="prop-template-font-ctrl d-flex align-items-center" title="Tamaño de texto en selección">
+                    <span class="prop-font-hint" id="plantillaFontHint">Seleccione texto y elija tamaño</span>
+                    <select id="plantillaFontSizeSelect" class="form-select form-select-sm ms-1 prop-font-size-select" data-editor="plantillaPropuestaEditor" data-hint="plantillaFontHint" aria-label="Tamaño de fuente" onchange="onPropFontSizeSelectChange(this)">
+                        <option value="">Tamaño</option>
+                    </select>
+                </div>
+            </div>
+            <div id="plantillaPropuestaEditor" class="prop-template-editor" contenteditable="true" data-servicio="" onmouseup="actualizarFontSizeSelect(document.getElementById('plantillaFontSizeSelect'))" onkeyup="actualizarFontSizeSelect(document.getElementById('plantillaFontSizeSelect'))"></div>
         </div>
         <div class="modal-footer border-0">
             <button class="btn btn-outline-secondary btn-sm" onclick="restaurarPlantillaDefault()">Restaurar default</button>
@@ -2896,7 +2902,7 @@
     let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
-    let _propFontHintTimer = null;
+    const _fontHintTimers = {};
     let _propModalSplitDrag = null;
     let _propModalResizeDrag = null;
 
@@ -2904,39 +2910,107 @@
         document.getElementById(id)?.classList.toggle('collapsed');
     }
 
-    function selectionEnPropTemplate() {
-        const editor = document.getElementById('propTemplate');
+    function selectionEnEditor(editor) {
+        if (!editor) return null;
         const sel = window.getSelection();
-        if (!editor || !sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
         if (!editor.contains(sel.anchorNode) || !editor.contains(sel.focusNode)) return null;
         return sel;
     }
 
-    function mostrarHintFontPropuesta(msg) {
-        const el = document.getElementById('propFontHint');
+    function selectionEnPropTemplate() {
+        return selectionEnEditor(document.getElementById('propTemplate'));
+    }
+
+    function mostrarHintFontPropuesta(msg, hintId) {
+        const id = hintId || 'propFontHint';
+        const el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg;
         el.classList.add('text-warning');
-        clearTimeout(_propFontHintTimer);
-        _propFontHintTimer = setTimeout(() => {
+        clearTimeout(_fontHintTimers[id]);
+        _fontHintTimers[id] = setTimeout(() => {
             el.textContent = 'Seleccione texto y elija tamaño';
             el.classList.remove('text-warning');
         }, 2200);
     }
 
-    function aplicarFontSizePropSeleccion(pt) {
-        const editor = document.getElementById('propTemplate');
-        const sel = selectionEnPropTemplate();
+    function poblarFontSizeSelect(sel) {
+        if (!sel || sel.options.length > 1) return;
+        for (let pt = 6; pt <= 28; pt++) {
+            const opt = document.createElement('option');
+            opt.value = String(pt);
+            opt.textContent = pt + ' pt';
+            sel.appendChild(opt);
+        }
+    }
+
+    function initPropFontSizeSelect() {
+        poblarFontSizeSelect(document.getElementById('propFontSizeSelect'));
+        poblarFontSizeSelect(document.getElementById('plantillaFontSizeSelect'));
+    }
+
+    function fontSizePtDesdeElemento(el) {
+        if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
+        const inline = el.style.fontSize;
+        if (inline) {
+            if (inline.endsWith('pt')) return Math.round(parseFloat(inline));
+            if (inline.endsWith('px')) return Math.round(parseFloat(inline) * 72 / 96);
+        }
+        const computed = window.getComputedStyle(el).fontSize;
+        if (computed && computed.endsWith('px')) return Math.round(parseFloat(computed) * 72 / 96);
+        return null;
+    }
+
+    function detectarFontSizeSeleccion(editor) {
+        const sel = selectionEnEditor(editor);
+        if (!editor || !sel) return null;
+        let node = sel.anchorNode;
+        if (node?.nodeType === Node.TEXT_NODE) node = node.parentElement;
+        while (node && node !== editor) {
+            const pt = fontSizePtDesdeElemento(node);
+            if (pt) return pt;
+            node = node.parentElement;
+        }
+        return null;
+    }
+
+    function detectarFontSizePropSeleccion() {
+        return detectarFontSizeSeleccion(document.getElementById('propTemplate'));
+    }
+
+    function actualizarFontSizeSelect(selEl) {
+        if (!selEl) return;
+        const editor = document.getElementById(selEl.dataset.editor);
+        const pt = detectarFontSizeSeleccion(editor);
+        selEl.value = (pt >= 6 && pt <= 28) ? String(pt) : '';
+    }
+
+    function actualizarPropFontSizeSelect() {
+        actualizarFontSizeSelect(document.getElementById('propFontSizeSelect'));
+    }
+
+    function onPropFontSizeSelectChange(el) {
+        const pt = parseInt(el.value, 10);
+        if (!pt) return;
+        const editor = document.getElementById(el.dataset.editor);
+        aplicarFontSizeSeleccion(pt, editor, el.dataset.hint);
+        actualizarFontSizeSelect(el);
+    }
+
+    function aplicarFontSizeSeleccion(pt, editor, hintId) {
+        const sel = selectionEnEditor(editor);
+        const ctx = editor?.id === 'plantillaPropuestaEditor' ? 'la plantilla' : 'la propuesta';
         if (!editor || !sel) {
-            mostrarHintFontPropuesta('Seleccione texto en la propuesta');
-            return;
+            mostrarHintFontPropuesta('Seleccione texto en ' + ctx, hintId);
+            return false;
         }
         editor.focus();
         const range = sel.getRangeAt(0);
         const selectedText = range.toString();
         if (!selectedText) {
-            mostrarHintFontPropuesta('Seleccione texto en la propuesta');
-            return;
+            mostrarHintFontPropuesta('Seleccione texto en ' + ctx, hintId);
+            return false;
         }
         document.execCommand('styleWithCSS', false, true);
         try {
@@ -2947,7 +3021,12 @@
             const safe = selectedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             document.execCommand('insertHTML', false, `<span style="font-size:${pt}pt">${safe}</span>`);
         }
-        editor.dataset.editado = '1';
+        if (editor.id === 'propTemplate') editor.dataset.editado = '1';
+        return true;
+    }
+
+    function aplicarFontSizePropSeleccion(pt) {
+        return aplicarFontSizeSeleccion(pt, document.getElementById('propTemplate'), 'propFontHint');
     }
 
     function aplicarPropModalSize(w, h) {
@@ -3287,6 +3366,7 @@
     }
 
     async function bootstrapApp() {
+        initPropFontSizeSelect();
         document.getElementById('loginPassword')?.addEventListener('keydown', e => {
             if (e.key === 'Enter') enviarLogin();
         });
