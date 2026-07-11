@@ -402,25 +402,27 @@
         #modalPropuesta #propCalcAviso { font-size: 0.68rem; padding: 0.5rem 0.65rem; margin: 0; }
         #modalPropuesta #propCalcContenido .btn-sm { font-size: 0.68rem; padding: 0.15rem 0.4rem; }
         .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
-        .prop-template-editor .prop-doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--teal-green); }
+        .prop-template-editor table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid var(--teal-green); margin-bottom: 1rem; }
+        .prop-template-editor table.prop-doc-header td { vertical-align: top; padding: 0 0 0.75rem 0; border: none; }
+        .prop-template-editor .prop-doc-header-text { width: 72%; }
+        .prop-template-editor .prop-doc-logo-wrap { width: 28%; text-align: right; }
         .prop-template-editor .prop-doc-titulo { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 0.35rem; line-height: 1.3; }
-        .prop-template-editor .prop-doc-subtitulo { font-size: 0.95rem; font-weight: 500; color: var(--teal-green); margin: 0; }
-        .prop-template-editor .prop-doc-logo-wrap { flex-shrink: 0; }
+        .prop-template-editor .prop-doc-subtitulo { font-size: 0.95rem; font-weight: 700; color: var(--teal-green); margin: 0; }
         .prop-template-editor .prop-doc-logo { max-height: 56px; max-width: 120px; object-fit: contain; }
-        .prop-template-editor .prop-doc-meta { width: 100%; margin-bottom: 1rem; font-size: 0.8rem; }
-        .prop-template-editor .prop-doc-meta th { text-align: left; padding: 0.15rem 0.75rem 0.15rem 0; font-weight: 600; white-space: nowrap; vertical-align: top; }
-        .prop-template-editor .prop-doc-meta td { padding: 0.15rem 0; }
-        .prop-template-editor .prop-doc-seccion { font-size: 0.88rem; font-weight: 700; color: var(--teal-green); margin: 1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e0e0e0; text-transform: uppercase; letter-spacing: 0.02em; }
+        .prop-template-editor table.prop-doc-meta { width: 100%; margin-bottom: 1rem; font-size: 0.8rem; border-collapse: collapse; }
+        .prop-template-editor table.prop-doc-meta th { text-align: left; padding: 0.15rem 0.75rem 0.15rem 0; font-weight: 600; white-space: nowrap; vertical-align: top; border: none; }
+        .prop-template-editor table.prop-doc-meta td { padding: 0.15rem 0; border: none; }
+        .prop-template-editor h3.prop-doc-seccion { font-size: 0.88rem; font-weight: 700; color: var(--teal-green); margin: 1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e0e0e0; text-transform: uppercase; letter-spacing: 0.02em; }
         .prop-template-editor h4 { font-size: 0.84rem; font-weight: 600; margin: 0.75rem 0 0.35rem; color: #222; }
         .prop-template-editor p { margin: 0 0 0.5rem; text-align: justify; }
-        .prop-template-editor .prop-tabla { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.78rem; }
-        .prop-template-editor .prop-tabla th, .prop-template-editor .prop-tabla td { border: 1px solid #dee2e6; padding: 0.35rem 0.5rem; }
-        .prop-template-editor .prop-tabla th { background: #f1f3f5; font-weight: 600; }
-        .prop-template-editor .prop-tabla .text-end { text-align: right; }
+        .prop-template-editor table.prop-tabla { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.78rem; }
+        .prop-template-editor table.prop-tabla th, .prop-template-editor table.prop-tabla td { border: 1px solid #dee2e6; padding: 0.35rem 0.5rem; }
+        .prop-template-editor table.prop-tabla th { background: #f1f3f5; font-weight: 600; }
+        .prop-template-editor table.prop-tabla .text-end { text-align: right; }
         .prop-template-editor .prop-doc-total { margin-top: 0.75rem; font-size: 0.9rem; }
         .prop-template-editor .prop-doc-firma, .prop-template-editor .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 0.78rem; }
         #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
-        #propCalcUnidades th, #propCalcEtapas th, .prop-template-editor .prop-tabla th { position: relative; }
+        #propCalcUnidades th, #propCalcEtapas th, .prop-template-editor table.prop-tabla th { position: relative; }
         .prop-tabla-resize { table-layout: fixed; width: 100%; }
         .prop-col-resize-grip {
             position: absolute;
@@ -6949,10 +6951,45 @@
         if (!wrap) return;
         const data = await cargarLogoPropuesta();
         if (data) {
-            wrap.innerHTML = `<img src="${data}" alt="Logo" class="prop-doc-logo">`;
+            wrap.innerHTML = `<img src="${data}" alt="Logo" class="prop-doc-logo"/>`;
         } else {
             wrap.innerHTML = '';
         }
+    }
+
+    function reemplazarPlaceholdersResiduales(editor, d) {
+        if (!editor) return;
+        const uf = d.total_uf ? d.total_uf.toFixed(1).replace('.', ',') : '0';
+        const rep = {
+            '{{PROYECTO}}': d.proyecto,
+            '{{CLIENTE}}': d.cliente,
+            '{{PRESENTADO_POR}}': d.presentado_por,
+            '{{FECHA}}': d.fecha,
+            '{{NUMERO}}': d.numero,
+            '{{UNIDADES_DESCRIPCION}}': d.unidades,
+            '{{TOTAL_UF}}': uf,
+            'P{{NUMERO}}': 'P' + d.numero,
+        };
+        let html = editor.innerHTML;
+        Object.keys(rep).sort((a, b) => b.length - a.length).forEach(k => {
+            html = html.split(k).join(rep[k]);
+        });
+        editor.innerHTML = html;
+    }
+
+    function prepararContenidoExportPropuesta() {
+        const editor = document.getElementById('propTemplate');
+        if (!editor) return '';
+        const clone = editor.cloneNode(true);
+        clone.querySelectorAll('.prop-col-resize-grip').forEach(el => el.remove());
+        clone.querySelectorAll('colgroup').forEach(el => el.remove());
+        clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        clone.querySelectorAll('[data-prop],[data-resize-key],[data-editado]').forEach(el => {
+            el.removeAttribute('data-prop');
+            el.removeAttribute('data-resize-key');
+            el.removeAttribute('data-editado');
+        });
+        return clone.innerHTML.trim();
     }
 
     function colgroupHtml(key, defaultWidths) {
@@ -7148,7 +7185,10 @@
             unidades: d.unidades,
         };
         for (const [prop, val] of Object.entries(map)) {
-            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => { el.textContent = val; });
+            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
+                if (prop === 'logo') return;
+                el.textContent = val;
+            });
         }
         if (!editor.querySelector('[data-prop="cliente"]')) {
             const meta = editor.querySelector('.prop-doc-meta');
@@ -7162,6 +7202,7 @@
             const sub = editor.querySelector('.prop-doc-subtitulo');
             if (sub) sub.textContent = d.proyecto;
         }
+        reemplazarPlaceholdersResiduales(editor, d);
         actualizarBloquesTemplate();
         await sincronizarLogoTemplate();
     }
@@ -7320,8 +7361,8 @@
     }
 
     async function exportarPropuesta(formato) {
-        const editor = document.getElementById('propTemplate');
-        const contenido = leerHtmlEditor(editor);
+        await sincronizarDatosEnTemplate();
+        const contenido = prepararContenidoExportPropuesta();
         if (!contenido) {
             alert('No hay contenido de propuesta para exportar.');
             return;

@@ -53,13 +53,15 @@ ETAPAS_PAGO_CEV_RT = [
 ]
 
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
-<div class="prop-doc-header">
-  <div class="prop-doc-header-text">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
     <h1 class="prop-doc-titulo">Calificación energética de viviendas CEV + Verificación Reglamentación térmica.</h1>
     <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
-  </div>
-  <div class="prop-doc-logo-wrap" data-prop="logo">{{LOGO}}</div>
-</div>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
 <table class="prop-doc-meta">
   <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
   <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
@@ -128,23 +130,32 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT}
 
 PROP_DOC_CSS = """
-body { font-family: Roboto, Calibri, Arial, sans-serif; font-size: 11pt; color: #222; line-height: 1.45; }
-.prop-doc-header { display: table; width: 100%; border-bottom: 2px solid #008080; margin-bottom: 12px; padding-bottom: 8px; }
-.prop-doc-header-text { display: table-cell; vertical-align: top; width: 75%; }
-.prop-doc-logo-wrap { display: table-cell; vertical-align: top; text-align: right; width: 25%; }
-.prop-doc-titulo { font-size: 14pt; font-weight: bold; margin: 0 0 4px; color: #111; }
-.prop-doc-subtitulo { font-size: 12pt; font-weight: 500; margin: 0; color: #008080; }
-.prop-doc-logo { max-height: 56px; max-width: 120px; }
-.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
-.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; white-space: nowrap; vertical-align: top; }
-.prop-doc-meta td { padding: 2px 0; }
-.prop-doc-seccion { font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #ddd; text-transform: uppercase; }
-h4 { font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px; color: #222; }
-p { margin: 0 0 8px; text-align: justify; }
-.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 10pt; }
-.prop-tabla th, .prop-tabla td { border: 1px solid #ccc; padding: 5px 8px; }
-.prop-tabla th { background: #f1f3f5; font-weight: bold; text-align: left; }
-.prop-tabla .text-end { text-align: right; }
+@page { size: a4; margin: 2cm 2cm 2.5cm 2cm; }
+body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
+.prop-doc { width: 100%; }
+table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #008080; margin-bottom: 12px; }
+table.prop-doc-header td { vertical-align: top; padding: 0 0 8px 0; border: none; }
+.prop-doc-header-text { width: 72%; }
+.prop-doc-logo-wrap { width: 28%; text-align: right; }
+.prop-doc-titulo { font-size: 14pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
+.prop-doc-subtitulo { font-size: 12pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
+h1.prop-doc-titulo { font-size: 14pt; }
+h2.prop-doc-subtitulo { font-size: 12pt; }
+.prop-doc-logo { max-height: 56px; max-width: 120px; height: auto; }
+table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
+table.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; vertical-align: top; border: none; }
+table.prop-doc-meta td { padding: 2px 0; border: none; vertical-align: top; }
+h3.prop-doc-seccion { font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
+h4 { font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
+p { margin: 0 0 8px 0; text-align: justify; }
+strong { font-weight: bold; }
+table.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px 0; font-size: 10pt; }
+table.prop-tabla th, table.prop-tabla td { border: 1px solid #cccccc; padding: 5px 8px; vertical-align: top; }
+table.prop-tabla th { background-color: #f1f3f5; font-weight: bold; text-align: left; }
+table.prop-tabla tfoot td { font-weight: bold; }
+.text-end { text-align: right; }
+.fw-bold { font-weight: bold; }
+.text-muted { color: #6c757d; }
 .prop-doc-total { margin-top: 10px; font-size: 11pt; }
 .prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 9.5pt; }
 """
@@ -195,21 +206,60 @@ def _logo_data_uri(logo_path: str | None) -> str:
         return ''
 
 
-def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None) -> str:
+def _normalizar_html_para_pdf(html: str) -> str:
+    import html as html_mod
+
+    out = html_mod.unescape(str(html or ''))
+    out = re.sub(r'<span[^>]*class="[^"]*prop-col-resize-grip[^"]*"[^>]*></span>', '', out, flags=re.I)
+    out = re.sub(r'\scontenteditable="[^"]*"', '', out, flags=re.I)
+    out = re.sub(r'\sdata-(?:prop|resize-key|editado|servicio)="[^"]*"', '', out, flags=re.I)
+    out = re.sub(r'<(br)([^>]*)>', r'<\1\2/>', out, flags=re.I)
+    out = re.sub(r'<img([^>]*?)(?<!/)>', r'<img\1/>', out, flags=re.I)
+    out = re.sub(r'<colgroup>.*?</colgroup>', '', out, flags=re.I | re.S)
+    out = re.sub(r'\sclass="([^"]*\s)?prop-tabla-resize(\s[^"]*)?"', ' class="prop-tabla"', out, flags=re.I)
+    out = re.sub(r'<div class="prop-doc-header">\s*<div class="prop-doc-header-text">', '<table class="prop-doc-header" cellpadding="0" cellspacing="0"><tr><td class="prop-doc-header-text" valign="top">', out, flags=re.I | re.S)
+    out = re.sub(r'</div>\s*<div class="prop-doc-logo-wrap"([^>]*)>', r'</td><td class="prop-doc-logo-wrap"\1 valign="top" align="right">', out, flags=re.I)
+    out = re.sub(r'</div>\s*</div>\s*<table class="prop-doc-meta"', '</td></tr></table><table class="prop-doc-meta"', out, flags=re.I)
+    return out.strip()
+
+
+def _inyectar_logo_html(html: str, logo_path: str | None) -> str:
     logo_uri = _logo_data_uri(logo_path)
-    if logo_uri and 'prop-doc-logo' not in contenido and '<img' not in contenido[:500]:
-        pass
-    html = contenido
-    if logo_uri:
+    if not logo_uri:
+        return html
+    if re.search(r'<img[^>]+class="[^"]*prop-doc-logo', html, flags=re.I):
         html = re.sub(
-            r'(<div class="prop-doc-logo-wrap">)\s*(</div>)',
-            rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+            r'(<img[^>]*class="[^"]*prop-doc-logo[^"]*"[^>]*src=")([^"]*)(")',
+            rf'\1{logo_uri}\3',
             html,
             count=1,
+            flags=re.I,
         )
-        html = html.replace('src="/api/empresas/', f'src="{logo_uri}" data-orig="/api/empresas/')
+        html = re.sub(r'(<img[^>]*src=")([^"]*)("[^>]*class="[^"]*prop-doc-logo)', rf'\1{logo_uri}\3', html, count=1, flags=re.I)
+        return html
+    html = re.sub(
+        r'(<td[^>]*class="[^"]*prop-doc-logo-wrap[^"]*"[^>]*>)\s*(</td>)',
+        rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+        html,
+        count=1,
+        flags=re.I,
+    )
+    html = re.sub(
+        r'(<div[^>]*class="[^"]*prop-doc-logo-wrap[^"]*"[^>]*>)\s*(</div>)',
+        rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+        html,
+        count=1,
+        flags=re.I,
+    )
+    return html
+
+
+def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None) -> str:
+    html = _normalizar_html_para_pdf(contenido)
+    html = _inyectar_logo_html(html, logo_path)
+    titulo_safe = titulo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     return f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>{titulo}</title>
+<html><head><meta charset="utf-8"/><title>{titulo_safe}</title>
 <style>{PROP_DOC_CSS}</style></head><body>{html}</body></html>"""
 
 
@@ -217,31 +267,17 @@ def generar_pdf_propuesta(titulo: str, contenido: str, logo_path: str | None = N
     doc_html = _envolver_html_export(contenido, titulo, logo_path)
     try:
         from xhtml2pdf import pisa
+    except ImportError as exc:
+        raise RuntimeError('xhtml2pdf no está instalado en el servidor') from exc
 
-        buf = io.BytesIO()
-        status = pisa.CreatePDF(doc_html, dest=buf, encoding='utf-8')
-        if status.err:
-            raise RuntimeError('Error al generar PDF')
-        return buf.getvalue()
-    except Exception:
-        from fpdf import FPDF
-
-        pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        pdf.add_page()
-        pdf.set_font('Helvetica', 'B', 12)
-        pdf.multi_cell(0, 7, titulo[:200])
-        pdf.ln(4)
-        pdf.set_font('Helvetica', '', 9)
-        texto = _html_a_texto(contenido)
-        for linea in texto.split('\n'):
-            linea = linea.strip()
-            if linea:
-                pdf.multi_cell(0, 5, linea[:500])
-            else:
-                pdf.ln(2)
-        out = pdf.output()
-        return out if isinstance(out, (bytes, bytearray)) else out.encode('latin-1', errors='replace')
+    buf = io.BytesIO()
+    status = pisa.CreatePDF(doc_html, dest=buf, encoding='utf-8')
+    if status.err:
+        raise RuntimeError('Error al renderizar PDF desde HTML')
+    pdf = buf.getvalue()
+    if not pdf:
+        raise RuntimeError('PDF vacío')
+    return pdf
 
 
 def generar_docx_propuesta(
