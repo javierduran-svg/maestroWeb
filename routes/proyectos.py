@@ -8,7 +8,7 @@ from common import *
 from contabilidad import calcular_transaccion, recalcular_proyecto
 from extensions import db
 from models import (
-    Cliente, EntregaProgramada, Movimiento, Propuesta, Proyecto, TareaEntrega,
+    Cliente, Empresa, EntregaProgramada, Movimiento, Propuesta, Proyecto, TareaEntrega,
 )
 from propuestas_service import (
     SERVICIOS_PROPUESTA,
@@ -542,7 +542,9 @@ def exportar_propuesta_pdf():
     contenido = data.get('contenido') or ''
     if not contenido.strip():
         return jsonify({'error': 'Contenido vacío'}), 400
-    pdf_bytes = generar_pdf_propuesta(titulo, contenido)
+    empresa = Empresa.query.get(eid)
+    logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
+    pdf_bytes = generar_pdf_propuesta(titulo, contenido, logo_path=logo_path)
     nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
     return send_file(
         io.BytesIO(pdf_bytes),
@@ -562,7 +564,9 @@ def exportar_propuesta_word():
     contenido = data.get('contenido') or ''
     if not contenido.strip():
         return jsonify({'error': 'Contenido vacío'}), 400
-    doc_bytes, ext = generar_docx_propuesta(titulo, contenido)
+    empresa = Empresa.query.get(eid)
+    logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
+    doc_bytes, ext = generar_docx_propuesta(titulo, contenido, logo_path=logo_path)
     nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
     mimetype = (
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

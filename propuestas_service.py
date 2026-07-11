@@ -41,95 +41,63 @@ ETAPAS_CEV_RT = [
     {'codigo': '2.2', 'nombre': 'Calificación'},
 ]
 
-TEMPLATE_CEV_RT = """Calificación energética de viviendas CEV + Verificación Reglamentación térmica.
-{{PROYECTO}}.
+TEMPLATE_CEV_RT = """<div class="prop-doc">
+<div class="prop-doc-header">
+  <div class="prop-doc-header-text">
+    <h1 class="prop-doc-titulo">Calificación energética de viviendas CEV + Verificación Reglamentación térmica.</h1>
+    <h2 class="prop-doc-subtitulo">{{PROYECTO}}</h2>
+  </div>
+  <div class="prop-doc-logo-wrap">{{LOGO}}</div>
+</div>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td>{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td>{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td>{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td>P{{NUMERO}}</td></tr>
+</table>
 
-Cliente: {{CLIENTE}}
-Presentada por: {{PRESENTADO_POR}}
-Fecha: {{FECHA}}
-ID Propuesta: P{{NUMERO}}
+<h3 class="prop-doc-seccion">Introducción</h3>
+<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong>{{PROYECTO}}</strong>, y tiene por objetivo dar cumplimiento a los requerimientos normativos vigentes en materia de Reglamentación Térmica y Calificación Energética de Viviendas (CEV).</p>
+<p>El encargo considera la elaboración de los informes técnicos exigidos por la Dirección de Obras Municipales (DOM) para el ingreso y aprobación de modificaciones de proyecto, así como la evaluación energética integral del conjunto habitacional.</p>
+<p>Adicionalmente, la propuesta incluye la Precalificación y Calificación Energética CEV de cada una de las viviendas del condominio, correspondiente a <strong>{{UNIDADES_DESCRIPCION}}</strong>, a evaluar con el objetivo de optimizar su desempeño energético y alcanzar la mejor calificación posible dentro del marco normativo vigente.</p>
 
-═══════════════════════════════════════════════════════════════
-INTRODUCCIÓN
-═══════════════════════════════════════════════════════════════
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>La presente propuesta técnica se estructura en dos componentes principales, orientados a verificar el cumplimiento normativo y evaluar el desempeño energético del proyecto en etapa de diseño.</p>
 
-La presente Propuesta Técnica se desarrolla para el proyecto {{PROYECTO}}, y tiene por objetivo dar cumplimiento a los requerimientos normativos vigentes en materia de Reglamentación Térmica y Calificación Energética de Viviendas (CEV).
+<h4>1. Cumplimiento de la Reglamentación Térmica</h4>
+<p>Se elaborará un Informe de Cumplimiento de Reglamentación Térmica válido para presentación ante la Dirección de Obras Municipales (DOM), en el cual se verificará el cumplimiento del Artículo 4.1.10 de la OGUC, aplicable a edificaciones de uso residencial.</p>
+<p><strong>A. Desempeño térmico de la envolvente</strong> — Se verificará el cumplimiento de transmitancia térmica (U) o resistencia térmica (Rt) de techumbres, muros, pisos, puertas y ventanas, con memoria de cálculo detallada.</p>
+<p><strong>B. Ausencia de riesgo de condensación</strong> — Memoria de cálculo con método de Glaser para muros, cubiertas y pisos ventilados.</p>
+<p><strong>C. Permeabilidad al aire e infiltraciones</strong> — Revisión de carpinterías, sellados y barreras de vapor. Blower door no incluida (servicio adicional).</p>
+<p><strong>D. Ventilación mínima</strong> — Diseño conceptual de ventilación conforme a NCh 3308.</p>
 
-El encargo considera la elaboración de los informes técnicos exigidos por la Dirección de Obras Municipales (DOM) para el ingreso y aprobación de modificaciones de proyecto, así como la evaluación energética integral del conjunto habitacional.
+<h4>2. Calificación energética de viviendas CEV</h4>
+<p><strong>2.1. Análisis Preliminar CEV</strong> — Simulación temprana y propuestas de mejora.</p>
+<p><strong>2.2. Precalificación CEV</strong> — Simulación PBDT MINVU con permiso de edificación aprobado.</p>
+<p><strong>2.3. Calificación energética</strong> — Visita de obra obligatoria en construcción.</p>
+<p><strong>2.4. Calificación CEV</strong> — Tramitación final tras Recepción Final.</p>
 
-Adicionalmente, la propuesta incluye la Precalificación y Calificación Energética CEV de cada una de las viviendas del condominio, correspondiente a {{UNIDADES_DESCRIPCION}}, a evaluar con el objetivo de optimizar su desempeño energético y alcanzar la mejor calificación posible dentro del marco normativo vigente.
-
-═══════════════════════════════════════════════════════════════
-PROPUESTA TÉCNICA
-═══════════════════════════════════════════════════════════════
-
-La presente propuesta técnica se estructura en dos componentes principales, orientados a verificar el cumplimiento normativo y evaluar el desempeño energético del proyecto en etapa de diseño.
-
-1. CUMPLIMIENTO DE LA REGLAMENTACIÓN TÉRMICA
-
-Se elaborará un Informe de Cumplimiento de Reglamentación Térmica válido para presentación ante la Dirección de Obras Municipales (DOM), en el cual se verificará el cumplimiento del Artículo 4.1.10 de la OGUC, aplicable a edificaciones de uso residencial.
-
-El informe considerará los siguientes aspectos prescriptivos:
-
-A. Desempeño térmico de la envolvente
-Se verificará el cumplimiento de los requisitos de transmitancia térmica máxima (U) o resistencia térmica mínima (Rt) exigidos para los distintos elementos de la envolvente térmica, incluyendo techumbres, muros perimetrales, pisos ventilados sobre exterior, sobrecimientos, puertas opacas y ventanas.
-
-Para ello, se entregará una memoria de cálculo detallada con la caracterización completa de los materiales que componen la envolvente térmica, considerando espesores, tipos de aislación térmica, soluciones constructivas, tipos de carpintería y especificaciones de vidrios.
-
-Asimismo, se realizará el cálculo de la transmitancia térmica (U) y de la resistencia térmica (Rt o R100) de todos los elementos de la envolvente, verificando adicionalmente los indicadores térmicos de los cristales según la orientación de las fachadas del proyecto.
-
-B. Ausencia de riesgo de condensación
-Se desarrollará una memoria de cálculo de condensación superficial e intersticial, aplicando el método de Glaser, para todos los cerramientos del proyecto (muros exteriores, cubiertas y pisos ventilados).
-
-C. Permeabilidad al aire e infiltraciones
-Se realizará una revisión de la permeabilidad al aire de puertas y ventanas, considerando clasificación de ventanas según infiltraciones de aire, evaluación de detalles constructivos de sellado y revisión de barreras de vapor.
-
-La prueba de hermeticidad (blower door) no se encuentra incluida en la presente propuesta, pero podrá ser considerada como un servicio adicional si el mandante lo requiere.
-
-D. Ventilación mínima según normativa vigente
-Se propondrá un diseño conceptual de soluciones de ventilación adecuadas al proyecto, orientadas a asegurar el cumplimiento de la reglamentación térmica y a mejorar las condiciones de confort y calidad del aire interior.
-
-2. CALIFICACIÓN ENERGÉTICA DE VIVIENDAS CEV
-
-La propuesta incluye la evaluación en la etapa de diseño de los aspectos definidos en la normativa vigente y los parámetros de la calificación energética de viviendas CEV.
-
-2.1. Análisis Preliminar CEV y propuestas de mejora.
-Se llevará a cabo la simulación de la vivienda para determinar tempranamente la calificación energética. Se entregará un informe con los resultados preliminares calculados según los planos y especificaciones técnicas de arquitectura.
-
-2.2. Precalificación CEV.
-Para la precalificación CEV de la vivienda, es requisito contar con el permiso de edificación aprobado. Se realizará la simulación de cada una de las unidades utilizando la Herramienta de Cálculo de la Calificación Energética de Viviendas (PBDT) del MINVU.
-
-2.3. Calificación energética de viviendas.
-Durante la fase de construcción, se realizará una visita obligatoria para verificar que la envolvente especificada se esté implementando conforme al proyecto.
-
-2.4. Calificación CEV.
-Una vez finalizada la construcción y obtenida la Recepción Final, se procederá a la Calificación CEV.
-
-═══════════════════════════════════════════════════════════════
-HONORARIOS PROFESIONALES
-═══════════════════════════════════════════════════════════════
-
-Para definir el monto de los honorarios profesionales se asume que se contratan los 2 servicios descritos en la propuesta:
-
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Para definir el monto de los honorarios profesionales se asume que se contratan los 2 servicios descritos en la propuesta:</p>
 {{HONORARIOS_TABLA}}
 
-FORMA DE PAGO
-
+<h4>Forma de pago</h4>
 {{PAGO_TABLA}}
+<p class="prop-doc-total"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
-TOTAL: UF {{TOTAL_UF}}
-
-───────────────────────────────────────────────────────────────
-{{PRESENTADO_POR}}
-Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |
-LEED AP | Asesor CES | Calificador Energético CEV.
-B-green Chile
-
-Información de la Empresa.
-Nombre: B-green Chile Ltda.
-Rut.: 77.748.415-k
-Dirección: Obispo Donoso 5 Oficina 62. Providencia.
-"""
+<div class="prop-doc-firma">
+  <p><strong>{{PRESENTADO_POR}}</strong></p>
+  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES | Calificador Energético CEV.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
 
 TEMPLATES_POR_SERVICIO = {
     'CEV+RT': TEMPLATE_CEV_RT,
@@ -185,28 +153,61 @@ class PropuestaPDF(FPDF):
         pass
 
 
-def generar_pdf_propuesta(titulo: str, contenido: str) -> bytes:
+def _html_a_texto(html: str) -> str:
+    import re
+    import html as html_mod
+
+    texto = re.sub(r'<br\s*/?>', '\n', html, flags=re.I)
+    texto = re.sub(r'</p>', '\n\n', texto, flags=re.I)
+    texto = re.sub(r'</h[1-6]>', '\n\n', texto, flags=re.I)
+    texto = re.sub(r'</tr>', '\n', texto, flags=re.I)
+    texto = re.sub(r'</t[dh]>', '\t', texto, flags=re.I)
+    texto = re.sub(r'<[^>]+>', '', texto)
+    texto = html_mod.unescape(texto)
+    texto = re.sub(r'\n{3,}', '\n\n', texto)
+    return texto.strip()
+
+
+def generar_pdf_propuesta(titulo: str, contenido: str, logo_path: str | None = None) -> bytes:
     pdf = PropuestaPDF()
     pdf.add_page()
+    y_ini = pdf.get_y()
+    if logo_path and os.path.isfile(logo_path):
+        try:
+            pdf.image(logo_path, x=150, y=y_ini, h=18)
+        except Exception:
+            pass
     pdf.set_font('Helvetica', 'B', 14)
     pdf.multi_cell(0, 8, _texto_seguro(titulo))
     pdf.ln(4)
     pdf.set_font('Helvetica', '', 10)
-    for linea in contenido.split('\n'):
-        pdf.multi_cell(0, 5, _texto_seguro(linea))
+    texto = _html_a_texto(contenido) if '<' in contenido else contenido
+    for linea in texto.split('\n'):
+        if linea.strip():
+            pdf.multi_cell(0, 5, _texto_seguro(linea))
+        else:
+            pdf.ln(3)
     return bytes(pdf.output())
 
 
-def generar_docx_propuesta(titulo: str, contenido: str) -> tuple[bytes, str]:
+def generar_docx_propuesta(
+    titulo: str, contenido: str, logo_path: str | None = None,
+) -> tuple[bytes, str]:
     """Retorna (bytes, extension: 'docx' | 'doc')."""
     try:
         from docx import Document
-        from docx.shared import Pt
+        from docx.shared import Pt, Inches
 
         doc = Document()
+        if logo_path and os.path.isfile(logo_path):
+            try:
+                doc.add_picture(logo_path, width=Inches(1.6))
+            except Exception:
+                pass
         titulo_p = doc.add_heading(titulo, level=1)
         titulo_p.runs[0].font.size = Pt(16)
-        for linea in contenido.split('\n'):
+        texto = _html_a_texto(contenido) if '<' in contenido else contenido
+        for linea in texto.split('\n'):
             p = doc.add_paragraph(linea)
             p.paragraph_format.space_after = Pt(2)
             for run in p.runs:
@@ -237,5 +238,6 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'tarifas': TARIFAS_CEV_RT,
             'etapas': ETAPAS_CEV_RT,
             'template': TEMPLATE_CEV_RT,
+            'format': 'html',
         }
     return None

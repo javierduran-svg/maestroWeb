@@ -230,10 +230,189 @@
         .btn-teal { background: var(--teal-green); color: #fff; border: none; }
         .btn-teal:hover { background: #006666; color: #fff; }
         .modal-header { background: #000; color: #fff; }
-        #modalPropuesta .modal-body { max-height: calc(100vh - 180px); overflow-y: auto; }
-        .prop-seccion { border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; margin-top: 1rem; background: #fafbfc; }
-        .prop-seccion h6 { color: var(--teal-green); font-weight: 600; margin-bottom: 0.75rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
-        #propTemplate { font-family: 'Roboto', monospace; font-size: 0.78rem; line-height: 1.45; min-height: 280px; resize: vertical; }
+        #modalPropuesta .prop-modal-dialog {
+            margin: 0.5rem auto;
+            width: min(96vw, var(--prop-modal-w, 1280px));
+            height: var(--prop-modal-h, 90vh);
+            max-width: 98vw;
+            max-height: 98vh;
+        }
+        #modalPropuesta .prop-modal-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-width: 720px;
+            min-height: 480px;
+        }
+        #modalPropuesta .prop-modal-resize-grip {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 18px;
+            height: 18px;
+            cursor: nwse-resize;
+            z-index: 10;
+            background: linear-gradient(135deg, transparent 50%, rgba(0,128,128,0.45) 50%);
+            border-bottom-right-radius: 0.3rem;
+        }
+        #modalPropuesta .modal-header,
+        #modalPropuesta .modal-footer { flex-shrink: 0; padding-top: 0.45rem; padding-bottom: 0.45rem; }
+        #modalPropuesta .modal-body.prop-modal-body {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            padding: 0;
+        }
+        #modalPropuesta .prop-modal-layout {
+            display: flex;
+            height: 100%;
+            min-height: 0;
+        }
+        #modalPropuesta .prop-modal-side {
+            flex: 0 0 var(--prop-side-w, 300px);
+            min-width: 220px;
+            max-width: 420px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #f8f9fa;
+            border-right: 1px solid var(--border-color);
+        }
+        #modalPropuesta .prop-modal-divider {
+            flex: 0 0 5px;
+            cursor: col-resize;
+            background: var(--border-color);
+            touch-action: none;
+            user-select: none;
+            position: relative;
+        }
+        #modalPropuesta .prop-modal-divider:hover,
+        body.prop-modal-split-resizing #modalPropuesta .prop-modal-divider {
+            background: var(--teal-green);
+        }
+        body.prop-modal-split-resizing,
+        body.prop-modal-size-resizing {
+            cursor: nwse-resize !important;
+            user-select: none !important;
+        }
+        body.prop-modal-split-resizing { cursor: col-resize !important; }
+        #modalPropuesta .prop-modal-main {
+            flex: 1 1 auto;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+        }
+        #modalPropuesta .prop-side-block {
+            border-bottom: 1px solid var(--border-color);
+        }
+        #modalPropuesta .prop-side-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.4rem 0.65rem;
+            border: 0;
+            background: #eef1f3;
+            color: var(--teal-green);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+        }
+        #modalPropuesta .prop-side-toggle:hover { background: #e4e9ec; }
+        #modalPropuesta .prop-side-toggle .fa-chevron-down { transition: transform 0.15s; font-size: 0.65rem; }
+        #modalPropuesta .prop-side-block.collapsed .prop-side-toggle .fa-chevron-down { transform: rotate(-90deg); }
+        #modalPropuesta .prop-side-block.collapsed .prop-side-body { display: none; }
+        #modalPropuesta .prop-side-body { padding: 0.5rem 0.65rem 0.65rem; }
+        #modalPropuesta .prop-compact-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.35rem 0.45rem;
+        }
+        #modalPropuesta .prop-compact-grid .span-2 { grid-column: span 2; }
+        #modalPropuesta .prop-field label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.1rem;
+            line-height: 1.2;
+        }
+        #modalPropuesta .prop-field .form-control,
+        #modalPropuesta .prop-field .form-select {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.4rem;
+            min-height: 1.65rem;
+        }
+        #modalPropuesta .prop-template-toolbar {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.45rem 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            background: #fafbfc;
+        }
+        #modalPropuesta .prop-template-toolbar h6 {
+            margin: 0;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--teal-green);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        #modalPropuesta .prop-template-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            padding: 0.5rem 0.75rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+        }
+        #modalPropuesta #propTemplate {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+            resize: none;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.25rem;
+        }
+        #modalPropuesta .prop-seccion { border: none; border-radius: 0; padding: 0; margin: 0; background: transparent; }
+        #modalPropuesta .prop-seccion h6 { display: none; }
+        #modalPropuesta #propCalcContenido { padding: 0 0.65rem 0.65rem; }
+        #modalPropuesta #propCalcContenido .table { font-size: 0.68rem; margin-bottom: 0.35rem; }
+        #modalPropuesta #propCalcContenido .table th,
+        #modalPropuesta #propCalcContenido .table td { padding: 0.2rem 0.35rem; }
+        #modalPropuesta #propCalcAviso { font-size: 0.68rem; padding: 0.5rem 0.65rem; margin: 0; }
+        #modalPropuesta #propCalcContenido .btn-sm { font-size: 0.68rem; padding: 0.15rem 0.4rem; }
+        #propTemplate:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
+        #propTemplate .prop-doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--teal-green); }
+        #propTemplate .prop-doc-titulo { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 0.35rem; line-height: 1.3; }
+        #propTemplate .prop-doc-subtitulo { font-size: 0.95rem; font-weight: 500; color: var(--teal-green); margin: 0; }
+        #propTemplate .prop-doc-logo-wrap { flex-shrink: 0; }
+        #propTemplate .prop-doc-logo { max-height: 56px; max-width: 120px; object-fit: contain; }
+        #propTemplate .prop-doc-meta { width: 100%; margin-bottom: 1rem; font-size: 0.8rem; }
+        #propTemplate .prop-doc-meta th { text-align: left; padding: 0.15rem 0.75rem 0.15rem 0; font-weight: 600; white-space: nowrap; vertical-align: top; }
+        #propTemplate .prop-doc-meta td { padding: 0.15rem 0; }
+        #propTemplate .prop-doc-seccion { font-size: 0.88rem; font-weight: 700; color: var(--teal-green); margin: 1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e0e0e0; text-transform: uppercase; letter-spacing: 0.02em; }
+        #propTemplate h4 { font-size: 0.84rem; font-weight: 600; margin: 0.75rem 0 0.35rem; color: #222; }
+        #propTemplate p { margin: 0 0 0.5rem; text-align: justify; }
+        #propTemplate .prop-tabla { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.78rem; }
+        #propTemplate .prop-tabla th, #propTemplate .prop-tabla td { border: 1px solid #dee2e6; padding: 0.35rem 0.5rem; }
+        #propTemplate .prop-tabla th { background: #f1f3f5; font-weight: 600; }
+        #propTemplate .prop-tabla .text-end { text-align: right; }
+        #propTemplate .prop-doc-total { margin-top: 0.75rem; font-size: 0.9rem; }
+        #propTemplate .prop-doc-firma, #propTemplate .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 0.78rem; }
         #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
         .prop-calc-total { font-weight: 700; color: var(--teal-green); }
         .panel-toolbar { font-size: 0.8125rem; }
@@ -2268,63 +2447,80 @@
 </div>
 
 <div class="modal fade" id="modalPropuesta" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-dialog prop-modal-dialog"><div class="modal-content prop-modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloModalPropuesta">Nueva propuesta</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body p-4">
+        <div class="modal-body prop-modal-body">
             <input type="hidden" id="propId">
-            <div class="row g-3">
-                <div class="col-md-2"><label class="form-label small fw-bold">N° propuesta</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
-                <div class="col-md-10"><label class="form-label small fw-bold">Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="actualizarTemplatePropuesta()"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="actualizarTemplatePropuesta()"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Cliente (texto)</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="actualizarTemplatePropuesta()"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
-                <div class="col-md-8"><label class="form-label small fw-bold">Detalle servicio</label><input type="text" class="form-control" id="propDetalle" oninput="actualizarTemplatePropuesta()"></div>
-                <div class="col-md-2"><label class="form-label small fw-bold">m² (total)</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
-                <div class="col-md-2"><label class="form-label small fw-bold">Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">UF (total)</label><input type="number" step="any" class="form-control" id="propUf"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Pesos</label><input type="number" step="1" class="form-control" id="propPesos"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Fecha envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="actualizarTemplatePropuesta()"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Fecha adjudicación</label><input type="date" class="form-control" id="propFechaAdjud"></div>
-            </div>
-
-            <div class="prop-seccion" id="propSeccionCalculadora">
-                <h6><i class="fa-solid fa-calculator me-1"></i> Calculadora de honorarios</h6>
-                <p class="small text-muted mb-2" id="propCalcAviso">Seleccione un servicio con calculadora disponible.</p>
-                <div id="propCalcContenido" class="d-none">
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm table-bordered mb-1" id="propCalcUnidades">
-                            <thead class="table-light"><tr><th>Tipo / Superficie</th><th class="text-end" style="width:90px">m²</th><th class="text-end" style="width:80px">Cant.</th><th class="text-end" style="width:90px">UF/unidad</th><th class="text-end" style="width:90px">Subtotal</th><th style="width:40px"></th></tr></thead>
-                            <tbody id="propCalcUnidadesBody"></tbody>
-                            <tfoot><tr><td colspan="4" class="text-end fw-bold">Total unidades</td><td class="text-end prop-calc-total" id="propCalcTotalUnidades">0</td><td></td></tr></tfoot>
-                        </table>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i> Agregar tipo</button>
+            <div class="prop-modal-layout">
+                <aside class="prop-modal-side">
+                    <div class="prop-side-block collapsed" id="propBlockDatos">
+                        <button type="button" class="prop-side-toggle" onclick="togglePropSideBlock('propBlockDatos')">
+                            <span><i class="fa-solid fa-pen-to-square me-1"></i> Datos</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="prop-side-body">
+                            <div class="prop-compact-grid">
+                                <div class="prop-field"><label>N°</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
+                                <div class="prop-field"><label>Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
+                                <div class="prop-field span-2"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field span-2"><label>Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
+                                <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field span-2"><label>Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
+                                <div class="prop-field"><label>Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
+                                <div class="prop-field"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field"><label>m²</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
+                                <div class="prop-field"><label>Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
+                                <div class="prop-field"><label>UF</label><input type="number" step="any" class="form-control" id="propUf"></div>
+                                <div class="prop-field"><label>Pesos</label><input type="number" step="1" class="form-control" id="propPesos"></div>
+                                <div class="prop-field"><label>Envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field"><label>Adjudic.</label><input type="date" class="form-control" id="propFechaAdjud"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0" id="propCalcEtapas">
-                            <thead class="table-light"><tr><th>Etapas de pago</th><th class="text-end" style="width:120px">Monto [UF]</th></tr></thead>
-                            <tbody id="propCalcEtapasBody"></tbody>
-                            <tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
-                        </table>
+                    <div class="prop-side-block" id="propSeccionCalculadora">
+                        <button type="button" class="prop-side-toggle" onclick="togglePropSideBlock('propSeccionCalculadora')">
+                            <span><i class="fa-solid fa-calculator me-1"></i> Honorarios</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <p class="small text-muted mb-0" id="propCalcAviso">Seleccione un servicio con calculadora.</p>
+                        <div id="propCalcContenido" class="d-none prop-side-body">
+                            <div class="table-responsive mb-2">
+                                <table class="table table-sm table-bordered mb-1" id="propCalcUnidades">
+                                    <thead class="table-light"><tr><th>Tipo</th><th class="text-end">m²</th><th class="text-end">Cant.</th><th class="text-end">UF/u</th><th class="text-end">Sub.</th><th style="width:24px"></th></tr></thead>
+                                    <tbody id="propCalcUnidadesBody"></tbody>
+                                    <tfoot><tr><td colspan="4" class="text-end fw-bold">Total</td><td class="text-end prop-calc-total" id="propCalcTotalUnidades">0</td><td></td></tr></tfoot>
+                                </table>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0" id="propCalcEtapas">
+                                    <thead class="table-light"><tr><th>Etapas</th><th class="text-end">UF</th></tr></thead>
+                                    <tbody id="propCalcEtapasBody"></tbody>
+                                    <tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="prop-seccion" id="propSeccionTemplate">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h6 class="mb-0"><i class="fa-solid fa-file-lines me-1"></i> Propuesta (template)</h6>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar desde datos"><i class="fa-solid fa-rotate"></i></button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportarPropuesta('pdf')"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportarPropuesta('word')"><i class="fa-solid fa-file-word me-1"></i>Word</button>
+                </aside>
+                <div class="prop-modal-divider" onmousedown="startPropModalSplitDrag(event)" title="Arrastrar para ajustar panel"></div>
+                <main class="prop-modal-main">
+                    <div class="prop-template-toolbar">
+                        <h6><i class="fa-solid fa-file-lines me-1"></i> Propuesta</h6>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar desde datos"><i class="fa-solid fa-rotate"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportarPropuesta('pdf')"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportarPropuesta('word')"><i class="fa-solid fa-file-word me-1"></i>Word</button>
+                        </div>
                     </div>
-                </div>
-                <textarea class="form-control" id="propTemplate" placeholder="Seleccione un servicio para cargar el template…"></textarea>
+                    <div class="prop-template-wrap">
+                        <div id="propTemplate" class="prop-template-editor" contenteditable="true" data-editado="0"></div>
+                    </div>
+                </main>
             </div>
         </div>
-        <div class="modal-footer border-0"><button class="btn btn-teal px-5" onclick="guardarPropuesta()">GUARDAR</button></div>
+        <div class="modal-footer border-0"><button class="btn btn-teal px-4 btn-sm" onclick="guardarPropuesta()">GUARDAR</button></div>
+        <div class="prop-modal-resize-grip" onmousedown="startPropModalResize(event)" title="Arrastrar para redimensionar ventana"></div>
     </div></div>
 </div>
 
@@ -2546,6 +2742,101 @@
     let _propCalcConfig = null;
     let _propCalcFilas = [];
     let _propTemplateBase = '';
+    const PROP_MODAL_SIZE_KEY = 'propModalSize';
+    const PROP_MODAL_SIDE_KEY = 'propModalSideW';
+    let _propModalSplitDrag = null;
+    let _propModalResizeDrag = null;
+
+    function togglePropSideBlock(id) {
+        document.getElementById(id)?.classList.toggle('collapsed');
+    }
+
+    function aplicarPropModalSize(w, h) {
+        const dlg = document.querySelector('#modalPropuesta .prop-modal-dialog');
+        if (!dlg) return;
+        const clampedW = Math.max(720, Math.min(w, window.innerWidth * 0.98));
+        const clampedH = Math.max(480, Math.min(h, window.innerHeight * 0.98));
+        dlg.style.setProperty('--prop-modal-w', clampedW + 'px');
+        dlg.style.setProperty('--prop-modal-h', clampedH + 'px');
+        try { localStorage.setItem(PROP_MODAL_SIZE_KEY, JSON.stringify({ w: clampedW, h: clampedH })); } catch (_) {}
+    }
+
+    function restaurarPropModalSize() {
+        try {
+            const raw = localStorage.getItem(PROP_MODAL_SIZE_KEY);
+            if (!raw) return;
+            const { w, h } = JSON.parse(raw);
+            if (w && h) aplicarPropModalSize(w, h);
+        } catch (_) {}
+    }
+
+    function aplicarPropModalSideW(px) {
+        const layout = document.querySelector('#modalPropuesta .prop-modal-layout');
+        if (!layout) return;
+        const clamped = Math.max(220, Math.min(px, 420));
+        layout.style.setProperty('--prop-side-w', clamped + 'px');
+        try { localStorage.setItem(PROP_MODAL_SIDE_KEY, String(clamped)); } catch (_) {}
+    }
+
+    function restaurarPropModalSideW() {
+        const saved = parseInt(localStorage.getItem(PROP_MODAL_SIDE_KEY), 10);
+        if (!isNaN(saved) && saved > 0) aplicarPropModalSideW(saved);
+    }
+
+    function startPropModalSplitDrag(e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        const side = document.querySelector('#modalPropuesta .prop-modal-side');
+        if (!side) return;
+        _propModalSplitDrag = { startX: e.clientX, startW: side.offsetWidth };
+        document.body.classList.add('prop-modal-split-resizing');
+        document.addEventListener('mousemove', onPropModalSplitDrag);
+        document.addEventListener('mouseup', endPropModalSplitDrag);
+    }
+
+    function onPropModalSplitDrag(e) {
+        if (!_propModalSplitDrag) return;
+        aplicarPropModalSideW(_propModalSplitDrag.startW + (e.clientX - _propModalSplitDrag.startX));
+    }
+
+    function endPropModalSplitDrag() {
+        _propModalSplitDrag = null;
+        document.body.classList.remove('prop-modal-split-resizing');
+        document.removeEventListener('mousemove', onPropModalSplitDrag);
+        document.removeEventListener('mouseup', endPropModalSplitDrag);
+    }
+
+    function startPropModalResize(e) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const dlg = document.querySelector('#modalPropuesta .prop-modal-dialog');
+        if (!dlg) return;
+        _propModalResizeDrag = {
+            startX: e.clientX,
+            startY: e.clientY,
+            startW: dlg.offsetWidth,
+            startH: dlg.offsetHeight,
+        };
+        document.body.classList.add('prop-modal-size-resizing');
+        document.addEventListener('mousemove', onPropModalResize);
+        document.addEventListener('mouseup', endPropModalResize);
+    }
+
+    function onPropModalResize(e) {
+        if (!_propModalResizeDrag) return;
+        aplicarPropModalSize(
+            _propModalResizeDrag.startW + (e.clientX - _propModalResizeDrag.startX),
+            _propModalResizeDrag.startH + (e.clientY - _propModalResizeDrag.startY),
+        );
+    }
+
+    function endPropModalResize() {
+        _propModalResizeDrag = null;
+        document.body.classList.remove('prop-modal-size-resizing');
+        document.removeEventListener('mousemove', onPropModalResize);
+        document.removeEventListener('mouseup', endPropModalResize);
+    }
     let _vistaActual = 'dashboard-gestion';
     let _chartBarras = null;
     let _chartCategorias = null;
@@ -6513,38 +6804,43 @@
         return partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1];
     }
 
+    function logoHtmlPropuesta() {
+        const emp = empresaActiva();
+        const url = logoUrlEmpresa(emp);
+        if (!url) return '';
+        return `<img src="${url}" alt="${esc(emp?.nombre || 'Logo')}" class="prop-doc-logo">`;
+    }
+
+    function aplicarVarsPlantilla(plantilla, vars) {
+        if (Array.isArray(plantilla)) plantilla = plantilla.join('');
+        let out = String(plantilla ?? '');
+        const keys = Object.keys(vars).filter(Boolean).sort((a, b) => b.length - a.length);
+        for (const k of keys) {
+            out = out.split(k).join(String(vars[k] ?? ''));
+        }
+        return out;
+    }
+
     function tablaHonorariosPropuesta() {
         const filas = _propCalcFilas.filter(f => f.cantidad > 0);
-        if (!filas.length) return 'ITEM\tCant\tMonto [UF]\n—\t—\t—';
-        const lineas = ['ITEM\tCant\tMonto [UF]'];
-        filas.forEach((f, i) => {
-            lineas.push(`${i + 1} ${f.label}\t${f.cantidad}\t${((f.cantidad || 0) * (f.uf_unidad || 0)).toFixed(0)}`);
-        });
+        if (!filas.length) {
+            return '<table class="prop-tabla"><thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody><tr><td colspan="3" class="text-muted">Sin unidades</td></tr></tbody></table>';
+        }
+        const rows = filas.map((f, i) => `<tr><td>${i + 1} ${esc(f.label)}</td><td class="text-end">${f.cantidad}</td><td class="text-end">${((f.cantidad || 0) * (f.uf_unidad || 0)).toFixed(0)}</td></tr>`).join('');
         const total = filas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
-        lineas.push(`TOTAL\t\t${total.toFixed(0)}`);
-        return lineas.join('\n');
+        return `<table class="prop-tabla"><thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(0)}</td></tr></tfoot></table>`;
     }
 
     function tablaPagoPropuesta() {
         const total = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
         const etapas = _propCalcConfig?.etapas || [];
-        if (!etapas.length) return 'ITEM\tMonto [UF]\nTOTAL\tUF 0';
-        const n = etapas.length;
-        const monto = total / n;
-        const lineas = ['ITEM\tMonto [UF]'];
-        let grupo = 1;
-        let sub = 1;
-        etapas.forEach((e, i) => {
-            if (i > 0 && e.codigo && e.codigo.charAt(0) !== etapas[i - 1].codigo?.charAt(0)) {
-                grupo++;
-                sub = 1;
-            }
-            const pref = e.codigo ? `${e.codigo} ` : `${grupo}.${sub} `;
-            lineas.push(`${pref}${e.nombre}\tUF ${monto.toFixed(2).replace('.', ',')}`);
-            sub++;
-        });
-        lineas.push(`TOTAL\tUF ${total.toFixed(1).replace('.', ',')}`);
-        return lineas.join('\n');
+        if (!etapas.length) return '<table class="prop-tabla"><tbody><tr><td>TOTAL</td><td class="text-end">UF 0</td></tr></tbody></table>';
+        const monto = total / etapas.length;
+        const rows = etapas.map((e, i) => {
+            const cod = e.codigo ? `${esc(e.codigo)} ` : `${i + 1}. `;
+            return `<tr><td>${cod}${esc(e.nombre)}</td><td class="text-end">UF ${monto.toFixed(2).replace('.', ',')}</td></tr>`;
+        }).join('');
+        return `<table class="prop-tabla"><thead><tr><th>ITEM</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">UF ${total.toFixed(1).replace('.', ',')}</td></tr></tfoot></table>`;
     }
 
     function rellenarTemplatePropuesta(template) {
@@ -6553,27 +6849,26 @@
         const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
         const cliente = document.getElementById('propClienteNombre').value.trim() || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '');
         const vars = {
-            '{{PROYECTO}}': document.getElementById('propNombre').value.trim() || '—',
-            '{{CLIENTE}}': cliente || '—',
-            '{{PRESENTADO_POR}}': document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile',
-            '{{FECHA}}': fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value),
-            '{{NUMERO}}': document.getElementById('propNumero').value || '—',
-            '{{UNIDADES_DESCRIPCION}}': descripcionUnidadesPropuesta(),
+            '{{LOGO}}': logoHtmlPropuesta(),
+            '{{PROYECTO}}': esc(document.getElementById('propNombre').value.trim() || '—'),
+            '{{CLIENTE}}': esc(cliente || '—'),
+            '{{PRESENTADO_POR}}': esc(document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile'),
+            '{{FECHA}}': esc(fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value)),
+            '{{NUMERO}}': esc(document.getElementById('propNumero').value || '—'),
+            '{{UNIDADES_DESCRIPCION}}': esc(descripcionUnidadesPropuesta()),
             '{{HONORARIOS_TABLA}}': tablaHonorariosPropuesta(),
             '{{PAGO_TABLA}}': tablaPagoPropuesta(),
             '{{TOTAL_UF}}': total ? total.toFixed(1).replace('.', ',') : '0',
         };
-        let texto = template || _propTemplateBase || '';
-        Object.entries(vars).forEach(([k, v]) => { texto = texto.split(k).join(v); });
-        return texto;
+        return aplicarVarsPlantilla(template || _propTemplateBase || '', vars);
     }
 
     function actualizarTemplatePropuesta(forzar = false) {
-        const ta = document.getElementById('propTemplate');
-        if (!ta || !_propTemplateBase) return;
-        if (!forzar && ta.value && ta.dataset.editado === '1') return;
-        ta.value = rellenarTemplatePropuesta(_propTemplateBase);
-        ta.dataset.editado = '0';
+        const editor = document.getElementById('propTemplate');
+        if (!editor || !_propTemplateBase) return;
+        if (!forzar && editor.dataset.editado === '1' && editor.innerHTML.trim()) return;
+        editor.innerHTML = rellenarTemplatePropuesta(_propTemplateBase);
+        editor.dataset.editado = '0';
     }
 
     async function onPropServicioChange() {
@@ -6583,12 +6878,15 @@
         _propCalcConfig = null;
         _propCalcFilas = [];
         _propTemplateBase = '';
-        document.getElementById('propTemplate').value = '';
-        document.getElementById('propTemplate').dataset.editado = '0';
+        const editor = document.getElementById('propTemplate');
+        if (editor) {
+            editor.innerHTML = '';
+            editor.dataset.editado = '0';
+        }
 
         if (!servicio) {
             aviso.classList.remove('d-none');
-            aviso.textContent = 'Seleccione un servicio con calculadora disponible.';
+            aviso.textContent = 'Seleccione un servicio con calculadora.';
             contenido.classList.add('d-none');
             document.getElementById('propUf').readOnly = false;
             return;
@@ -6597,7 +6895,7 @@
         const res = await apiFetch(`/api/propuestas/calculadora/${encodeURIComponent(servicio)}`);
         if (!res.ok) {
             aviso.classList.remove('d-none');
-            aviso.textContent = `Calculadora no disponible para "${servicio}". Puede ingresar UF manualmente.`;
+            aviso.textContent = 'Sin calculadora para este servicio.';
             contenido.classList.add('d-none');
             document.getElementById('propUf').readOnly = false;
             return;
@@ -6607,6 +6905,7 @@
         _propTemplateBase = _propCalcConfig.template || '';
         aviso.classList.add('d-none');
         contenido.classList.remove('d-none');
+        document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
         document.getElementById('propUf').readOnly = true;
 
         if (!_propCalcFilas.length) {
@@ -6643,7 +6942,8 @@
     }
 
     async function exportarPropuesta(formato) {
-        const contenido = document.getElementById('propTemplate').value.trim();
+        const editor = document.getElementById('propTemplate');
+        const contenido = editor?.innerHTML?.trim() || '';
         if (!contenido) {
             alert('No hay contenido de propuesta para exportar.');
             return;
@@ -6811,25 +7111,33 @@
         document.getElementById('propStatus').value = 'No enviada';
         document.getElementById('propClienteId').value = '';
         document.getElementById('propServicio').value = '';
-        document.getElementById('propTemplate').value = '';
-        document.getElementById('propTemplate').dataset.editado = '0';
+        const editorTpl = document.getElementById('propTemplate');
+        if (editorTpl) {
+            editorTpl.innerHTML = '';
+            editorTpl.dataset.editado = '0';
+        }
         _propCalcConfig = null;
         _propCalcFilas = [];
         _propTemplateBase = '';
         document.getElementById('propCalcContenido')?.classList.add('d-none');
         document.getElementById('propCalcAviso')?.classList.remove('d-none');
         const aviso = document.getElementById('propCalcAviso');
-        if (aviso) aviso.textContent = 'Seleccione un servicio con calculadora disponible.';
+        if (aviso) aviso.textContent = 'Seleccione un servicio con calculadora.';
         document.getElementById('propCalcUnidadesBody').innerHTML = '';
         document.getElementById('propCalcEtapasBody').innerHTML = '';
+        document.getElementById('propBlockDatos')?.classList.add('collapsed');
+        document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
     }
 
     async function abrirPropuestaModal(id = null) {
         await poblarClientesPropuestaModal();
         await cargarServiciosPropuesta();
         limpiarFormPropuesta();
+        restaurarPropModalSize();
+        restaurarPropModalSideW();
         document.getElementById('tituloModalPropuesta').innerText = id ? 'Editar propuesta' : 'Nueva propuesta';
         if (id) {
+            document.getElementById('propBlockDatos')?.classList.remove('collapsed');
             const p = await (await apiFetch(`/api/propuestas/${id}`)).json();
             document.getElementById('propId').value = p.id;
             document.getElementById('propNumero').value = p.numero;
