@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from flask import Blueprint, jsonify, render_template, request, send_file, abort, session
+from flask import Blueprint, current_app, jsonify, render_template, request, send_file, abort, session
 from werkzeug.utils import secure_filename
 
 from bootstrap import (
@@ -38,7 +38,10 @@ def _configuracion_requiere_admin():
 
 @bp.route('/')
 def index():
-    return render_template('app.html')
+    # app.html es una SPA con marcadores literales de cliente ({{PROYECTO}},
+    # {{...}}, etc.). NO debe pasar por Jinja: se sirve como archivo estático
+    # para no romper esos marcadores ni provocar TemplateSyntaxError.
+    return send_file(Path(current_app.root_path) / 'app.html')
 
 
 @bp.route('/api/auth/login', methods=['POST'])
