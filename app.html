@@ -368,6 +368,16 @@
             gap: 0.35rem 0.45rem;
         }
         #modalPropuesta .prop-compact-grid .span-2 { grid-column: span 2; }
+        #modalPropuesta .prop-compact-grid .prop-subheading {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6c757d;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.15rem;
+            margin-top: 0.25rem;
+        }
         #modalPropuesta .prop-field label {
             display: block;
             font-size: 0.65rem;
@@ -2584,21 +2594,23 @@
                         </button>
                         <div class="prop-side-body">
                             <div class="prop-compact-grid">
-                                <div class="prop-field"><label>N°</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
-                                <div class="prop-field"><label>Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
-                                <div class="prop-field span-2"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
                                 <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2 prop-subheading">Datos</div>
+                                <div class="prop-field"><label>N°</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
+                                <div class="prop-field"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
-                                <div class="prop-field"><label>Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
-                                <div class="prop-field"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field"><label>m²</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>UF</label><input type="number" step="any" class="form-control" id="propUf"></div>
                                 <div class="prop-field"><label>Pesos</label><input type="number" step="1" class="form-control" id="propPesos"></div>
+                                <div class="prop-field span-2 prop-subheading">Seguimiento</div>
+                                <div class="prop-field"><label>Recepción</label><input type="date" class="form-control" id="propFechaRecepcion"></div>
                                 <div class="prop-field"><label>Envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="onPropCampoTemplate()"></div>
                                 <div class="prop-field"><label>Adjudic.</label><input type="date" class="form-control" id="propFechaAdjud"></div>
+                                <div class="prop-field"><label>Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
                             </div>
                         </div>
                     </div>
@@ -2617,6 +2629,18 @@
                                     <div class="prop-field"><label>Total UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesTotal" readonly></div>
                                 </div>
                                 <p class="small text-muted mb-0">Valores referenciales; edite las UF por entregable en la tabla.</p>
+                                <div id="propCesOtrosGastos" class="d-none mt-2">
+                                    <div class="fw-bold small text-muted mb-1">Otros gastos a considerar (referencial, según m²)</div>
+                                    <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table">
+                                        <tbody>
+                                            <tr><td>A. Entidad Administradora (arancel CES EA) — neto</td><td class="text-end" id="propCesEaNeto">–</td></tr>
+                                            <tr><td class="ps-3">IVA (19%)</td><td class="text-end" id="propCesEaIva">–</td></tr>
+                                            <tr><td class="ps-3 fw-bold">Total EA (con IVA)</td><td class="text-end fw-bold" id="propCesEaTotal">–</td></tr>
+                                            <tr><td>B. Entidad Evaluadora (arancel CES EE)*</td><td class="text-end" id="propCesEe">–</td></tr>
+                                        </tbody>
+                                    </table>
+                                    <p class="small text-muted mb-0">A. EA es un valor + IVA (19%). B. EE *no incluye visita de obra. No se suman a los honorarios profesionales.</p>
+                                </div>
                             </div>
                             <div class="table-responsive mb-2">
                                 <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table" id="propCalcUnidades">
@@ -2909,7 +2933,7 @@
     let _propTemplateBase = '';
     let _propPlantillaServicio = '';
     let _propLogoCache = { empId: null, data: null };
-    let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
+    let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null, otrosTpl: null };
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
     const _fontHintTimers = {};
@@ -7084,6 +7108,65 @@
         return cesFactorSel('propCesTipo', _propCalcConfig?.tipos);
     }
 
+    // Interpolación lineal por tramos de un tarifario {m2, uf} según superficie.
+    // Bajo el primer punto: clamp al primer valor. Sobre el último punto:
+    // extrapola con la pendiente del último tramo. (mismo criterio que el
+    // tarifario CES: "extrapola para otras áreas").
+    function _interpArancelCes(brackets, m2) {
+        const pts = (brackets || []).slice().sort((a, b) => a.m2 - b.m2);
+        if (!pts.length || !m2 || m2 <= 0) return 0;
+        if (m2 <= pts[0].m2) return pts[0].uf;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const a = pts[i], b = pts[i + 1];
+            if (m2 <= b.m2) {
+                const t = (b.m2 === a.m2) ? 0 : (m2 - a.m2) / (b.m2 - a.m2);
+                return a.uf + t * (b.uf - a.uf);
+            }
+        }
+        const a = pts[pts.length - 2], b = pts[pts.length - 1];
+        const slope = (b.m2 === a.m2) ? 0 : (b.uf - a.uf) / (b.m2 - a.m2);
+        return b.uf + slope * (m2 - b.m2);
+    }
+
+    // A. Entidad Administradora (arancel CES EA) — neto (afecto a IVA).
+    function arancelCesEA(m2) {
+        return _interpArancelCes(_propCalcConfig?.arancel_ea, m2);
+    }
+
+    // B. Entidad Evaluadora (arancel CES EE) — no incluye visita de obra, sin IVA.
+    function arancelCesEE(m2) {
+        return _interpArancelCes(_propCalcConfig?.arancel_ee, m2);
+    }
+
+    function cesIva() {
+        const v = _propCalcConfig?.iva;
+        return (typeof v === 'number' && !isNaN(v)) ? v : 0.19;
+    }
+
+    // "Otros gastos a considerar" CES calculados desde la superficie actual.
+    function calcOtrosGastosCes() {
+        const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+        const eaNeto = arancelCesEA(m2);
+        const iva = cesIva();
+        const eaIva = eaNeto * iva;
+        const eaTotal = eaNeto + eaIva;
+        const ee = arancelCesEE(m2);
+        return { m2, eaNeto, eaIva, eaTotal, ee, iva };
+    }
+
+    function renderOtrosGastosCes() {
+        const box = document.getElementById('propCesOtrosGastos');
+        if (!box) return;
+        if (!esServicioCes()) { box.classList.add('d-none'); return; }
+        box.classList.remove('d-none');
+        const g = calcOtrosGastosCes();
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = 'UF ' + fmtUfNum(v); };
+        set('propCesEaNeto', g.eaNeto);
+        set('propCesEaIva', g.eaIva);
+        set('propCesEaTotal', g.eaTotal);
+        set('propCesEe', g.ee);
+    }
+
     // Recalcula el total CES (base × nivel × tipo) y lo reparte entre los
     // entregables según su participación (share), sobre-escribiendo overrides.
     function recomputeCesFilas() {
@@ -7107,6 +7190,7 @@
             }
         });
         if (totalEl) totalEl.value = _propCalcFilas.reduce((s, f) => s + (f.uf_unidad || 0), 0).toFixed(0);
+        renderOtrosGastosCes();
     }
 
     function poblarCesControles() {
@@ -7271,6 +7355,7 @@
             const base = cesBasePorM2(m2);
             if (baseEl) baseEl.value = base ? base.toFixed(1) : '';
             if (cesTotalEl) cesTotalEl.value = totalUnidades.toFixed(0);
+            renderOtrosGastosCes();
         }
         renderCalcPropuesta();
         renderEtapasPropuesta();
@@ -7661,6 +7746,21 @@
         return `<table class="prop-tabla prop-tabla-resize" data-resize-key="pagoTpl">${colgroupHtml('pagoTpl', [null, 100])}${inner}</table>`;
     }
 
+    // Tabla "Otros gastos a considerar" para el documento (solo CES). Muestra
+    // el arancel EA (neto, IVA y total con IVA) y el arancel EE (sin visita de
+    // obra). Son informativos y NO se suman a los honorarios profesionales.
+    function tablaOtrosGastosCes() {
+        const g = calcOtrosGastosCes();
+        const f = (v) => 'UF ' + fmtUfNum(v);
+        const rows = `
+            <tr><td>A. Entidad Administradora (arancel CES EA) — neto</td><td class="text-end">${f(g.eaNeto)}</td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;IVA (19%)</td><td class="text-end">${f(g.eaIva)}</td></tr>
+            <tr><td>&nbsp;&nbsp;&nbsp;<strong>Total Entidad Administradora (con IVA)</strong></td><td class="text-end fw-bold">${f(g.eaTotal)}</td></tr>
+            <tr><td>B. Entidad Evaluadora (arancel CES EE) — no incluye visita de obra</td><td class="text-end">${f(g.ee)}</td></tr>`;
+        const inner = `<thead><tr><th>Descripción</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody>`;
+        return `<table class="prop-tabla prop-tabla-resize" data-resize-key="otrosTpl">${colgroupHtml('otrosTpl', [null, 110])}${inner}</table>`;
+    }
+
     function varsTemplatePropuesta() {
         const d = datosPropuestaActuales();
         return {
@@ -7673,6 +7773,7 @@
             '{{UNIDADES_DESCRIPCION}}': esc(d.unidades),
             '{{HONORARIOS_TABLA}}': tablaHonorariosPropuesta(),
             '{{PAGO_TABLA}}': tablaPagoPropuesta(),
+            '{{OTROS_GASTOS_TABLA}}': esServicioCes() ? tablaOtrosGastosCes() : '',
             '{{TOTAL_UF}}': d.total_uf ? d.total_uf.toFixed(1).replace('.', ',') : '0',
         };
     }
@@ -7699,6 +7800,14 @@
                 pagoSec.insertAdjacentElement('afterend', div);
             }
         }
+        if (esServicioCes() && !editor.querySelector('#prop-bloque-otros-gastos')) {
+            const otrosSec = [...editor.querySelectorAll('.prop-doc-seccion, h3, h4')].find(s => /otros gastos/i.test(s.textContent));
+            if (otrosSec) {
+                const div = document.createElement('div');
+                div.id = 'prop-bloque-otros-gastos';
+                otrosSec.insertAdjacentElement('afterend', div);
+            }
+        }
     }
 
     function actualizarBloquesTemplate() {
@@ -7715,6 +7824,11 @@
         if (pago) {
             pago.innerHTML = tablaPagoPropuesta();
             initTablaColumnasResizables(pago.querySelector('table'), 'pagoTpl', [null, 100], []);
+        }
+        const otros = editor.querySelector('#prop-bloque-otros-gastos');
+        if (otros && esServicioCes()) {
+            otros.innerHTML = tablaOtrosGastosCes();
+            initTablaColumnasResizables(otros.querySelector('table'), 'otrosTpl', [null, 110], []);
         }
         const total = totalHonorariosPropuesta();
         if (totalEl) {
@@ -7767,7 +7881,7 @@
         _propTemplateBase = '';
         _propPlantillaServicio = '';
         _propLogoCache = { empId: null, data: null };
-        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
+        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null, otrosTpl: null };
         const editor = document.getElementById('propTemplate');
         if (editor) {
             editor.innerHTML = '';
@@ -8072,7 +8186,7 @@
 
     function limpiarFormPropuesta() {
         document.getElementById('propId').value = '';
-        ['propNumero','propNombre','propContactoBgreen','propClienteNombre','propContactoCliente','propDetalle','propM2','propUnidades','propUf','propPesos','propFechaEnvio','propFechaAdjud'].forEach(id => {
+        ['propNumero','propNombre','propContactoBgreen','propClienteNombre','propDetalle','propM2','propUnidades','propUf','propPesos','propFechaRecepcion','propFechaEnvio','propFechaAdjud'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
@@ -8091,7 +8205,7 @@
         _propTemplateBase = '';
         _propPlantillaServicio = '';
         _propLogoCache = { empId: null, data: null };
-        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
+        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null, otrosTpl: null };
         document.getElementById('propCalcContenido')?.classList.add('d-none');
         document.getElementById('propCesControls')?.classList.add('d-none');
         document.getElementById('propCalcAviso')?.classList.remove('d-none');
@@ -8127,7 +8241,6 @@
             document.getElementById('propContactoBgreen').value = p.contacto_bgreen || '';
             document.getElementById('propClienteNombre').value = p.cliente_nombre || '';
             document.getElementById('propClienteId').value = p.cliente_id || '';
-            document.getElementById('propContactoCliente').value = p.contacto_cliente || '';
             document.getElementById('propServicio').value = p.servicio || '';
             if (p.servicio && ![...document.getElementById('propServicio').options].some(o => o.value === p.servicio)) {
                 const opt = document.createElement('option');
@@ -8141,6 +8254,7 @@
             document.getElementById('propUnidades').value = p.unidades ?? '';
             document.getElementById('propUf').value = p.monto_uf ?? '';
             document.getElementById('propPesos').value = p.monto_pesos ?? '';
+            document.getElementById('propFechaRecepcion').value = p.fecha_recepcion || '';
             document.getElementById('propFechaEnvio').value = p.fecha_envio || '';
             document.getElementById('propFechaAdjud').value = p.fecha_adjudicacion || '';
             if (p.servicio) {
@@ -8188,13 +8302,13 @@
             contacto_bgreen: document.getElementById('propContactoBgreen').value.trim(),
             cliente_nombre: document.getElementById('propClienteNombre').value.trim(),
             cliente_id: document.getElementById('propClienteId').value || null,
-            contacto_cliente: document.getElementById('propContactoCliente').value.trim(),
             servicio: document.getElementById('propServicio').value.trim(),
             detalle_servicio: document.getElementById('propDetalle').value.trim(),
             superficie_m2: document.getElementById('propM2').value,
             unidades: document.getElementById('propUnidades').value,
             monto_uf: document.getElementById('propUf').value,
             monto_pesos: document.getElementById('propPesos').value || 0,
+            fecha_recepcion: document.getElementById('propFechaRecepcion').value || null,
             fecha_envio: document.getElementById('propFechaEnvio').value || null,
             fecha_adjudicacion: document.getElementById('propFechaAdjud').value || null,
             template_html: leerHtmlEditor(document.getElementById('propTemplate')) || null,

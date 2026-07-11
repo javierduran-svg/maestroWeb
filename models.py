@@ -98,6 +98,7 @@ class Propuesta(db.Model):
     unidades = db.Column(db.Float, nullable=True)
     monto_uf = db.Column(db.Float, nullable=True)
     monto_pesos = db.Column(db.Float, default=0.0)
+    fecha_recepcion = db.Column(db.Date, nullable=True)
     fecha_envio = db.Column(db.Date, nullable=True)
     fecha_adjudicacion = db.Column(db.Date, nullable=True)
     template_html = db.Column(db.Text, nullable=True)

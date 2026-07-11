@@ -1883,6 +1883,7 @@ def _propuesta_a_dict(prop: Propuesta) -> dict:
         'unidades': prop.unidades,
         'monto_uf': prop.monto_uf,
         'monto_pesos': prop.monto_pesos,
+        'fecha_recepcion': prop.fecha_recepcion.strftime('%Y-%m-%d') if prop.fecha_recepcion else None,
         'fecha_envio': prop.fecha_envio.strftime('%Y-%m-%d') if prop.fecha_envio else None,
         'fecha_adjudicacion': (
             prop.fecha_adjudicacion.strftime('%Y-%m-%d') if prop.fecha_adjudicacion else None
@@ -1941,6 +1942,7 @@ def _validar_datos_propuesta(data: dict, empresa_id: int, propuesta_id: int | No
         'unidades': float(data['unidades']) if data.get('unidades') not in (None, '') else None,
         'monto_uf': float(data['monto_uf']) if data.get('monto_uf') not in (None, '') else None,
         'monto_pesos': float(data.get('monto_pesos') or 0),
+        'fecha_recepcion': _parse_fecha(data['fecha_recepcion']) if data.get('fecha_recepcion') else None,
         'fecha_envio': _parse_fecha(data['fecha_envio']) if data.get('fecha_envio') else None,
         'fecha_adjudicacion': (
             _parse_fecha(data['fecha_adjudicacion']) if data.get('fecha_adjudicacion') else None

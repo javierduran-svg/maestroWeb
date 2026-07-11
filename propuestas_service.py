@@ -100,6 +100,48 @@ ETAPAS_PAGO_CES = [
     {'codigo': 'C', 'nombre': 'Certificación CES', 'porcentaje': 28.125},
 ]
 
+# IVA aplicable (Chile). Solo afecta al arancel de la Entidad Administradora.
+IVA_CES = 0.19
+
+# "Otros gastos a considerar" CES — aranceles oficiales de las entidades del
+# sistema, ajenos a los honorarios profesionales. Se calculan por interpolación
+# lineal por tramos según la superficie total (m²): bajo el primer punto se
+# usa el primer valor (clamp) y sobre el último se extrapola con la pendiente
+# del último tramo.
+#
+# A) Entidad Administradora (arancel CES EA). AFECTO A IVA (19%).
+#    El punto de 100.000 m² del tarifario se obtiene extrapolando sobre la
+#    pendiente del último tramo (40.000→80.000), por lo que se omite y se deja
+#    que la extrapolación lo resuelva automáticamente.
+ARANCEL_CES_EA = [
+    {'m2': 0, 'uf': 20},
+    {'m2': 700, 'uf': 30},
+    {'m2': 1500, 'uf': 45},
+    {'m2': 3000, 'uf': 60},
+    {'m2': 5000, 'uf': 75},
+    {'m2': 10000, 'uf': 150},
+    {'m2': 20000, 'uf': 300},
+    {'m2': 40000, 'uf': 400},
+    {'m2': 80000, 'uf': 550},
+]
+
+# B) Entidad Evaluadora (arancel CES EE). NO afecto a IVA y NO incluye visita
+#    de obra.
+ARANCEL_CES_EE = [
+    {'m2': 1, 'uf': 29},
+    {'m2': 200, 'uf': 32},
+    {'m2': 700, 'uf': 37},
+    {'m2': 1500, 'uf': 42},
+    {'m2': 2500, 'uf': 50},
+    {'m2': 5000, 'uf': 63},
+    {'m2': 10000, 'uf': 76},
+    {'m2': 20000, 'uf': 93},
+    {'m2': 30000, 'uf': 110},
+    {'m2': 40000, 'uf': 120},
+    {'m2': 50000, 'uf': 130},
+    {'m2': 100000, 'uf': 170},
+]
+
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -243,14 +285,9 @@ Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación d
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <h4>Otros gastos a considerar</h4>
-<table class="prop-tabla">
-<thead><tr><th>Descripción</th><th class="text-end">UF</th></tr></thead>
-<tbody>
-<tr><td>A. Inscripción CES (pago a Instituto de la Construcción)</td><td class="text-end">30 + IVA</td></tr>
-<tr><td>B. Evaluación CES a Entidad Evaluadora (valor referencial)*</td><td class="text-end">Por definir</td></tr>
-</tbody>
-</table>
-<p class="text-muted">*Se cotiza directamente con las Entidades Evaluadoras.</p>
+<p>Los siguientes aranceles corresponden a las entidades del sistema CES y son ajenos a los honorarios profesionales. Se estiman en función de la superficie total del proyecto.</p>
+<div id="prop-bloque-otros-gastos">{{OTROS_GASTOS_TABLA}}</div>
+<p class="text-muted">A. Entidad Administradora (arancel CES EA): valor afecto a IVA (19%). B. Entidad Evaluadora (arancel CES EE): no incluye visita de obra.</p>
 
 <div class="prop-doc-firma">
   <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
@@ -500,6 +537,9 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'niveles': NIVELES_CES,
             'tipos': TIPOS_CES,
             'etapas': ETAPAS_PAGO_CES,
+            'arancel_ea': ARANCEL_CES_EA,
+            'arancel_ee': ARANCEL_CES_EE,
+            'iva': IVA_CES,
             'template': None,
             'format': 'html',
         }
