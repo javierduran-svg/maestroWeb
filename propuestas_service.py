@@ -535,33 +535,33 @@ TEMPLATES_POR_SERVICIO = {
 }
 
 PROP_DOC_CSS = """
-body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
-.prop-doc { width: 100%; }
+body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 9pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
+.prop-doc { width: 100%; font-size: 9pt; }
 table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #008080; margin-bottom: 12px; }
 table.prop-doc-header td { vertical-align: top; padding: 0 0 8px 0; border: none; }
 .prop-doc-header-text { width: 72%; }
 .prop-doc-logo-wrap { width: 28%; text-align: right; vertical-align: top; }
-.prop-doc-titulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 14pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
-.prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 12pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
-h1.prop-doc-titulo { font-size: 14pt; }
-h2.prop-doc-subtitulo { font-size: 12pt; }
+.prop-doc-titulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 13pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
+.prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
+h1.prop-doc-titulo { font-size: 13pt; }
+h2.prop-doc-subtitulo { font-size: 11pt; }
 .prop-doc-logo { max-height: 56px; max-width: 120px; height: auto; display: inline-block; }
-table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
+table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 8.5pt; }
 table.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; vertical-align: top; border: none; }
 table.prop-doc-meta td { padding: 2px 0; border: none; vertical-align: top; }
-h3.prop-doc-seccion { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
-h4 { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
-p { margin: 0 0 8px 0; text-align: justify; }
+h3.prop-doc-seccion { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
+h4 { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
+p { margin: 0 0 8px 0; text-align: justify; font-size: 9pt; }
 strong { font-weight: bold; }
-table.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px 0; font-size: 10pt; }
+table.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px 0; font-size: 8.5pt; }
 table.prop-tabla th, table.prop-tabla td { border: 1px solid #cccccc; padding: 5px 8px; vertical-align: top; }
 table.prop-tabla th { background-color: #f1f3f5; font-weight: bold; text-align: left; }
 table.prop-tabla tfoot td { font-weight: bold; }
 .text-end { text-align: right; }
 .fw-bold { font-weight: bold; }
 .text-muted { color: #6c757d; }
-.prop-doc-total { margin-top: 10px; font-size: 11pt; }
-.prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 9.5pt; }
+.prop-doc-total { margin-top: 10px; font-size: 10pt; }
+.prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
 """
 
 PROP_PDF_CSS = """
@@ -650,12 +650,20 @@ def _normalizar_html_para_pdf(html: str) -> str:
     import html as html_mod
 
     out = html_mod.unescape(str(html or ''))
+    # Auto-reparación de la corrupción "char-por-char": un mismo token N,N
+    # (p.ej. el total UF "10,0"/"7,0") quedó insertado entre CADA carácter. Se
+    # elimina el token repetido (mismo token, 4+ veces, sin cruzar etiquetas),
+    # restaurando el texto. No toca números legítimos ("UF 10,0", "33,33%").
+    out = re.sub(r'[^<>](\d{1,4},\d)(?:[^<>]\1){3,}', lambda m: m.group(0).replace(m.group(1), ''), out)
     out = re.sub(r'\{7,0(?:\{7,0|[LG]7,0|\})+\}', '', out)
     out = re.sub(r'\{\{LOGO\}\}', '', out)
     out = re.sub(r'<div[^>]*id=["\']footerContent["\'][^>]*>[\s\S]*?</div>', '', out, flags=re.I)
     out = re.sub(r'<span[^>]*class="[^"]*prop-col-resize-grip[^"]*"[^>]*></span>', '', out, flags=re.I)
     out = re.sub(r'\scontenteditable="[^"]*"', '', out, flags=re.I)
     out = re.sub(r'\sdata-(?:prop|resize-key|editado|servicio)="[^"]*"', '', out, flags=re.I)
+    # El resaltado de campos automáticos nunca debe aparecer en el PDF/Word.
+    out = re.sub(r'\s*\bprop-campo-auto\b\s*', ' ', out)
+    out = re.sub(r'\sclass="\s*"', '', out, flags=re.I)
     out = re.sub(r'<(br)([^>]*)>', r'<\1\2/>', out, flags=re.I)
     out = re.sub(r'<img([^>]*?)(?<!/)>', r'<img\1/>', out, flags=re.I)
     out = re.sub(r'<colgroup>.*?</colgroup>', '', out, flags=re.I | re.S)
