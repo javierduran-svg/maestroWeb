@@ -230,6 +230,12 @@
         .btn-teal { background: var(--teal-green); color: #fff; border: none; }
         .btn-teal:hover { background: #006666; color: #fff; }
         .modal-header { background: #000; color: #fff; }
+        #modalPropuesta .modal-body { max-height: calc(100vh - 180px); overflow-y: auto; }
+        .prop-seccion { border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; margin-top: 1rem; background: #fafbfc; }
+        .prop-seccion h6 { color: var(--teal-green); font-weight: 600; margin-bottom: 0.75rem; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        #propTemplate { font-family: 'Roboto', monospace; font-size: 0.78rem; line-height: 1.45; min-height: 280px; resize: vertical; }
+        #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
+        .prop-calc-total { font-weight: 700; color: var(--teal-green); }
         .panel-toolbar { font-size: 0.8125rem; }
         .panel-toolbar .form-select-sm { font-size: 0.8125rem; }
         .subseccion-proyecto { background: #fafbfc; border-top: 1px solid var(--border-color); overflow-x: hidden; }
@@ -2262,27 +2268,60 @@
 </div>
 
 <div class="modal fade" id="modalPropuesta" tabindex="-1">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloModalPropuesta">Nueva propuesta</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
             <input type="hidden" id="propId">
             <div class="row g-3">
-                <div class="col-md-3"><label class="form-label small fw-bold">N° propuesta</label><input type="number" class="form-control" id="propNumero" required></div>
-                <div class="col-md-9"><label class="form-label small fw-bold">Nombre</label><input type="text" class="form-control" id="propNombre" required></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen"></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Cliente (texto)</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta"></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Vincular cliente</label><select class="form-select" id="propClienteId"><option value="">— Sin vínculo —</option></select></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Servicio</label><input type="text" class="form-control" id="propServicio" list="listaServiciosPropuesta"></div>
-                <datalist id="listaServiciosPropuesta"></datalist>
-                <div class="col-md-8"><label class="form-label small fw-bold">Detalle servicio</label><input type="text" class="form-control" id="propDetalle"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">m²</label><input type="number" step="any" class="form-control" id="propM2"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">Unidades</label><input type="number" step="any" class="form-control" id="propUnidades"></div>
-                <div class="col-md-3"><label class="form-label small fw-bold">UF</label><input type="number" step="any" class="form-control" id="propUf"></div>
+                <div class="col-md-2"><label class="form-label small fw-bold">N° propuesta</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
+                <div class="col-md-10"><label class="form-label small fw-bold">Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="actualizarTemplatePropuesta()"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="actualizarTemplatePropuesta()"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Cliente (texto)</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="actualizarTemplatePropuesta()"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
+                <div class="col-md-8"><label class="form-label small fw-bold">Detalle servicio</label><input type="text" class="form-control" id="propDetalle" oninput="actualizarTemplatePropuesta()"></div>
+                <div class="col-md-2"><label class="form-label small fw-bold">m² (total)</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
+                <div class="col-md-2"><label class="form-label small fw-bold">Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">UF (total)</label><input type="number" step="any" class="form-control" id="propUf"></div>
                 <div class="col-md-3"><label class="form-label small fw-bold">Pesos</label><input type="number" step="1" class="form-control" id="propPesos"></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Fecha envío</label><input type="date" class="form-control" id="propFechaEnvio"></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Fecha adjudicación</label><input type="date" class="form-control" id="propFechaAdjud"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Fecha envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="actualizarTemplatePropuesta()"></div>
+                <div class="col-md-3"><label class="form-label small fw-bold">Fecha adjudicación</label><input type="date" class="form-control" id="propFechaAdjud"></div>
+            </div>
+
+            <div class="prop-seccion" id="propSeccionCalculadora">
+                <h6><i class="fa-solid fa-calculator me-1"></i> Calculadora de honorarios</h6>
+                <p class="small text-muted mb-2" id="propCalcAviso">Seleccione un servicio con calculadora disponible.</p>
+                <div id="propCalcContenido" class="d-none">
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm table-bordered mb-1" id="propCalcUnidades">
+                            <thead class="table-light"><tr><th>Tipo / Superficie</th><th class="text-end" style="width:90px">m²</th><th class="text-end" style="width:80px">Cant.</th><th class="text-end" style="width:90px">UF/unidad</th><th class="text-end" style="width:90px">Subtotal</th><th style="width:40px"></th></tr></thead>
+                            <tbody id="propCalcUnidadesBody"></tbody>
+                            <tfoot><tr><td colspan="4" class="text-end fw-bold">Total unidades</td><td class="text-end prop-calc-total" id="propCalcTotalUnidades">0</td><td></td></tr></tfoot>
+                        </table>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i> Agregar tipo</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" id="propCalcEtapas">
+                            <thead class="table-light"><tr><th>Etapas de pago</th><th class="text-end" style="width:120px">Monto [UF]</th></tr></thead>
+                            <tbody id="propCalcEtapasBody"></tbody>
+                            <tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prop-seccion" id="propSeccionTemplate">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fa-solid fa-file-lines me-1"></i> Propuesta (template)</h6>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar desde datos"><i class="fa-solid fa-rotate"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportarPropuesta('pdf')"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportarPropuesta('word')"><i class="fa-solid fa-file-word me-1"></i>Word</button>
+                    </div>
+                </div>
+                <textarea class="form-control" id="propTemplate" placeholder="Seleccione un servicio para cargar el template…"></textarea>
             </div>
         </div>
         <div class="modal-footer border-0"><button class="btn btn-teal px-5" onclick="guardarPropuesta()">GUARDAR</button></div>
@@ -2503,6 +2542,10 @@
     let _propuestasCache = [];
     let _propOrdenCol = 'numero';
     let _propOrdenDir = 'desc';
+    let _propServiciosLista = [];
+    let _propCalcConfig = null;
+    let _propCalcFilas = [];
+    let _propTemplateBase = '';
     let _vistaActual = 'dashboard-gestion';
     let _chartBarras = null;
     let _chartCategorias = null;
@@ -6361,10 +6404,273 @@
         const servicioSel = document.getElementById('filtroPropServicio');
         if (!servicioSel) return;
         const vServicio = servicioSel.value;
-        const servicios = [...new Set(_propuestasCache.map(p => p.servicio).filter(Boolean))]
-            .sort((a, b) => a.localeCompare(b, 'es'));
+        const servicios = [...new Set([
+            ..._propServiciosLista,
+            ..._propuestasCache.map(p => p.servicio).filter(Boolean),
+        ])].sort((a, b) => a.localeCompare(b, 'es'));
         servicioSel.innerHTML = '<option value="">Todos</option>' + servicios.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
         if ([...servicioSel.options].some(o => o.value === vServicio)) servicioSel.value = vServicio;
+    }
+
+    async function cargarServiciosPropuesta() {
+        const res = await apiFetch('/api/propuestas/servicios');
+        _propServiciosLista = res.ok ? await res.json() : [];
+        const sel = document.getElementById('propServicio');
+        if (sel) {
+            const v = sel.value;
+            sel.innerHTML = '<option value="">— Seleccionar —</option>' +
+                _propServiciosLista.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+            if ([...sel.options].some(o => o.value === v)) sel.value = v;
+        }
+        poblarFiltrosPropuestasSelects();
+    }
+
+    const MESES_PROP_ES = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    function fmtFechaPropuestaLarga(fechaStr) {
+        if (!fechaStr) {
+            const hoy = new Date();
+            return `${String(hoy.getDate()).padStart(2, '0')} de ${MESES_PROP_ES[hoy.getMonth() + 1]} de ${hoy.getFullYear()}`;
+        }
+        const partes = String(fechaStr).slice(0, 10).split('-');
+        if (partes.length === 3) {
+            const [anio, mes, dia] = partes.map(Number);
+            if (mes >= 1 && mes <= 12) return `${String(dia).padStart(2, '0')} de ${MESES_PROP_ES[mes]} de ${anio}`;
+        }
+        return fechaStr;
+    }
+
+    function tarifaCevRtPorM2(m2) {
+        if (!_propCalcConfig?.tarifas?.length) return 0;
+        const ordenadas = [..._propCalcConfig.tarifas].sort((a, b) => a.m2 - b.m2);
+        let mejor = ordenadas[0];
+        for (const t of ordenadas) {
+            if (m2 >= t.m2) mejor = t;
+        }
+        return mejor?.uf_unidad || 0;
+    }
+
+    function agregarFilaCalcPropuesta(fila = null) {
+        const m2 = fila?.m2 ?? (parseFloat(document.getElementById('propM2').value) || 140);
+        const cant = fila?.cantidad ?? (parseFloat(document.getElementById('propUnidades').value) || 1);
+        const tarifa = fila?.uf_unidad ?? tarifaCevRtPorM2(m2);
+        const label = fila?.label || `Casas ${m2} m²`;
+        _propCalcFilas.push({ label, m2, cantidad: cant, uf_unidad: tarifa });
+        renderCalcPropuesta();
+        recalcularPropuesta();
+    }
+
+    function eliminarFilaCalcPropuesta(idx) {
+        _propCalcFilas.splice(idx, 1);
+        renderCalcPropuesta();
+        recalcularPropuesta();
+    }
+
+    function renderCalcPropuesta() {
+        const body = document.getElementById('propCalcUnidadesBody');
+        if (!body) return;
+        body.innerHTML = _propCalcFilas.map((f, i) => `<tr>
+            <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" onchange="_propCalcFilas[${i}].label=this.value;actualizarTemplatePropuesta()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.m2}" min="1" onchange="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);renderCalcPropuesta();recalcularPropuesta()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" onchange="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="0.01" onchange="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
+            <td class="text-end">${fmtUf((f.cantidad || 0) * (f.uf_unidad || 0))}</td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
+        </tr>`).join('');
+    }
+
+    function recalcularPropuesta() {
+        const totalUnidades = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+        const totalEl = document.getElementById('propCalcTotalUnidades');
+        if (totalEl) totalEl.textContent = fmtUf(totalUnidades);
+
+        const etapasBody = document.getElementById('propCalcEtapasBody');
+        const etapas = _propCalcConfig?.etapas || [];
+        const nEtapas = etapas.length || 1;
+        const montoEtapa = totalUnidades / nEtapas;
+        if (etapasBody) {
+            etapasBody.innerHTML = etapas.map((e, i) => {
+                const cod = e.codigo ? `${e.codigo} ` : `${i + 1}. `;
+                return `<tr><td>${esc(cod + e.nombre)}</td><td class="text-end">${fmtUf(montoEtapa)}</td></tr>`;
+            }).join('');
+        }
+        const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
+        if (totalEtapasEl) totalEtapasEl.textContent = fmtUf(totalUnidades);
+
+        document.getElementById('propUf').value = totalUnidades ? totalUnidades.toFixed(2) : '';
+        actualizarTemplatePropuesta();
+    }
+
+    function descripcionUnidadesPropuesta() {
+        const filas = _propCalcFilas.filter(f => f.cantidad > 0);
+        if (!filas.length) return 'las unidades del proyecto';
+        const partes = filas.map(f => {
+            const n = Math.round(f.cantidad);
+            const tipo = n === 1 ? 'casa' : 'casas';
+            return `${n} ${tipo} de ${f.m2} m²`;
+        });
+        if (partes.length === 1) return partes[0];
+        return partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1];
+    }
+
+    function tablaHonorariosPropuesta() {
+        const filas = _propCalcFilas.filter(f => f.cantidad > 0);
+        if (!filas.length) return 'ITEM\tCant\tMonto [UF]\n—\t—\t—';
+        const lineas = ['ITEM\tCant\tMonto [UF]'];
+        filas.forEach((f, i) => {
+            lineas.push(`${i + 1} ${f.label}\t${f.cantidad}\t${((f.cantidad || 0) * (f.uf_unidad || 0)).toFixed(0)}`);
+        });
+        const total = filas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+        lineas.push(`TOTAL\t\t${total.toFixed(0)}`);
+        return lineas.join('\n');
+    }
+
+    function tablaPagoPropuesta() {
+        const total = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+        const etapas = _propCalcConfig?.etapas || [];
+        if (!etapas.length) return 'ITEM\tMonto [UF]\nTOTAL\tUF 0';
+        const n = etapas.length;
+        const monto = total / n;
+        const lineas = ['ITEM\tMonto [UF]'];
+        let grupo = 1;
+        let sub = 1;
+        etapas.forEach((e, i) => {
+            if (i > 0 && e.codigo && e.codigo.charAt(0) !== etapas[i - 1].codigo?.charAt(0)) {
+                grupo++;
+                sub = 1;
+            }
+            const pref = e.codigo ? `${e.codigo} ` : `${grupo}.${sub} `;
+            lineas.push(`${pref}${e.nombre}\tUF ${monto.toFixed(2).replace('.', ',')}`);
+            sub++;
+        });
+        lineas.push(`TOTAL\tUF ${total.toFixed(1).replace('.', ',')}`);
+        return lineas.join('\n');
+    }
+
+    function rellenarTemplatePropuesta(template) {
+        const total = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+        const clienteSel = document.getElementById('propClienteId');
+        const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
+        const cliente = document.getElementById('propClienteNombre').value.trim() || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '');
+        const vars = {
+            '{{PROYECTO}}': document.getElementById('propNombre').value.trim() || '—',
+            '{{CLIENTE}}': cliente || '—',
+            '{{PRESENTADO_POR}}': document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile',
+            '{{FECHA}}': fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value),
+            '{{NUMERO}}': document.getElementById('propNumero').value || '—',
+            '{{UNIDADES_DESCRIPCION}}': descripcionUnidadesPropuesta(),
+            '{{HONORARIOS_TABLA}}': tablaHonorariosPropuesta(),
+            '{{PAGO_TABLA}}': tablaPagoPropuesta(),
+            '{{TOTAL_UF}}': total ? total.toFixed(1).replace('.', ',') : '0',
+        };
+        let texto = template || _propTemplateBase || '';
+        Object.entries(vars).forEach(([k, v]) => { texto = texto.split(k).join(v); });
+        return texto;
+    }
+
+    function actualizarTemplatePropuesta(forzar = false) {
+        const ta = document.getElementById('propTemplate');
+        if (!ta || !_propTemplateBase) return;
+        if (!forzar && ta.value && ta.dataset.editado === '1') return;
+        ta.value = rellenarTemplatePropuesta(_propTemplateBase);
+        ta.dataset.editado = '0';
+    }
+
+    async function onPropServicioChange() {
+        const servicio = document.getElementById('propServicio').value;
+        const aviso = document.getElementById('propCalcAviso');
+        const contenido = document.getElementById('propCalcContenido');
+        _propCalcConfig = null;
+        _propCalcFilas = [];
+        _propTemplateBase = '';
+        document.getElementById('propTemplate').value = '';
+        document.getElementById('propTemplate').dataset.editado = '0';
+
+        if (!servicio) {
+            aviso.classList.remove('d-none');
+            aviso.textContent = 'Seleccione un servicio con calculadora disponible.';
+            contenido.classList.add('d-none');
+            document.getElementById('propUf').readOnly = false;
+            return;
+        }
+
+        const res = await apiFetch(`/api/propuestas/calculadora/${encodeURIComponent(servicio)}`);
+        if (!res.ok) {
+            aviso.classList.remove('d-none');
+            aviso.textContent = `Calculadora no disponible para "${servicio}". Puede ingresar UF manualmente.`;
+            contenido.classList.add('d-none');
+            document.getElementById('propUf').readOnly = false;
+            return;
+        }
+
+        _propCalcConfig = await res.json();
+        _propTemplateBase = _propCalcConfig.template || '';
+        aviso.classList.add('d-none');
+        contenido.classList.remove('d-none');
+        document.getElementById('propUf').readOnly = true;
+
+        if (!_propCalcFilas.length) {
+            const m2 = parseFloat(document.getElementById('propM2').value) || 140;
+            const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
+            agregarFilaCalcPropuesta({ m2, cantidad: cant, uf_unidad: tarifaCevRtPorM2(m2) });
+        } else {
+            renderCalcPropuesta();
+            recalcularPropuesta();
+        }
+        actualizarTemplatePropuesta(true);
+    }
+
+    function onPropSuperficieChange() {
+        if (_propCalcFilas.length === 1 && _propCalcConfig) {
+            const m2 = parseFloat(document.getElementById('propM2').value) || 140;
+            const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
+            _propCalcFilas[0].m2 = m2;
+            _propCalcFilas[0].cantidad = cant;
+            _propCalcFilas[0].label = `Casas ${m2} m²`;
+            _propCalcFilas[0].uf_unidad = tarifaCevRtPorM2(m2);
+            renderCalcPropuesta();
+            recalcularPropuesta();
+        }
+    }
+
+    function onPropClienteVinculado() {
+        const sel = document.getElementById('propClienteId');
+        const nombre = sel?.selectedOptions?.[0]?.text?.trim();
+        if (nombre && nombre !== '— Sin vínculo —' && !document.getElementById('propClienteNombre').value.trim()) {
+            document.getElementById('propClienteNombre').value = nombre;
+        }
+        actualizarTemplatePropuesta();
+    }
+
+    async function exportarPropuesta(formato) {
+        const contenido = document.getElementById('propTemplate').value.trim();
+        if (!contenido) {
+            alert('No hay contenido de propuesta para exportar.');
+            return;
+        }
+        const nombre = document.getElementById('propNombre').value.trim() || 'propuesta';
+        const numero = document.getElementById('propNumero').value;
+        const titulo = `P${numero} — ${nombre}`;
+        const res = await apiFetch(`/api/propuestas/exportar/${formato}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ titulo, contenido, nombre_archivo: `P${numero}_${nombre}` }),
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || 'Error al exportar');
+            return;
+        }
+        const blob = await res.blob();
+        const disp = res.headers.get('content-disposition') || '';
+        const match = disp.match(/filename="?([^";]+)"?/i);
+        const filename = match ? match[1] : `P${numero}_${nombre}.${formato === 'pdf' ? 'pdf' : 'docx'}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
     }
 
     function leerFiltrosPropuestas() {
@@ -6483,11 +6789,10 @@
     }
 
     async function listarPropuestas() {
+        await cargarServiciosPropuesta();
         const res = await apiFetch('/api/propuestas');
         _propuestasCache = res.ok ? normalizarListaApi(await res.json()) : [];
         poblarFiltrosPropuestasSelects();
-        const servicios = [...new Set(_propuestasCache.map(p => p.servicio).filter(Boolean))];
-        document.getElementById('listaServiciosPropuesta').innerHTML = servicios.map(s => `<option value="${esc(s)}">`).join('');
         renderPropuestas();
     }
 
@@ -6499,16 +6804,29 @@
 
     function limpiarFormPropuesta() {
         document.getElementById('propId').value = '';
-        ['propNumero','propNombre','propContactoBgreen','propClienteNombre','propContactoCliente','propServicio','propDetalle','propM2','propUnidades','propUf','propPesos','propFechaEnvio','propFechaAdjud'].forEach(id => {
+        ['propNumero','propNombre','propContactoBgreen','propClienteNombre','propContactoCliente','propDetalle','propM2','propUnidades','propUf','propPesos','propFechaEnvio','propFechaAdjud'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
         document.getElementById('propStatus').value = 'No enviada';
         document.getElementById('propClienteId').value = '';
+        document.getElementById('propServicio').value = '';
+        document.getElementById('propTemplate').value = '';
+        document.getElementById('propTemplate').dataset.editado = '0';
+        _propCalcConfig = null;
+        _propCalcFilas = [];
+        _propTemplateBase = '';
+        document.getElementById('propCalcContenido')?.classList.add('d-none');
+        document.getElementById('propCalcAviso')?.classList.remove('d-none');
+        const aviso = document.getElementById('propCalcAviso');
+        if (aviso) aviso.textContent = 'Seleccione un servicio con calculadora disponible.';
+        document.getElementById('propCalcUnidadesBody').innerHTML = '';
+        document.getElementById('propCalcEtapasBody').innerHTML = '';
     }
 
     async function abrirPropuestaModal(id = null) {
         await poblarClientesPropuestaModal();
+        await cargarServiciosPropuesta();
         limpiarFormPropuesta();
         document.getElementById('tituloModalPropuesta').innerText = id ? 'Editar propuesta' : 'Nueva propuesta';
         if (id) {
@@ -6522,6 +6840,13 @@
             document.getElementById('propClienteId').value = p.cliente_id || '';
             document.getElementById('propContactoCliente').value = p.contacto_cliente || '';
             document.getElementById('propServicio').value = p.servicio || '';
+            if (p.servicio && ![...document.getElementById('propServicio').options].some(o => o.value === p.servicio)) {
+                const opt = document.createElement('option');
+                opt.value = p.servicio;
+                opt.textContent = p.servicio;
+                document.getElementById('propServicio').appendChild(opt);
+                document.getElementById('propServicio').value = p.servicio;
+            }
             document.getElementById('propDetalle').value = p.detalle_servicio || '';
             document.getElementById('propM2').value = p.superficie_m2 ?? '';
             document.getElementById('propUnidades').value = p.unidades ?? '';
@@ -6529,14 +6854,29 @@
             document.getElementById('propPesos').value = p.monto_pesos ?? '';
             document.getElementById('propFechaEnvio').value = p.fecha_envio || '';
             document.getElementById('propFechaAdjud').value = p.fecha_adjudicacion || '';
+            if (p.servicio) await onPropServicioChange();
+            if (p.monto_uf && _propCalcFilas.length) recalcularPropuesta();
+        } else {
+            const resNum = await apiFetch('/api/propuestas/siguiente-numero');
+            if (resNum.ok) {
+                const data = await resNum.json();
+                document.getElementById('propNumero').value = data.numero;
+            }
+            document.getElementById('propFechaEnvio').value = new Date().toISOString().slice(0, 10);
+        }
+        const ta = document.getElementById('propTemplate');
+        if (ta && !ta._propBound) {
+            ta._propBound = true;
+            ta.addEventListener('input', () => { ta.dataset.editado = '1'; });
         }
         new bootstrap.Modal(document.getElementById('modalPropuesta')).show();
     }
 
     async function guardarPropuesta() {
         const id = document.getElementById('propId').value;
+        const numeroVal = document.getElementById('propNumero').value;
         const payload = {
-            numero: parseInt(document.getElementById('propNumero').value, 10),
+            numero: numeroVal ? parseInt(numeroVal, 10) : null,
             nombre: document.getElementById('propNombre').value.trim(),
             status: document.getElementById('propStatus').value,
             contacto_bgreen: document.getElementById('propContactoBgreen').value.trim(),

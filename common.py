@@ -1891,14 +1891,21 @@ def _propuesta_a_dict(prop: Propuesta) -> dict:
 
 
 def _validar_datos_propuesta(data: dict, empresa_id: int, propuesta_id: int | None = None):
+    from propuestas_service import siguiente_numero_propuesta
+
     numero = data.get('numero')
     nombre = (data.get('nombre') or '').strip()
-    if numero is None or nombre == '':
-        return None, 'Campos requeridos: numero, nombre'
-    try:
-        numero_int = int(numero)
-    except (TypeError, ValueError):
-        return None, 'numero inválido'
+    if nombre == '':
+        return None, 'Campo requerido: nombre'
+    if numero is None or numero == '':
+        if propuesta_id:
+            return None, 'Campo requerido: numero'
+        numero_int = siguiente_numero_propuesta(empresa_id)
+    else:
+        try:
+            numero_int = int(numero)
+        except (TypeError, ValueError):
+            return None, 'numero inválido'
     if numero_int <= 0:
         return None, 'numero debe ser mayor a 0'
 

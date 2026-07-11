@@ -1,6 +1,7 @@
 from datetime import date
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, send_file
+import io
 
 from bootstrap import ESTADOS_PROPUESTA
 from common import *
@@ -8,6 +9,13 @@ from contabilidad import calcular_transaccion, recalcular_proyecto
 from extensions import db
 from models import (
     Cliente, EntregaProgramada, Movimiento, Propuesta, Proyecto, TareaEntrega,
+)
+from propuestas_service import (
+    SERVICIOS_PROPUESTA,
+    get_config_calculadora,
+    generar_docx_propuesta,
+    generar_pdf_propuesta,
+    siguiente_numero_propuesta,
 )
 
 from services.rentabilidad_service import calcular_rentabilidad_proyectos
@@ -501,6 +509,71 @@ def gantt_datos():
 @bp.route('/api/propuestas/estados', methods=['GET'])
 def get_estados_propuesta():
     return jsonify(ESTADOS_PROPUESTA)
+
+
+@bp.route('/api/propuestas/servicios', methods=['GET'])
+def get_servicios_propuesta():
+    return jsonify(SERVICIOS_PROPUESTA)
+
+
+@bp.route('/api/propuestas/siguiente-numero', methods=['GET'])
+def get_siguiente_numero_propuesta():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    return jsonify({'numero': siguiente_numero_propuesta(eid)})
+
+
+@bp.route('/api/propuestas/calculadora/<path:servicio>', methods=['GET'])
+def get_calculadora_propuesta(servicio):
+    config = get_config_calculadora(servicio)
+    if not config:
+        return jsonify({'error': 'Calculadora no disponible para este servicio'}), 404
+    return jsonify(config)
+
+
+@bp.route('/api/propuestas/exportar/pdf', methods=['POST'])
+def exportar_propuesta_pdf():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    data = request.json or {}
+    titulo = (data.get('titulo') or 'Propuesta comercial').strip()
+    contenido = data.get('contenido') or ''
+    if not contenido.strip():
+        return jsonify({'error': 'Contenido vacío'}), 400
+    pdf_bytes = generar_pdf_propuesta(titulo, contenido)
+    nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'{nombre}.pdf',
+    )
+
+
+@bp.route('/api/propuestas/exportar/word', methods=['POST'])
+def exportar_propuesta_word():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    data = request.json or {}
+    titulo = (data.get('titulo') or 'Propuesta comercial').strip()
+    contenido = data.get('contenido') or ''
+    if not contenido.strip():
+        return jsonify({'error': 'Contenido vacío'}), 400
+    doc_bytes, ext = generar_docx_propuesta(titulo, contenido)
+    nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
+    mimetype = (
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        if ext == 'docx' else 'application/msword'
+    )
+    return send_file(
+        io.BytesIO(doc_bytes),
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=f'{nombre}.{ext}',
+    )
 
 
 @bp.route('/api/propuestas', methods=['GET', 'POST'])
