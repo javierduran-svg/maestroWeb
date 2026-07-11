@@ -193,6 +193,7 @@ TEMPLATE_CEV_RT = r"""<div class="prop-doc">
   <td class="prop-doc-header-text" valign="top">
     <h1 class="prop-doc-titulo">Calificación energética de viviendas CEV + Verificación Reglamentación térmica.</h1>
     <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
   </td>
   <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
 </tr>
@@ -268,6 +269,7 @@ TEMPLATE_RT = r"""<div class="prop-doc">
   <td class="prop-doc-header-text" valign="top">
     <h1 class="prop-doc-titulo">Verificación de Reglamentación Térmica.</h1>
     <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
   </td>
   <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
 </tr>
@@ -332,6 +334,7 @@ TEMPLATE_CES = r"""<div class="prop-doc">
   <td class="prop-doc-header-text" valign="top">
     <h1 class="prop-doc-titulo">Certificación Edificio Sustentable (CES)</h1>
     <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
   </td>
   <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
 </tr>
@@ -419,6 +422,7 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
   <td class="prop-doc-header-text" valign="top">
     <h1 class="prop-doc-titulo">Propuesta de Evaluación — Entidad Evaluadora CES (EEV)</h1>
     <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
   </td>
   <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
 </tr>
@@ -545,6 +549,7 @@ table.prop-doc-header td { vertical-align: top; padding: 0 0 8px 0; border: none
 .prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
 h1.prop-doc-titulo { font-size: 13pt; }
 h2.prop-doc-subtitulo { font-size: 11pt; }
+.prop-doc-detalle { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 9.5pt; font-weight: normal; margin: 2px 0 0 0; padding: 0; color: #444444; }
 .prop-doc-logo { max-height: 56px; max-width: 120px; height: auto; display: inline-block; }
 table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 8.5pt; }
 table.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; vertical-align: top; border: none; }
