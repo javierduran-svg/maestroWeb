@@ -56,21 +56,21 @@ TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <div class="prop-doc-header">
   <div class="prop-doc-header-text">
     <h1 class="prop-doc-titulo">Calificación energética de viviendas CEV + Verificación Reglamentación térmica.</h1>
-    <h2 class="prop-doc-subtitulo">{{PROYECTO}}</h2>
+    <h2 class="prop-doc-subtitulo"><span data-prop="proyecto">{{PROYECTO}}</span></h2>
   </div>
-  <div class="prop-doc-logo-wrap">{{LOGO}}</div>
+  <div class="prop-doc-logo-wrap" data-prop="logo">{{LOGO}}</div>
 </div>
 <table class="prop-doc-meta">
-  <tr><th>Cliente:</th><td>{{CLIENTE}}</td></tr>
-  <tr><th>Presentada por:</th><td>{{PRESENTADO_POR}}</td></tr>
-  <tr><th>Fecha:</th><td>{{FECHA}}</td></tr>
-  <tr><th>ID Propuesta:</th><td>P{{NUMERO}}</td></tr>
+  <tr><th>Cliente:</th><td><span data-prop="cliente">{{CLIENTE}}</span></td></tr>
+  <tr><th>Presentada por:</th><td><span data-prop="presentado">{{PRESENTADO_POR}}</span></td></tr>
+  <tr><th>Fecha:</th><td><span data-prop="fecha">{{FECHA}}</span></td></tr>
+  <tr><th>ID Propuesta:</th><td>P<span data-prop="numero">{{NUMERO}}</span></td></tr>
 </table>
 
 <h3 class="prop-doc-seccion">Introducción</h3>
-<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong>{{PROYECTO}}</strong>, y tiene por objetivo dar cumplimiento a los requerimientos normativos vigentes en materia de Reglamentación Térmica y Calificación Energética de Viviendas (CEV).</p>
+<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong><span data-prop="proyecto">{{PROYECTO}}</span></strong>, y tiene por objetivo dar cumplimiento a los requerimientos normativos vigentes en materia de Reglamentación Térmica y Calificación Energética de Viviendas (CEV).</p>
 <p>El encargo considera la elaboración de los informes técnicos exigidos por la Dirección de Obras Municipales (DOM) para el ingreso y aprobación de modificaciones de proyecto, así como la evaluación energética integral del conjunto habitacional.</p>
-<p>Adicionalmente, la propuesta incluye la Precalificación y Calificación Energética CEV de cada una de las viviendas del condominio, correspondiente a <strong>{{UNIDADES_DESCRIPCION}}</strong>, a evaluar con el objetivo de optimizar su desempeño energético y alcanzar la mejor calificación posible dentro del marco normativo vigente.</p>
+<p>Adicionalmente, la propuesta incluye la Precalificación y Calificación Energética CEV de cada una de las viviendas del condominio, correspondiente a <strong><span data-prop="unidades">{{UNIDADES_DESCRIPCION}}</span></strong>, a evaluar con el objetivo de optimizar su desempeño energético y alcanzar la mejor calificación posible dentro del marco normativo vigente.</p>
 
 <h3 class="prop-doc-seccion">Propuesta Técnica</h3>
 <p>La presente propuesta técnica se estructura en dos componentes principales, orientados a verificar el cumplimiento normativo y evaluar el desempeño energético del proyecto en etapa de diseño.</p>
@@ -109,10 +109,10 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 
 <h4>Forma de pago</h4>
 <div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
-<p class="prop-doc-total"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+<p class="prop-doc-total"><strong>TOTAL: UF <span data-prop="total_uf">{{TOTAL_UF}}</span></strong></p>
 
 <div class="prop-doc-firma">
-  <p><strong>{{PRESENTADO_POR}}</strong></p>
+  <p><strong><span data-prop="presentado">{{PRESENTADO_POR}}</span></strong></p>
   <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
