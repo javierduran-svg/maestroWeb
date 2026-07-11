@@ -130,23 +130,22 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT}
 
 PROP_DOC_CSS = """
-@page { size: a4; margin: 2cm 2cm 2.5cm 2cm; }
-body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
+body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
 .prop-doc { width: 100%; }
 table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #008080; margin-bottom: 12px; }
 table.prop-doc-header td { vertical-align: top; padding: 0 0 8px 0; border: none; }
 .prop-doc-header-text { width: 72%; }
-.prop-doc-logo-wrap { width: 28%; text-align: right; }
-.prop-doc-titulo { font-size: 14pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
-.prop-doc-subtitulo { font-size: 12pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
+.prop-doc-logo-wrap { width: 28%; text-align: right; vertical-align: top; }
+.prop-doc-titulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 14pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
+.prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 12pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
 h1.prop-doc-titulo { font-size: 14pt; }
 h2.prop-doc-subtitulo { font-size: 12pt; }
-.prop-doc-logo { max-height: 56px; max-width: 120px; height: auto; }
+.prop-doc-logo { max-height: 56px; max-width: 120px; height: auto; display: inline-block; }
 table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
 table.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; vertical-align: top; border: none; }
 table.prop-doc-meta td { padding: 2px 0; border: none; vertical-align: top; }
-h3.prop-doc-seccion { font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
-h4 { font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
+h3.prop-doc-seccion { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
+h4 { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
 p { margin: 0 0 8px 0; text-align: justify; }
 strong { font-weight: bold; }
 table.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px 0; font-size: 10pt; }
@@ -159,6 +158,42 @@ table.prop-tabla tfoot td { font-weight: bold; }
 .prop-doc-total { margin-top: 10px; font-size: 11pt; }
 .prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 9.5pt; }
 """
+
+PROP_PDF_CSS = """
+@page {
+  size: a4;
+  margin: 2cm 2cm 2.5cm 2cm;
+  @frame footer_frame {
+    -pdf-frame-content: footerContent;
+    bottom: 1cm;
+    margin-left: 2cm;
+    margin-right: 2cm;
+    height: 1cm;
+  }
+}
+#footerContent {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9pt;
+  color: #666666;
+  text-align: right;
+}
+""" + PROP_DOC_CSS
+
+_FONTS_DIR = Path(__file__).parent / 'fonts'
+
+
+def _registrar_fuentes_pdf() -> None:
+    regular = _FONTS_DIR / 'Roboto-Regular.ttf'
+    bold = _FONTS_DIR / 'Roboto-Bold.ttf'
+    try:
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        if regular.is_file() and 'Roboto' not in pdfmetrics.getRegisteredFontNames():
+            pdfmetrics.registerFont(TTFont('Roboto', str(regular)))
+        if bold.is_file() and 'Roboto-Bold' not in pdfmetrics.getRegisteredFontNames():
+            pdfmetrics.registerFont(TTFont('Roboto-Bold', str(bold)))
+    except Exception:
+        pass
 
 
 def siguiente_numero_propuesta(empresa_id: int) -> int:
@@ -254,17 +289,22 @@ def _inyectar_logo_html(html: str, logo_path: str | None) -> str:
     return html
 
 
-def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None) -> str:
+def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None, pdf: bool = False) -> str:
     html = _normalizar_html_para_pdf(contenido)
     html = _inyectar_logo_html(html, logo_path)
     titulo_safe = titulo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    css = PROP_PDF_CSS if pdf else PROP_DOC_CSS
+    footer = ''
+    if pdf:
+        footer = '<div id="footerContent">Página <pdf:pagenumber> de <pdf:pagecount></div>'
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"/><title>{titulo_safe}</title>
-<style>{PROP_DOC_CSS}</style></head><body>{html}</body></html>"""
+<style>{css}</style></head><body>{html}{footer}</body></html>"""
 
 
 def generar_pdf_propuesta(titulo: str, contenido: str, logo_path: str | None = None) -> bytes:
-    doc_html = _envolver_html_export(contenido, titulo, logo_path)
+    _registrar_fuentes_pdf()
+    doc_html = _envolver_html_export(contenido, titulo, logo_path, pdf=True)
     try:
         from xhtml2pdf import pisa
     except ImportError as exc:
