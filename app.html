@@ -227,6 +227,40 @@
             border-bottom: 1px solid var(--border-color);
         }
         #tabla-propuestas-grid .prop-col-oculta { display: none !important; }
+        #view-propuestas { width: 100%; max-width: 100%; }
+        #view-propuestas .tabla-scroll-wrap {
+            overflow-x: hidden;
+            overflow-y: auto;
+            --tabla-scroll-max: min(52vh, 480px);
+        }
+        #tabla-propuestas-grid {
+            table-layout: fixed;
+            width: 100%;
+            min-width: 0;
+        }
+        #tabla-propuestas-grid col.prop-col-num { width: 3.25rem; }
+        #tabla-propuestas-grid col.prop-col-nombre { width: 22%; }
+        #tabla-propuestas-grid col.prop-col-status { width: 6.5rem; }
+        #tabla-propuestas-grid col.prop-col-contacto { width: 12%; }
+        #tabla-propuestas-grid col.prop-col-servicio { width: 12%; }
+        #tabla-propuestas-grid col.prop-col-uf { width: 4.5rem; }
+        #tabla-propuestas-grid col.prop-col-pesos { width: 6.5rem; }
+        #tabla-propuestas-grid col.prop-col-fecha { width: 5.75rem; }
+        #tabla-propuestas-grid col.prop-col-acciones { width: 5rem; }
+        #tabla-propuestas-grid col.prop-col-oculta { width: 0; }
+        #tabla-propuestas-grid th,
+        #tabla-propuestas-grid td { overflow: hidden; }
+        #tabla-propuestas-grid th:last-child,
+        #tabla-propuestas-grid td:last-child { overflow: visible; }
+        #tabla-propuestas-grid .prop-cell-truncate {
+            max-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #tabla-propuestas-grid .mov-filtro,
+        #tabla-propuestas-grid .mov-filtro.form-select,
+        #tabla-propuestas-grid .cell-edit-date { min-width: 0; }
         .table-panel th, .table-panel td { vertical-align: middle; }
         .btn-teal { background: var(--teal-green); color: #fff; border: none; }
         .btn-teal:hover { background: #006666; color: #fff; }
@@ -1893,8 +1927,23 @@
                     <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarFiltrosPropuestas()">Limpiar filtros</button>
                 </div>
                 <p class="small text-muted px-3 pt-2 mb-0 d-none" id="propImportMsg"></p>
-                <div class="table-responsive tabla-scroll-wrap">
+                <div class="tabla-scroll-wrap">
                     <table id="tabla-propuestas-grid" class="table table-hover table-panel table-compact table-proyectos mb-0">
+                        <colgroup>
+                            <col class="prop-col-num">
+                            <col class="prop-col-nombre">
+                            <col class="prop-col-status">
+                            <col class="prop-col-oculta">
+                            <col class="prop-col-contacto">
+                            <col class="prop-col-servicio">
+                            <col class="prop-col-oculta">
+                            <col class="prop-col-oculta">
+                            <col class="prop-col-uf">
+                            <col class="prop-col-pesos">
+                            <col class="prop-col-fecha">
+                            <col class="prop-col-fecha">
+                            <col class="prop-col-acciones">
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th class="mov-th-sort" data-col="numero" onclick="ordenarPropuestas('numero')">N° <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -1909,7 +1958,7 @@
                                 <th class="mov-th-sort text-end" data-col="monto_pesos" onclick="ordenarPropuestas('monto_pesos')">Pesos <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="fecha_envio" onclick="ordenarPropuestas('fecha_envio')">Envío <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="fecha_adjudicacion" onclick="ordenarPropuestas('fecha_adjudicacion')">Adjudic. <i class="fa-solid fa-sort sort-icon"></i></th>
-                                <th class="text-end" style="width:72px"></th>
+                                <th class="text-end"></th>
                             </tr>
                             <tr class="mov-filtros">
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropNumero" placeholder="N°" oninput="renderPropuestas()"></th>
@@ -6892,6 +6941,8 @@
     }
 
     function descripcionUnidadesPropuesta() {
+        const detalle = document.getElementById('propDetalle')?.value?.trim();
+        if (detalle) return detalle;
         const filas = _propCalcFilas.filter(f => f.cantidad > 0);
         if (!filas.length) return 'las unidades del proyecto';
         const partes = filas.map(f => {
@@ -6957,24 +7008,58 @@
         }
     }
 
-    function reemplazarPlaceholdersResiduales(editor, d) {
-        if (!editor) return;
+    function actualizarCamposDatosEnEditor(editor, d) {
+        if (!editor || !d) return;
         const uf = d.total_uf ? d.total_uf.toFixed(1).replace('.', ',') : '0';
-        const rep = {
+        const map = {
+            proyecto: d.proyecto,
+            cliente: d.cliente,
+            presentado_por: d.presentado_por,
+            fecha: d.fecha,
+            numero: 'P' + d.numero,
+            unidades: d.unidades,
+        };
+        for (const [prop, val] of Object.entries(map)) {
+            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
+                if (prop === 'logo') return;
+                el.textContent = val;
+            });
+        }
+        const totalEl = editor.querySelector('[data-prop="total_uf"]') || editor.querySelector('.prop-doc-total');
+        if (totalEl) totalEl.innerHTML = `<strong>TOTAL: UF ${uf}</strong>`;
+
+        if (!editor.querySelector('[data-prop="cliente"]')) {
+            const meta = editor.querySelector('.prop-doc-meta');
+            if (meta) {
+                const tds = meta.querySelectorAll('td');
+                if (tds[0]) tds[0].textContent = d.cliente;
+                if (tds[1]) tds[1].textContent = d.presentado_por;
+                if (tds[2]) tds[2].textContent = d.fecha;
+                if (tds[3]) tds[3].textContent = 'P' + d.numero;
+            }
+            const sub = editor.querySelector('.prop-doc-subtitulo');
+            if (sub) sub.textContent = d.proyecto;
+        }
+
+        const placeholders = {
+            '{{UNIDADES_DESCRIPCION}}': d.unidades,
+            '{{PRESENTADO_POR}}': d.presentado_por,
             '{{PROYECTO}}': d.proyecto,
             '{{CLIENTE}}': d.cliente,
-            '{{PRESENTADO_POR}}': d.presentado_por,
             '{{FECHA}}': d.fecha,
-            '{{NUMERO}}': d.numero,
-            '{{UNIDADES_DESCRIPCION}}': d.unidades,
-            '{{TOTAL_UF}}': uf,
             'P{{NUMERO}}': 'P' + d.numero,
+            '{{NUMERO}}': d.numero,
+            '{{TOTAL_UF}}': uf,
         };
-        let html = editor.innerHTML;
-        Object.keys(rep).sort((a, b) => b.length - a.length).forEach(k => {
-            html = html.split(k).join(rep[k]);
+        const phKeys = Object.keys(placeholders).sort((a, b) => b.length - a.length);
+        editor.querySelectorAll('h1,h2,h3,h4,p,td,th,strong,span,li').forEach(el => {
+            if (el.closest('[data-prop="logo"]') || el.querySelector('img,table')) return;
+            if (el.children.length > 1) return;
+            let text = el.textContent || '';
+            if (!/\{\{[A-Z_]+\}\}|P\{\{NUMERO\}\}/.test(text)) return;
+            phKeys.forEach(k => { text = text.split(k).join(placeholders[k]); });
+            el.textContent = text;
         });
-        editor.innerHTML = html;
     }
 
     function prepararContenidoExportPropuesta() {
@@ -7175,34 +7260,7 @@
             if (_propTemplateBase) await actualizarTemplatePropuesta(true);
             return;
         }
-        const d = datosPropuestaActuales();
-        const map = {
-            proyecto: d.proyecto,
-            cliente: d.cliente,
-            presentado_por: d.presentado_por,
-            fecha: d.fecha,
-            numero: 'P' + d.numero,
-            unidades: d.unidades,
-        };
-        for (const [prop, val] of Object.entries(map)) {
-            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
-                if (prop === 'logo') return;
-                el.textContent = val;
-            });
-        }
-        if (!editor.querySelector('[data-prop="cliente"]')) {
-            const meta = editor.querySelector('.prop-doc-meta');
-            if (meta) {
-                const tds = meta.querySelectorAll('td');
-                if (tds[0]) tds[0].textContent = d.cliente;
-                if (tds[1]) tds[1].textContent = d.presentado_por;
-                if (tds[2]) tds[2].textContent = d.fecha;
-                if (tds[3]) tds[3].textContent = 'P' + d.numero;
-            }
-            const sub = editor.querySelector('.prop-doc-subtitulo');
-            if (sub) sub.textContent = d.proyecto;
-        }
-        reemplazarPlaceholdersResiduales(editor, d);
+        actualizarCamposDatosEnEditor(editor, datosPropuestaActuales());
         actualizarBloquesTemplate();
         await sincronizarLogoTemplate();
     }
@@ -7219,6 +7277,7 @@
         editor.dataset.editado = '0';
         asegurarBloquesTemplate(editor);
         actualizarBloquesTemplate();
+        actualizarCamposDatosEnEditor(editor, datosPropuestaActuales());
         await sincronizarLogoTemplate();
     }
 
@@ -7277,7 +7336,8 @@
             renderCalcPropuesta();
             recalcularPropuesta();
         }
-        actualizarTemplatePropuesta(true);
+        await actualizarTemplatePropuesta(true);
+        await sincronizarDatosEnTemplate();
     }
 
     function onPropSuperficieChange() {
@@ -7607,6 +7667,9 @@
                 document.getElementById('propNumero').value = data.numero;
             }
             document.getElementById('propFechaEnvio').value = new Date().toISOString().slice(0, 10);
+            if (document.getElementById('propServicio').value) {
+                await onPropServicioChange();
+            }
         }
         const ta = document.getElementById('propTemplate');
         if (ta && !ta._propBound) {
