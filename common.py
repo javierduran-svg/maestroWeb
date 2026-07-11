@@ -1887,6 +1887,8 @@ def _propuesta_a_dict(prop: Propuesta) -> dict:
         'fecha_adjudicacion': (
             prop.fecha_adjudicacion.strftime('%Y-%m-%d') if prop.fecha_adjudicacion else None
         ),
+        'template_html': prop.template_html,
+        'calculadora_json': prop.calculadora_json,
     }
 
 
@@ -1943,6 +1945,8 @@ def _validar_datos_propuesta(data: dict, empresa_id: int, propuesta_id: int | No
         'fecha_adjudicacion': (
             _parse_fecha(data['fecha_adjudicacion']) if data.get('fecha_adjudicacion') else None
         ),
+        'template_html': data.get('template_html') or None,
+        'calculadora_json': data.get('calculadora_json') or None,
     }
     return campos, None
 

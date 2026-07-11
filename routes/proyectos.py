@@ -8,13 +8,16 @@ from common import *
 from contabilidad import calcular_transaccion, recalcular_proyecto
 from extensions import db
 from models import (
-    Cliente, Empresa, EntregaProgramada, Movimiento, Propuesta, Proyecto, TareaEntrega,
+    Cliente, Empresa, EntregaProgramada, Movimiento, PlantillaPropuesta, Propuesta, Proyecto, TareaEntrega,
 )
 from propuestas_service import (
     SERVICIOS_PROPUESTA,
     get_config_calculadora,
     generar_docx_propuesta,
     generar_pdf_propuesta,
+    guardar_plantilla_servicio,
+    obtener_plantilla_servicio,
+    plantilla_a_dict,
     siguiente_numero_propuesta,
 )
 
@@ -526,10 +529,39 @@ def get_siguiente_numero_propuesta():
 
 @bp.route('/api/propuestas/calculadora/<path:servicio>', methods=['GET'])
 def get_calculadora_propuesta(servicio):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
     config = get_config_calculadora(servicio)
     if not config:
         return jsonify({'error': 'Calculadora no disponible para este servicio'}), 404
+    config = dict(config)
+    config['template'] = obtener_plantilla_servicio(eid, servicio)
     return jsonify(config)
+
+
+@bp.route('/api/propuestas/plantillas/<path:servicio>', methods=['GET', 'PUT'])
+def manejar_plantilla_propuesta(servicio):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    if request.method == 'GET':
+        contenido = obtener_plantilla_servicio(eid, servicio)
+        if not contenido:
+            return jsonify({'error': 'Plantilla no encontrada'}), 404
+        row = PlantillaPropuesta.query.filter_by(empresa_id=eid, servicio=servicio).first()
+        return jsonify({
+            'servicio': servicio,
+            'contenido_html': contenido,
+            'personalizada': bool(row),
+            'updated_at': row.updated_at.isoformat() if row and row.updated_at else None,
+        })
+    data = request.json or {}
+    contenido = (data.get('contenido_html') or '').strip()
+    if not contenido:
+        return jsonify({'error': 'contenido_html requerido'}), 400
+    row = guardar_plantilla_servicio(eid, servicio, contenido)
+    return jsonify({'mensaje': 'Plantilla guardada', 'plantilla': plantilla_a_dict(row)})
 
 
 @bp.route('/api/propuestas/exportar/pdf', methods=['POST'])
@@ -544,7 +576,10 @@ def exportar_propuesta_pdf():
         return jsonify({'error': 'Contenido vacío'}), 400
     empresa = Empresa.query.get(eid)
     logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
-    pdf_bytes = generar_pdf_propuesta(titulo, contenido, logo_path=logo_path)
+    try:
+        pdf_bytes = generar_pdf_propuesta(titulo, contenido, logo_path=logo_path)
+    except Exception as exc:
+        return jsonify({'error': f'Error al generar PDF: {exc}'}), 500
     nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
     return send_file(
         io.BytesIO(pdf_bytes),
@@ -568,15 +603,11 @@ def exportar_propuesta_word():
     logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
     doc_bytes, ext = generar_docx_propuesta(titulo, contenido, logo_path=logo_path)
     nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
-    mimetype = (
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-        if ext == 'docx' else 'application/msword'
-    )
     return send_file(
         io.BytesIO(doc_bytes),
-        mimetype=mimetype,
+        mimetype='application/msword',
         as_attachment=True,
-        download_name=f'{nombre}.{ext}',
+        download_name=f'{nombre}.doc',
     )
 
 

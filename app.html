@@ -2462,18 +2462,18 @@
                             <div class="prop-compact-grid">
                                 <div class="prop-field"><label>N°</label><input type="text" class="form-control bg-light" id="propNumero" readonly title="Numeración automática"></div>
                                 <div class="prop-field"><label>Status</label><select class="form-select" id="propStatus"><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></div>
-                                <div class="prop-field span-2"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field span-2"><label>Nombre</label><input type="text" class="form-control" id="propNombre" required oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Servicio</label><select class="form-select" id="propServicio" onchange="onPropServicioChange()"><option value="">— Seleccionar —</option></select></div>
-                                <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="actualizarTemplatePropuesta()"></div>
-                                <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field span-2"><label>Detalle</label><input type="text" class="form-control" id="propDetalle" oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
                                 <div class="prop-field"><label>Contacto cliente</label><input type="text" class="form-control" id="propContactoCliente"></div>
-                                <div class="prop-field"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field"><label>m²</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>UF</label><input type="number" step="any" class="form-control" id="propUf"></div>
                                 <div class="prop-field"><label>Pesos</label><input type="number" step="1" class="form-control" id="propPesos"></div>
-                                <div class="prop-field"><label>Envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="actualizarTemplatePropuesta()"></div>
+                                <div class="prop-field"><label>Envío</label><input type="date" class="form-control" id="propFechaEnvio" onchange="onPropCampoTemplate()"></div>
                                 <div class="prop-field"><label>Adjudic.</label><input type="date" class="form-control" id="propFechaAdjud"></div>
                             </div>
                         </div>
@@ -2495,9 +2495,9 @@
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-sm table-bordered mb-0" id="propCalcEtapas">
-                                    <thead class="table-light"><tr><th>Etapas</th><th class="text-end">UF</th></tr></thead>
+                                    <thead class="table-light"><tr><th>Etapas</th><th class="text-end" style="width:52px">%</th><th class="text-end" style="width:70px">UF</th></tr></thead>
                                     <tbody id="propCalcEtapasBody"></tbody>
-                                    <tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
+                                    <tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
                                 </table>
                             </div>
                         </div>
@@ -2508,7 +2508,8 @@
                     <div class="prop-template-toolbar">
                         <h6><i class="fa-solid fa-file-lines me-1"></i> Propuesta</h6>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar desde datos"><i class="fa-solid fa-rotate"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar completo desde datos"><i class="fa-solid fa-rotate"></i></button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="abrirEditorPlantilla()" title="Editar plantilla del servicio"><i class="fa-solid fa-file-pen"></i></button>
                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportarPropuesta('pdf')"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
                             <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportarPropuesta('word')"><i class="fa-solid fa-file-word me-1"></i>Word</button>
                         </div>
@@ -2521,6 +2522,20 @@
         </div>
         <div class="modal-footer border-0"><button class="btn btn-teal px-4 btn-sm" onclick="guardarPropuesta()">GUARDAR</button></div>
         <div class="prop-modal-resize-grip" onmousedown="startPropModalResize(event)" title="Arrastrar para redimensionar ventana"></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalPlantillaPropuesta" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="tituloModalPlantilla">Editar plantilla</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-3">
+            <p class="small text-muted">Plantilla base del servicio. Use marcadores: <code>{{PROYECTO}}</code>, <code>{{CLIENTE}}</code>, <code>{{HONORARIOS_TABLA}}</code>, <code>{{PAGO_TABLA}}</code>, etc.</p>
+            <textarea class="form-control font-monospace" id="plantillaPropuestaEditor" rows="22" style="font-size:0.75rem"></textarea>
+        </div>
+        <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm" onclick="restaurarPlantillaDefault()">Restaurar default</button>
+            <button class="btn btn-teal btn-sm px-4" onclick="guardarPlantillaServicio()">GUARDAR PLANTILLA</button>
+        </div>
     </div></div>
 </div>
 
@@ -2741,7 +2756,9 @@
     let _propServiciosLista = [];
     let _propCalcConfig = null;
     let _propCalcFilas = [];
+    let _propEtapasState = [];
     let _propTemplateBase = '';
+    let _propPlantillaServicio = '';
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
     let _propModalSplitDrag = null;
@@ -6757,39 +6774,93 @@
         recalcularPropuesta();
     }
 
+    function fmtUfNum(n) {
+        return (Number(n) || 0).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function subtotalFilaPropuesta(f) {
+        return (f.cantidad || 0) * (f.uf_unidad || 0);
+    }
+
+    function totalHonorariosPropuesta() {
+        return _propCalcFilas.reduce((s, f) => s + subtotalFilaPropuesta(f), 0);
+    }
+
+    function initEtapasPropuesta(etapas, guardadas) {
+        if (guardadas?.length) {
+            _propEtapasState = guardadas.map(e => ({
+                codigo: e.codigo || '',
+                nombre: e.nombre || '',
+                porcentaje: parseFloat(e.porcentaje) || 0,
+            }));
+            return;
+        }
+        const lista = etapas || [];
+        const pct = lista.length ? 100 / lista.length : 0;
+        _propEtapasState = lista.map((e, i) => ({
+            codigo: e.codigo || '',
+            nombre: e.nombre || '',
+            porcentaje: e.porcentaje ?? (i === lista.length - 1 ? 100 - pct * (lista.length - 1) : pct),
+        }));
+    }
+
     function renderCalcPropuesta() {
         const body = document.getElementById('propCalcUnidadesBody');
         if (!body) return;
-        body.innerHTML = _propCalcFilas.map((f, i) => `<tr>
-            <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" onchange="_propCalcFilas[${i}].label=this.value;actualizarTemplatePropuesta()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.m2}" min="1" onchange="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);renderCalcPropuesta();recalcularPropuesta()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" onchange="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="0.01" onchange="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
-            <td class="text-end">${fmtUf((f.cantidad || 0) * (f.uf_unidad || 0))}</td>
+        body.innerHTML = _propCalcFilas.map((f, i) => {
+            const sub = subtotalFilaPropuesta(f);
+            return `<tr>
+            <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.m2}" min="1" oninput="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);recalcularPropuesta()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" oninput="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="0.01" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
+            <td class="text-end subtotal-fila" data-idx="${i}">${fmtUfNum(sub)}</td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
-        </tr>`).join('');
+        </tr>`;
+        }).join('');
+    }
+
+    function renderEtapasPropuesta() {
+        const etapasBody = document.getElementById('propCalcEtapasBody');
+        if (!etapasBody) return;
+        const total = totalHonorariosPropuesta();
+        etapasBody.innerHTML = _propEtapasState.map((e, i) => {
+            const monto = total * (e.porcentaje || 0) / 100;
+            const cod = e.codigo ? `${e.codigo} ` : '';
+            return `<tr>
+                <td><input type="text" class="form-control form-control-sm" value="${esc(cod + e.nombre)}" oninput="_propEtapasState[${i}].nombre=this.value.replace(/^[\d.]+\s*/, '');actualizarBloquesTemplate()"></td>
+                <td><input type="number" class="form-control form-control-sm text-end" value="${(e.porcentaje || 0).toFixed(2)}" min="0" max="100" step="0.01" oninput="_propEtapasState[${i}].porcentaje=parseFloat(this.value)||0;renderEtapasPropuesta();actualizarBloquesTemplate()"></td>
+                <td class="text-end">${fmtUfNum(monto)}</td>
+            </tr>`;
+        }).join('');
+        const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
+        if (totalEtapasEl) totalEtapasEl.textContent = fmtUfNum(total);
     }
 
     function recalcularPropuesta() {
-        const totalUnidades = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+        const totalUnidades = totalHonorariosPropuesta();
         const totalEl = document.getElementById('propCalcTotalUnidades');
-        if (totalEl) totalEl.textContent = fmtUf(totalUnidades);
-
-        const etapasBody = document.getElementById('propCalcEtapasBody');
-        const etapas = _propCalcConfig?.etapas || [];
-        const nEtapas = etapas.length || 1;
-        const montoEtapa = totalUnidades / nEtapas;
-        if (etapasBody) {
-            etapasBody.innerHTML = etapas.map((e, i) => {
-                const cod = e.codigo ? `${e.codigo} ` : `${i + 1}. `;
-                return `<tr><td>${esc(cod + e.nombre)}</td><td class="text-end">${fmtUf(montoEtapa)}</td></tr>`;
-            }).join('');
-        }
-        const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
-        if (totalEtapasEl) totalEtapasEl.textContent = fmtUf(totalUnidades);
-
+        if (totalEl) totalEl.textContent = fmtUfNum(totalUnidades);
+        renderCalcPropuesta();
+        renderEtapasPropuesta();
         document.getElementById('propUf').value = totalUnidades ? totalUnidades.toFixed(2) : '';
-        actualizarTemplatePropuesta();
+        actualizarBloquesTemplate();
+    }
+
+    function serializarCalculadoraPropuesta() {
+        return JSON.stringify({ filas: _propCalcFilas, etapas: _propEtapasState });
+    }
+
+    function restaurarCalculadoraPropuesta(jsonStr) {
+        if (!jsonStr) return false;
+        try {
+            const data = JSON.parse(jsonStr);
+            if (Array.isArray(data.filas)) _propCalcFilas = data.filas;
+            if (Array.isArray(data.etapas)) _propEtapasState = data.etapas;
+            return true;
+        } catch (_) {
+            return false;
+        }
     }
 
     function descripcionUnidadesPropuesta() {
@@ -6832,23 +6903,24 @@
     }
 
     function tablaPagoPropuesta() {
-        const total = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
-        const etapas = _propCalcConfig?.etapas || [];
-        if (!etapas.length) return '<table class="prop-tabla"><tbody><tr><td>TOTAL</td><td class="text-end">UF 0</td></tr></tbody></table>';
-        const monto = total / etapas.length;
-        const rows = etapas.map((e, i) => {
+        const total = totalHonorariosPropuesta();
+        if (!_propEtapasState.length) {
+            return '<table class="prop-tabla"><tbody><tr><td>TOTAL</td><td class="text-end">UF 0</td></tr></tbody></table>';
+        }
+        const rows = _propEtapasState.map((e, i) => {
+            const monto = total * (e.porcentaje || 0) / 100;
             const cod = e.codigo ? `${esc(e.codigo)} ` : `${i + 1}. `;
             return `<tr><td>${cod}${esc(e.nombre)}</td><td class="text-end">UF ${monto.toFixed(2).replace('.', ',')}</td></tr>`;
         }).join('');
         return `<table class="prop-tabla"><thead><tr><th>ITEM</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">UF ${total.toFixed(1).replace('.', ',')}</td></tr></tfoot></table>`;
     }
 
-    function rellenarTemplatePropuesta(template) {
-        const total = _propCalcFilas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
+    function varsTemplatePropuesta() {
+        const total = totalHonorariosPropuesta();
         const clienteSel = document.getElementById('propClienteId');
         const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
         const cliente = document.getElementById('propClienteNombre').value.trim() || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '');
-        const vars = {
+        return {
             '{{LOGO}}': logoHtmlPropuesta(),
             '{{PROYECTO}}': esc(document.getElementById('propNombre').value.trim() || '—'),
             '{{CLIENTE}}': esc(cliente || '—'),
@@ -6860,15 +6932,40 @@
             '{{PAGO_TABLA}}': tablaPagoPropuesta(),
             '{{TOTAL_UF}}': total ? total.toFixed(1).replace('.', ',') : '0',
         };
-        return aplicarVarsPlantilla(template || _propTemplateBase || '', vars);
+    }
+
+    function rellenarTemplatePropuesta(template) {
+        return aplicarVarsPlantilla(template || _propTemplateBase || '', varsTemplatePropuesta());
+    }
+
+    function actualizarBloquesTemplate() {
+        const editor = document.getElementById('propTemplate');
+        if (!editor || !editor.innerHTML.trim()) return;
+        const hon = editor.querySelector('#prop-bloque-honorarios');
+        const pago = editor.querySelector('#prop-bloque-pago');
+        const totalEl = editor.querySelector('.prop-doc-total');
+        if (hon) hon.innerHTML = tablaHonorariosPropuesta();
+        if (pago) pago.innerHTML = tablaPagoPropuesta();
+        const total = totalHonorariosPropuesta();
+        if (totalEl) totalEl.innerHTML = `<strong>TOTAL: UF ${total ? total.toFixed(1).replace('.', ',') : '0'}</strong>`;
     }
 
     function actualizarTemplatePropuesta(forzar = false) {
         const editor = document.getElementById('propTemplate');
         if (!editor || !_propTemplateBase) return;
-        if (!forzar && editor.dataset.editado === '1' && editor.innerHTML.trim()) return;
+        if (!forzar && editor.dataset.editado === '1' && editor.innerHTML.trim()) {
+            actualizarBloquesTemplate();
+            return;
+        }
+        if (forzar && editor.dataset.editado === '1' && !confirm('¿Regenerar la propuesta? Se perderán las ediciones manuales del texto.')) return;
         editor.innerHTML = rellenarTemplatePropuesta(_propTemplateBase);
         editor.dataset.editado = '0';
+    }
+
+    function onPropCampoTemplate() {
+        const editor = document.getElementById('propTemplate');
+        if (editor?.dataset.editado === '1') return;
+        actualizarTemplatePropuesta();
     }
 
     async function onPropServicioChange() {
@@ -6877,7 +6974,9 @@
         const contenido = document.getElementById('propCalcContenido');
         _propCalcConfig = null;
         _propCalcFilas = [];
+        _propEtapasState = [];
         _propTemplateBase = '';
+        _propPlantillaServicio = '';
         const editor = document.getElementById('propTemplate');
         if (editor) {
             editor.innerHTML = '';
@@ -6903,6 +7002,8 @@
 
         _propCalcConfig = await res.json();
         _propTemplateBase = _propCalcConfig.template || '';
+        _propPlantillaServicio = _propTemplateBase;
+        initEtapasPropuesta(_propCalcConfig.etapas);
         aviso.classList.add('d-none');
         contenido.classList.remove('d-none');
         document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
@@ -6938,7 +7039,61 @@
         if (nombre && nombre !== '— Sin vínculo —' && !document.getElementById('propClienteNombre').value.trim()) {
             document.getElementById('propClienteNombre').value = nombre;
         }
-        actualizarTemplatePropuesta();
+        onPropCampoTemplate();
+    }
+
+    async function abrirEditorPlantilla() {
+        const servicio = document.getElementById('propServicio').value;
+        if (!servicio) {
+            alert('Seleccione un servicio primero.');
+            return;
+        }
+        const res = await apiFetch(`/api/propuestas/plantillas/${encodeURIComponent(servicio)}`);
+        if (!res.ok) {
+            alert('No hay plantilla para este servicio.');
+            return;
+        }
+        const data = await res.json();
+        document.getElementById('tituloModalPlantilla').innerText = `Plantilla — ${servicio}`;
+        document.getElementById('plantillaPropuestaEditor').value = data.contenido_html || '';
+        document.getElementById('plantillaPropuestaEditor').dataset.servicio = servicio;
+        new bootstrap.Modal(document.getElementById('modalPlantillaPropuesta')).show();
+    }
+
+    function restaurarPlantillaDefault() {
+        if (_propPlantillaServicio) {
+            document.getElementById('plantillaPropuestaEditor').value = _propPlantillaServicio;
+            return;
+        }
+        const servicio = document.getElementById('plantillaPropuestaEditor').dataset.servicio;
+        if (servicio) onPropServicioChange().then(() => {
+            document.getElementById('plantillaPropuestaEditor').value = _propTemplateBase;
+        });
+    }
+
+    async function guardarPlantillaServicio() {
+        const servicio = document.getElementById('plantillaPropuestaEditor').dataset.servicio
+            || document.getElementById('propServicio').value;
+        const contenido = document.getElementById('plantillaPropuestaEditor').value.trim();
+        if (!servicio || !contenido) {
+            alert('Servicio y contenido requeridos.');
+            return;
+        }
+        const res = await apiFetch(`/api/propuestas/plantillas/${encodeURIComponent(servicio)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contenido_html: contenido }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || 'Error al guardar plantilla');
+            return;
+        }
+        _propTemplateBase = contenido;
+        bootstrap.Modal.getInstance(document.getElementById('modalPlantillaPropuesta')).hide();
+        if (confirm('¿Regenerar la propuesta actual con la plantilla guardada?')) {
+            actualizarTemplatePropuesta(true);
+        }
     }
 
     async function exportarPropuesta(formato) {
@@ -6957,8 +7112,10 @@
             body: JSON.stringify({ titulo, contenido, nombre_archivo: `P${numero}_${nombre}` }),
         });
         if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            alert(data.error || 'Error al exportar');
+            const errText = await res.text();
+            let msg = 'Error al exportar';
+            try { msg = JSON.parse(errText).error || msg; } catch (_) { if (errText) msg = errText.slice(0, 200); }
+            alert(msg);
             return;
         }
         const blob = await res.blob();
@@ -7118,7 +7275,9 @@
         }
         _propCalcConfig = null;
         _propCalcFilas = [];
+        _propEtapasState = [];
         _propTemplateBase = '';
+        _propPlantillaServicio = '';
         document.getElementById('propCalcContenido')?.classList.add('d-none');
         document.getElementById('propCalcAviso')?.classList.remove('d-none');
         const aviso = document.getElementById('propCalcAviso');
@@ -7162,8 +7321,21 @@
             document.getElementById('propPesos').value = p.monto_pesos ?? '';
             document.getElementById('propFechaEnvio').value = p.fecha_envio || '';
             document.getElementById('propFechaAdjud').value = p.fecha_adjudicacion || '';
-            if (p.servicio) await onPropServicioChange();
-            if (p.monto_uf && _propCalcFilas.length) recalcularPropuesta();
+            if (p.servicio) {
+                await onPropServicioChange();
+                if (restaurarCalculadoraPropuesta(p.calculadora_json)) {
+                    renderCalcPropuesta();
+                    renderEtapasPropuesta();
+                    recalcularPropuesta();
+                }
+                const editor = document.getElementById('propTemplate');
+                if (p.template_html && editor) {
+                    editor.innerHTML = p.template_html;
+                    editor.dataset.editado = '1';
+                } else {
+                    actualizarTemplatePropuesta(true);
+                }
+            }
         } else {
             const resNum = await apiFetch('/api/propuestas/siguiente-numero');
             if (resNum.ok) {
@@ -7199,6 +7371,8 @@
             monto_pesos: document.getElementById('propPesos').value || 0,
             fecha_envio: document.getElementById('propFechaEnvio').value || null,
             fecha_adjudicacion: document.getElementById('propFechaAdjud').value || null,
+            template_html: document.getElementById('propTemplate')?.innerHTML || null,
+            calculadora_json: serializarCalculadoraPropuesta(),
         };
         const res = await apiFetch(id ? `/api/propuestas/${id}` : '/api/propuestas', {
             method: id ? 'PUT' : 'POST',

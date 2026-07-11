@@ -100,11 +100,26 @@ class Propuesta(db.Model):
     monto_pesos = db.Column(db.Float, default=0.0)
     fecha_envio = db.Column(db.Date, nullable=True)
     fecha_adjudicacion = db.Column(db.Date, nullable=True)
+    template_html = db.Column(db.Text, nullable=True)
+    calculadora_json = db.Column(db.Text, nullable=True)
 
     cliente_rel = db.relationship('Cliente', backref='propuestas')
 
     __table_args__ = (
         db.UniqueConstraint('empresa_id', 'numero', name='uq_propuesta_empresa_numero'),
+    )
+
+
+class PlantillaPropuesta(db.Model):
+    __tablename__ = 'plantillas_propuesta'
+    id = db.Column(db.Integer, primary_key=True)
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
+    servicio = db.Column(db.String(100), nullable=False)
+    contenido_html = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('empresa_id', 'servicio', name='uq_plantilla_empresa_servicio'),
     )
 
 

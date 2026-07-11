@@ -1,13 +1,16 @@
 """Servicios de propuestas comerciales: numeración, plantillas y exportación."""
 from __future__ import annotations
 
+import base64
 import io
+import json
 import os
+import re
 from datetime import date
+from pathlib import Path
 
-from fpdf import FPDF
-
-from models import Propuesta
+from extensions import db
+from models import PlantillaPropuesta, Propuesta
 
 SERVICIOS_PROPUESTA = [
     'CES',
@@ -28,7 +31,6 @@ MESES_ES = (
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 )
 
-# Tarifas UF por unidad según superficie (CEV+RT)
 TARIFAS_CEV_RT = [
     {'label': 'Casas 140 m²', 'm2': 140, 'uf_unidad': 7},
     {'label': 'Casas 200 m²', 'm2': 200, 'uf_unidad': 10},
@@ -36,12 +38,21 @@ TARIFAS_CEV_RT = [
 ]
 
 ETAPAS_CEV_RT = [
-    {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]'},
-    {'codigo': '2.1', 'nombre': 'Pre Calificación'},
-    {'codigo': '2.2', 'nombre': 'Calificación'},
+    {'codigo': '1', 'nombre': 'INFORME VERIFICACION REGLAMENTACION TERMICA', 'porcentaje': 33.33},
+    {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]', 'porcentaje': 33.33},
+    {'codigo': '2', 'nombre': 'CALIFICACION ENERGETICA DE VIVIENDAS', 'porcentaje': 33.34},
+    {'codigo': '2.1', 'nombre': 'Pre Calificación', 'porcentaje': 16.67},
+    {'codigo': '2.2', 'nombre': 'Calificación', 'porcentaje': 16.67},
 ]
 
-TEMPLATE_CEV_RT = """<div class="prop-doc">
+# Etapas simplificadas para la calculadora (3 ítems de pago)
+ETAPAS_PAGO_CEV_RT = [
+    {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]', 'porcentaje': 33.33},
+    {'codigo': '2.1', 'nombre': 'Pre Calificación', 'porcentaje': 33.33},
+    {'codigo': '2.2', 'nombre': 'Calificación', 'porcentaje': 33.34},
+]
+
+TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <div class="prop-doc-header">
   <div class="prop-doc-header-text">
     <h1 class="prop-doc-titulo">Calificación energética de viviendas CEV + Verificación Reglamentación térmica.</h1>
@@ -66,23 +77,38 @@ TEMPLATE_CEV_RT = """<div class="prop-doc">
 
 <h4>1. Cumplimiento de la Reglamentación Térmica</h4>
 <p>Se elaborará un Informe de Cumplimiento de Reglamentación Térmica válido para presentación ante la Dirección de Obras Municipales (DOM), en el cual se verificará el cumplimiento del Artículo 4.1.10 de la OGUC, aplicable a edificaciones de uso residencial.</p>
-<p><strong>A. Desempeño térmico de la envolvente</strong> — Se verificará el cumplimiento de transmitancia térmica (U) o resistencia térmica (Rt) de techumbres, muros, pisos, puertas y ventanas, con memoria de cálculo detallada.</p>
-<p><strong>B. Ausencia de riesgo de condensación</strong> — Memoria de cálculo con método de Glaser para muros, cubiertas y pisos ventilados.</p>
-<p><strong>C. Permeabilidad al aire e infiltraciones</strong> — Revisión de carpinterías, sellados y barreras de vapor. Blower door no incluida (servicio adicional).</p>
-<p><strong>D. Ventilación mínima</strong> — Diseño conceptual de ventilación conforme a NCh 3308.</p>
+<p>El informe considerará los siguientes aspectos prescriptivos:</p>
+<p><strong>A. Desempeño térmico de la envolvente</strong><br>
+Se verificará el cumplimiento de los requisitos de transmitancia térmica máxima (U) o resistencia térmica mínima (Rt) exigidos para los distintos elementos de la envolvente térmica, incluyendo techumbres, muros perimetrales, pisos ventilados sobre exterior, sobrecimientos, puertas opacas y ventanas.</p>
+<p>Para ello, se entregará una memoria de cálculo detallada, que incluirá la caracterización completa de los materiales que componen la envolvente térmica (muros, techumbres, pisos, ventanas y puertas), considerando espesores, tipos de aislación térmica, soluciones constructivas, tipos de carpintería y especificaciones de vidrios.</p>
+<p>Asimismo, se realizará el cálculo de la transmitancia térmica (U) y de la resistencia térmica (Rt o R100) de todos los elementos de la envolvente, verificando adicionalmente los indicadores térmicos de los cristales según la orientación de las fachadas del proyecto, conforme a la normativa vigente.</p>
+<p><strong>B. Ausencia de riesgo de condensación</strong><br>
+Se desarrollará una memoria de cálculo de condensación superficial e intersticial, aplicando el método de Glaser, para todos los cerramientos del proyecto, incluyendo muros exteriores, cubiertas y pisos ventilados.</p>
+<p>El análisis permitirá verificar la ausencia de riesgo de condensación, asegurando el correcto desempeño higrotérmico de las soluciones constructivas propuestas.</p>
+<p><strong>C. Permeabilidad al aire e infiltraciones</strong><br>
+Se realizará una revisión de la permeabilidad al aire de puertas y ventanas, considerando clasificación de ventanas según infiltraciones de aire, evaluación de detalles constructivos de sellado y revisión de barreras de vapor y continuidad de la envolvente.</p>
+<p>La prueba de hermeticidad (blower door) no se encuentra incluida en la presente propuesta, pero podrá ser considerada como un servicio adicional si el mandante lo requiere.</p>
+<p><strong>D. Ventilación mínima según normativa vigente</strong><br>
+De acuerdo con la normativa actualizada, las viviendas deberán incorporar sistemas de ventilación activos, pasivos o mixtos, cumpliendo con las tasas mínimas de renovación de aire establecidas en la NCh 3308, así como con los requerimientos de extracción de aire en recintos húmedos.</p>
+<p>En este contexto, se propondrá un diseño conceptual de soluciones de ventilación adecuadas al proyecto, orientadas a asegurar el cumplimiento de la reglamentación térmica y a mejorar las condiciones de confort y calidad del aire interior de las viviendas.</p>
 
 <h4>2. Calificación energética de viviendas CEV</h4>
-<p><strong>2.1. Análisis Preliminar CEV</strong> — Simulación temprana y propuestas de mejora.</p>
-<p><strong>2.2. Precalificación CEV</strong> — Simulación PBDT MINVU con permiso de edificación aprobado.</p>
-<p><strong>2.3. Calificación energética</strong> — Visita de obra obligatoria en construcción.</p>
-<p><strong>2.4. Calificación CEV</strong> — Tramitación final tras Recepción Final.</p>
+<p>La propuesta incluye la evaluación en la etapa de diseño de los aspectos definidos en la normativa vigente, recientemente actualizada y los parámetros de la calificación energética de viviendas CEV. Producto de esa evaluación se busca obtener la calificación óptima para el proyecto.</p>
+<p><strong>2.1. Análisis Preliminar CEV y propuestas de mejora.</strong><br>
+Se llevará a cabo la simulación de la vivienda para determinar tempranamente la calificación energética. Se entregará un informe con los resultados preliminares calculados según los planos y especificaciones técnicas de arquitectura. En caso de no cumplir con el objetivo trazado por el mandante, se propondrán mejoras con el fin de alcanzar la calificación deseada.</p>
+<p><strong>2.2. Precalificación CEV.</strong><br>
+Para la precalificación CEV de la vivienda, es requisito contar con el permiso de edificación aprobado. Se realizará la simulación de cada una de las unidades utilizando la Herramienta de Cálculo de la Calificación Energética de Viviendas (PBDT) del MINVU.</p>
+<p><strong>2.3. Calificación energética de viviendas.</strong><br>
+Durante la fase de construcción, se realizará una visita obligatoria para verificar que la envolvente especificada se esté implementando conforme al proyecto. Para ello, se solicitará a la constructora la entrega de una copia de las facturas de compra de los elementos de la envolvente (aislantes térmicos, cristales, etc.).</p>
+<p><strong>2.4. Calificación CEV.</strong><br>
+Una vez finalizada la construcción y obtenida la Recepción Final, se procederá a la Calificación CEV. En esta etapa, será necesario subir las planillas de simulación a la página del MINVU. Para las viviendas existentes, se deberá considerar la envolvente construida.</p>
 
 <h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
 <p>Para definir el monto de los honorarios profesionales se asume que se contratan los 2 servicios descritos en la propuesta:</p>
-{{HONORARIOS_TABLA}}
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
 
 <h4>Forma de pago</h4>
-{{PAGO_TABLA}}
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
 <p class="prop-doc-total"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
@@ -99,9 +125,29 @@ TEMPLATE_CEV_RT = """<div class="prop-doc">
 </div>
 </div>"""
 
-TEMPLATES_POR_SERVICIO = {
-    'CEV+RT': TEMPLATE_CEV_RT,
-}
+TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT}
+
+PROP_DOC_CSS = """
+body { font-family: Roboto, Calibri, Arial, sans-serif; font-size: 11pt; color: #222; line-height: 1.45; }
+.prop-doc-header { display: table; width: 100%; border-bottom: 2px solid #008080; margin-bottom: 12px; padding-bottom: 8px; }
+.prop-doc-header-text { display: table-cell; vertical-align: top; width: 75%; }
+.prop-doc-logo-wrap { display: table-cell; vertical-align: top; text-align: right; width: 25%; }
+.prop-doc-titulo { font-size: 14pt; font-weight: bold; margin: 0 0 4px; color: #111; }
+.prop-doc-subtitulo { font-size: 12pt; font-weight: 500; margin: 0; color: #008080; }
+.prop-doc-logo { max-height: 56px; max-width: 120px; }
+.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 10pt; }
+.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; white-space: nowrap; vertical-align: top; }
+.prop-doc-meta td { padding: 2px 0; }
+.prop-doc-seccion { font-size: 11pt; font-weight: bold; color: #008080; margin: 14px 0 8px; padding-bottom: 4px; border-bottom: 1px solid #ddd; text-transform: uppercase; }
+h4 { font-size: 10.5pt; font-weight: bold; margin: 10px 0 6px; color: #222; }
+p { margin: 0 0 8px; text-align: justify; }
+.prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 10pt; }
+.prop-tabla th, .prop-tabla td { border: 1px solid #ccc; padding: 5px 8px; }
+.prop-tabla th { background: #f1f3f5; font-weight: bold; text-align: left; }
+.prop-tabla .text-end { text-align: right; }
+.prop-doc-total { margin-top: 10px; font-size: 11pt; }
+.prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 9.5pt; }
+"""
 
 
 def siguiente_numero_propuesta(empresa_id: int) -> int:
@@ -115,46 +161,97 @@ def siguiente_numero_propuesta(empresa_id: int) -> int:
     return (max_num or 0) + 1
 
 
-def _texto_seguro(texto) -> str:
-    if texto is None:
+def _plantilla_default(servicio: str) -> str | None:
+    return TEMPLATES_POR_SERVICIO.get(servicio)
+
+
+def obtener_plantilla_servicio(empresa_id: int, servicio: str) -> str | None:
+    row = PlantillaPropuesta.query.filter_by(empresa_id=empresa_id, servicio=servicio).first()
+    if row:
+        return row.contenido_html
+    return _plantilla_default(servicio)
+
+
+def guardar_plantilla_servicio(empresa_id: int, servicio: str, contenido_html: str) -> PlantillaPropuesta:
+    row = PlantillaPropuesta.query.filter_by(empresa_id=empresa_id, servicio=servicio).first()
+    if row:
+        row.contenido_html = contenido_html
+    else:
+        row = PlantillaPropuesta(empresa_id=empresa_id, servicio=servicio, contenido_html=contenido_html)
+        db.session.add(row)
+    db.session.commit()
+    return row
+
+
+def _logo_data_uri(logo_path: str | None) -> str:
+    if not logo_path or not os.path.isfile(logo_path):
         return ''
-    s = str(texto)
-    for a, b in (
-        ('á', 'a'), ('é', 'e'), ('í', 'i'), ('ó', 'o'), ('ú', 'u'),
-        ('Á', 'A'), ('É', 'E'), ('Í', 'I'), ('Ó', 'O'), ('Ú', 'U'),
-        ('ñ', 'n'), ('Ñ', 'N'), ('ü', 'u'), ('Ü', 'U'),
-    ):
-        s = s.replace(a, b)
-    return s
-
-
-def _fmt_fecha_larga(fecha_str: str | None) -> str:
-    if not fecha_str:
-        hoy = date.today()
-        return f'{hoy.day:02d} de {MESES_ES[hoy.month]} de {hoy.year}'
+    path = Path(logo_path)
+    mime = 'image/png' if path.suffix.lower() == '.png' else 'image/jpeg'
     try:
-        partes = str(fecha_str)[:10].split('-')
-        if len(partes) == 3:
-            anio, mes, dia = int(partes[0]), int(partes[1]), int(partes[2])
-            if 1 <= mes <= 12:
-                return f'{dia:02d} de {MESES_ES[mes]} de {anio}'
-    except (ValueError, IndexError):
+        data = base64.b64encode(path.read_bytes()).decode('ascii')
+        return f'data:{mime};base64,{data}'
+    except OSError:
+        return ''
+
+
+def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None) -> str:
+    logo_uri = _logo_data_uri(logo_path)
+    if logo_uri and 'prop-doc-logo' not in contenido and '<img' not in contenido[:500]:
         pass
-    return str(fecha_str)
+    html = contenido
+    if logo_uri:
+        html = re.sub(
+            r'(<div class="prop-doc-logo-wrap">)\s*(</div>)',
+            rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+            html,
+            count=1,
+        )
+        html = html.replace('src="/api/empresas/', f'src="{logo_uri}" data-orig="/api/empresas/')
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>{titulo}</title>
+<style>{PROP_DOC_CSS}</style></head><body>{html}</body></html>"""
 
 
-class PropuestaPDF(FPDF):
-    def __init__(self):
-        super().__init__()
-        self.set_margins(20, 20, 20)
-        self.set_auto_page_break(auto=True, margin=20)
+def generar_pdf_propuesta(titulo: str, contenido: str, logo_path: str | None = None) -> bytes:
+    doc_html = _envolver_html_export(contenido, titulo, logo_path)
+    try:
+        from xhtml2pdf import pisa
 
-    def header(self):
-        pass
+        buf = io.BytesIO()
+        status = pisa.CreatePDF(doc_html, dest=buf, encoding='utf-8')
+        if status.err:
+            raise RuntimeError('Error al generar PDF')
+        return buf.getvalue()
+    except Exception:
+        from fpdf import FPDF
+
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
+        pdf.set_font('Helvetica', 'B', 12)
+        pdf.multi_cell(0, 7, titulo[:200])
+        pdf.ln(4)
+        pdf.set_font('Helvetica', '', 9)
+        texto = _html_a_texto(contenido)
+        for linea in texto.split('\n'):
+            linea = linea.strip()
+            if linea:
+                pdf.multi_cell(0, 5, linea[:500])
+            else:
+                pdf.ln(2)
+        out = pdf.output()
+        return out if isinstance(out, (bytes, bytearray)) else out.encode('latin-1', errors='replace')
+
+
+def generar_docx_propuesta(
+    titulo: str, contenido: str, logo_path: str | None = None,
+) -> tuple[bytes, str]:
+    doc_html = _envolver_html_export(contenido, titulo, logo_path)
+    return doc_html.encode('utf-8'), 'doc'
 
 
 def _html_a_texto(html: str) -> str:
-    import re
     import html as html_mod
 
     texto = re.sub(r'<br\s*/?>', '\n', html, flags=re.I)
@@ -168,76 +265,20 @@ def _html_a_texto(html: str) -> str:
     return texto.strip()
 
 
-def generar_pdf_propuesta(titulo: str, contenido: str, logo_path: str | None = None) -> bytes:
-    pdf = PropuestaPDF()
-    pdf.add_page()
-    y_ini = pdf.get_y()
-    if logo_path and os.path.isfile(logo_path):
-        try:
-            pdf.image(logo_path, x=150, y=y_ini, h=18)
-        except Exception:
-            pass
-    pdf.set_font('Helvetica', 'B', 14)
-    pdf.multi_cell(0, 8, _texto_seguro(titulo))
-    pdf.ln(4)
-    pdf.set_font('Helvetica', '', 10)
-    texto = _html_a_texto(contenido) if '<' in contenido else contenido
-    for linea in texto.split('\n'):
-        if linea.strip():
-            pdf.multi_cell(0, 5, _texto_seguro(linea))
-        else:
-            pdf.ln(3)
-    return bytes(pdf.output())
-
-
-def generar_docx_propuesta(
-    titulo: str, contenido: str, logo_path: str | None = None,
-) -> tuple[bytes, str]:
-    """Retorna (bytes, extension: 'docx' | 'doc')."""
-    try:
-        from docx import Document
-        from docx.shared import Pt, Inches
-
-        doc = Document()
-        if logo_path and os.path.isfile(logo_path):
-            try:
-                doc.add_picture(logo_path, width=Inches(1.6))
-            except Exception:
-                pass
-        titulo_p = doc.add_heading(titulo, level=1)
-        titulo_p.runs[0].font.size = Pt(16)
-        texto = _html_a_texto(contenido) if '<' in contenido else contenido
-        for linea in texto.split('\n'):
-            p = doc.add_paragraph(linea)
-            p.paragraph_format.space_after = Pt(2)
-            for run in p.runs:
-                run.font.size = Pt(10)
-        buf = io.BytesIO()
-        doc.save(buf)
-        return buf.getvalue(), 'docx'
-    except ImportError:
-        return _generar_doc_html(titulo, contenido), 'doc'
-
-
-def _generar_doc_html(titulo: str, contenido: str) -> bytes:
-    import html
-    body = html.escape(contenido).replace('\n', '<br>')
-    titulo_esc = html.escape(titulo)
-    doc_html = (
-        f'<html xmlns:o="urn:schemas-microsoft-com:office:office" '
-        f'xmlns:w="urn:schemas-microsoft-com:office:word">'
-        f'<head><meta charset="utf-8"><title>{titulo_esc}</title></head>'
-        f'<body><h1>{titulo_esc}</h1><div style="font-family:Calibri;font-size:11pt">{body}</div></body></html>'
-    )
-    return doc_html.encode('utf-8')
-
-
 def get_config_calculadora(servicio: str) -> dict | None:
     if servicio == 'CEV+RT':
         return {
             'tarifas': TARIFAS_CEV_RT,
-            'etapas': ETAPAS_CEV_RT,
-            'template': TEMPLATE_CEV_RT,
+            'etapas': ETAPAS_PAGO_CEV_RT,
+            'template': None,
             'format': 'html',
         }
     return None
+
+
+def plantilla_a_dict(row: PlantillaPropuesta) -> dict:
+    return {
+        'servicio': row.servicio,
+        'contenido_html': row.contenido_html,
+        'updated_at': row.updated_at.isoformat() if row.updated_at else None,
+    }
