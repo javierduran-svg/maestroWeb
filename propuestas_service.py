@@ -52,6 +52,54 @@ ETAPAS_PAGO_CEV_RT = [
     {'codigo': '2.2', 'nombre': 'Calificación', 'porcentaje': 33.34},
 ]
 
+# ---------------------------------------------------------------------------
+# CES — Certificación Edificio Sustentable
+# ---------------------------------------------------------------------------
+# NOTA: CES no publica un arancel oficial de honorarios de asesoría. Los valores
+# de esta calculadora son REFERENCIALES / PLACEHOLDER y deben ser revisados por
+# el usuario. El único dato anclado proviene de la propuesta P2070 (referencia):
+# 1.250 m² -> 320 UF total para nivel "Edificio Certificado" (formato CES 1.2).
+# La curva es NO lineal (economías de escala: el UF/m² baja al crecer la
+# superficie) e interpola linealmente entre los tramos definidos.
+TARIFAS_CES = [
+    {'m2': 500, 'uf': 180},
+    {'m2': 1000, 'uf': 280},
+    {'m2': 1250, 'uf': 320},   # ancla propuesta P2070 (nivel Certificado)
+    {'m2': 2500, 'uf': 480},
+    {'m2': 5000, 'uf': 700},
+    {'m2': 10000, 'uf': 1000},
+]
+
+# Niveles de certificación CES (puntaje: Certificado ≥30, Destacado ≥54,5,
+# Sobresaliente ≥69,5). El factor es un multiplicador REFERENCIAL sobre la
+# tarifa base (mayor exigencia -> mayor esfuerzo de asesoría).
+NIVELES_CES = [
+    {'label': 'Edificio Certificado', 'factor': 1.00},
+    {'label': 'Certificación Destacada', 'factor': 1.15},
+    {'label': 'Certificación Sobresaliente', 'factor': 1.30},
+]
+
+# Tipos/versiones de certificación CES (fuente: certificacionsustentable.cl).
+# El factor es REFERENCIAL: usos más complejos (hospitales, aeropuertos)
+# implican mayor esfuerzo de asesoría.
+TIPOS_CES = [
+    {'label': 'CES Edificios de Uso Público v1.2', 'factor': 1.00},
+    {'label': 'CES Edificios de Uso Público v1.1', 'factor': 1.00},
+    {'label': 'CES Edificios de Uso Público v1.0', 'factor': 1.00},
+    {'label': 'CES Hospitales v1.1', 'factor': 1.30},
+    {'label': 'CES Hospitales v1.0', 'factor': 1.30},
+    {'label': 'CES Aeropuertos', 'factor': 1.35},
+    {'label': 'CES Edificios Existentes v1', 'factor': 1.10},
+]
+
+# Etapas/entregables de honorarios CES. Proporciones ancladas a la referencia
+# P2070 (Precertificación 140 / Acompañamiento 90 / Certificación 90 de 320 UF).
+ETAPAS_PAGO_CES = [
+    {'codigo': 'A', 'nombre': 'Precertificación CES', 'porcentaje': 43.75},
+    {'codigo': 'B', 'nombre': 'Acompañamiento en Obra', 'porcentaje': 28.125},
+    {'codigo': 'C', 'nombre': 'Certificación CES', 'porcentaje': 28.125},
+]
+
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -127,7 +175,99 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 </div>
 </div>"""
 
-TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT}
+TEMPLATE_CES = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Certificación Edificio Sustentable (CES)</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Resumen</h3>
+<p>La presente propuesta tiene por objetivo la asesoría integral para la obtención de la <strong>Certificación Edificio Sustentable (CES)</strong> del proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong>, correspondiente a <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong>.</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>La Certificación Edificio Sustentable (CES) es un sistema nacional que permite evaluar, calificar y certificar el comportamiento ambiental de edificios de uso público en Chile (tanto nuevos como existentes). El sistema es administrado por el Instituto de la Construcción (IC) como entidad independiente.</p>
+<p>El sistema evalúa el diseño y la operación de las edificaciones en base a los siguientes aspectos ambientales fundamentales:</p>
+<p>
+&#9679; <strong>Calidad Ambiental Interior</strong> (confort térmico, lumínico, acústico y calidad del aire).<br>
+&#9679; <strong>Uso de Energía</strong> (eficiencia energética, sistemas de climatización e iluminación).<br>
+&#9679; <strong>Uso del Agua</strong> (reducción del consumo de agua potable).<br>
+&#9679; <strong>Gestión</strong> (residuos, operación y mantención).<br>
+&#9679; <strong>Innovación</strong> (estrategias sustentables adicionales).
+</p>
+<p>El proceso de certificación se divide formalmente en dos grandes etapas consecutivas.</p>
+
+<h4>Etapa 1: Precertificación (Fase de Diseño)</h4>
+<p>Tiene como objetivo evaluar el proyecto en su etapa de diseño (arquitectura y especialidades) antes de iniciar la construcción, asegurando que las estrategias de sustentabilidad queden correctamente plasmadas en los planos y especificaciones técnicas.</p>
+<p><strong>Paso 1.1: Diagnóstico Inicial y Planificación</strong><br>
+Revisión de los antecedentes del proyecto de arquitectura y definición de la meta de puntaje objetivo (Edificio Certificado, Certificación Destacada o Certificación Sobresaliente).</p>
+<p><strong>Paso 1.2: Modelaciones y Evaluaciones Técnicas</strong><br>
+Desarrollo de las simulaciones energéticas y de iluminación natural requeridas por la metodología CES, además de la evaluación de los requerimientos de agua, calidad de aire y confort acústico.</p>
+<p><strong>Paso 1.3: Ingreso y Validación ante la Entidad Evaluadora</strong><br>
+Recopilación y ordenamiento de las evidencias de diseño, ingreso del expediente a la Entidad Evaluadora asignada por el Administrador CES y respuesta a observaciones hasta la obtención del Certificado de Precertificación.</p>
+
+<h4>Etapa 2: Certificación (Fase de Construcción y Término de Obra)</h4>
+<p>Busca verificar que todo lo proyectado y aprobado en la precertificación se ejecute fielmente en la obra, controlando los cambios o modificaciones que puedan surgir en la construcción.</p>
+<p><strong>Paso 2.1: Acompañamiento en Obra y Control de Cambios</strong><br>
+Inducción al contratista principal sobre las exigencias CES, revisión de fichas técnicas de materiales y equipos adquiridos y su correspondencia con lo aprobado en diseño, e inspecciones periódicas a la obra.</p>
+<p><strong>Paso 2.2: Recopilación de Antecedentes "As-Built" (Como Construido)</strong><br>
+Preparación del expediente final con planos definitivos, fotografías de respaldo y carpetas de especialidades ejecutadas.</p>
+<p><strong>Paso 2.3: Auditoría Final y Certificación</strong><br>
+Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación de la visita inspectiva del evaluador de ser necesario, levantamiento de observaciones y obtención de la Placa de Certificación CES.</p>
+
+<h4>Entregables Principales</h4>
+<p>
+1. <strong>Informe de Diagnóstico Inicial:</strong> matriz de puntos objetivo y brechas respecto al diseño base.<br>
+2. <strong>Informes de Modelación:</strong> reportes de simulación térmica, energética y lumínica.<br>
+3. <strong>Expedientes de Ingreso:</strong> carpetas ordenadas por requerimiento exigidas por la plataforma CES (Precertificación y Certificación).<br>
+4. <strong>Informes de Visita de Obra:</strong> minutas de control durante la etapa de construcción.
+</p>
+
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Los honorarios se determinan en función de la superficie del proyecto, el nivel de certificación objetivo y el tipo/versión de certificación CES seleccionado.</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+<p class="text-muted">*El pago de la inscripción CES se realiza al inicio del proceso de Precertificación.</p>
+
+<h4>Forma de pago</h4>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+
+<h4>Otros gastos a considerar</h4>
+<table class="prop-tabla">
+<thead><tr><th>Descripción</th><th class="text-end">UF</th></tr></thead>
+<tbody>
+<tr><td>A. Inscripción CES (pago a Instituto de la Construcción)</td><td class="text-end">30 + IVA</td></tr>
+<tr><td>B. Evaluación CES a Entidad Evaluadora (valor referencial)*</td><td class="text-end">Por definir</td></tr>
+</tbody>
+</table>
+<p class="text-muted">*Se cotiza directamente con las Entidades Evaluadoras.</p>
+
+<div class="prop-doc-firma">
+  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Giro: Desarrollo de Consultorías y Arquitectura<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
+TEMPLATES_POR_SERVICIO = {'CEV+RT': TEMPLATE_CEV_RT, 'CES': TEMPLATE_CES}
 
 PROP_DOC_CSS = """
 body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
@@ -347,8 +487,19 @@ def _html_a_texto(html: str) -> str:
 def get_config_calculadora(servicio: str) -> dict | None:
     if servicio == 'CEV+RT':
         return {
+            'servicio': 'CEV+RT',
             'tarifas': TARIFAS_CEV_RT,
             'etapas': ETAPAS_PAGO_CEV_RT,
+            'template': None,
+            'format': 'html',
+        }
+    if servicio == 'CES':
+        return {
+            'servicio': 'CES',
+            'brackets': TARIFAS_CES,
+            'niveles': NIVELES_CES,
+            'tipos': TIPOS_CES,
+            'etapas': ETAPAS_PAGO_CES,
             'template': None,
             'format': 'html',
         }

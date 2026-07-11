@@ -2609,6 +2609,15 @@
                         </button>
                         <p class="small text-muted mb-0" id="propCalcAviso">Seleccione un servicio con calculadora.</p>
                         <div id="propCalcContenido" class="d-none prop-side-body">
+                            <div id="propCesControls" class="d-none mb-2">
+                                <div class="prop-compact-grid">
+                                    <div class="prop-field span-2"><label>Nivel certificación</label><select class="form-select form-select-sm" id="propCesNivel" onchange="onCesParamChange()"></select></div>
+                                    <div class="prop-field span-2"><label>Tipo / versión CES</label><select class="form-select form-select-sm" id="propCesTipo" onchange="onCesParamChange()"></select></div>
+                                    <div class="prop-field"><label title="Tarifa base por superficie (nivel Certificado)">Base UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesBase" readonly title="Tarifa base referencial según superficie"></div>
+                                    <div class="prop-field"><label>Total UF</label><input type="number" step="any" class="form-control form-control-sm bg-light" id="propCesTotal" readonly></div>
+                                </div>
+                                <p class="small text-muted mb-0">Valores referenciales; edite las UF por entregable en la tabla.</p>
+                            </div>
                             <div class="table-responsive mb-2">
                                 <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table" id="propCalcUnidades">
                                     <thead><tr><th>Tipo</th><th class="text-end">m²</th><th class="text-end">Cant.</th><th class="text-end">UF/u</th><th class="text-end">Sub.</th><th></th></tr></thead>
@@ -7043,7 +7052,119 @@
         return mejor?.uf_unidad || 0;
     }
 
+    function esServicioCes() {
+        return _propCalcConfig?.servicio === 'CES';
+    }
+
+    // Tarifa base CES REFERENCIAL: interpola linealmente por superficie total.
+    // Fuera del rango, clampa al primer tramo o extrapola con la pendiente final.
+    function cesBasePorM2(m2) {
+        const br = _propCalcConfig?.brackets;
+        if (!br?.length) return 0;
+        const pts = [...br].map(t => ({ m2: +t.m2, uf: +t.uf })).sort((a, b) => a.m2 - b.m2);
+        if (m2 <= pts[0].m2) return pts[0].uf;
+        const last = pts[pts.length - 1];
+        if (m2 >= last.m2) {
+            const prev = pts[pts.length - 2] || pts[0];
+            if (last.m2 === prev.m2) return last.uf;
+            const pend = (last.uf - prev.uf) / (last.m2 - prev.m2);
+            return Math.max(0, last.uf + pend * (m2 - last.m2));
+        }
+        for (let i = 0; i < pts.length - 1; i++) {
+            const a = pts[i], b = pts[i + 1];
+            if (m2 >= a.m2 && m2 <= b.m2) {
+                if (b.m2 === a.m2) return a.uf;
+                return a.uf + (b.uf - a.uf) * (m2 - a.m2) / (b.m2 - a.m2);
+            }
+        }
+        return last.uf;
+    }
+
+    function cesFactorSel(id, lista) {
+        const val = document.getElementById(id)?.value;
+        const item = (lista || []).find(x => x.label === val);
+        return item ? (parseFloat(item.factor) || 1) : 1;
+    }
+
+    function cesNivelFactor() {
+        return cesFactorSel('propCesNivel', _propCalcConfig?.niveles);
+    }
+
+    function cesTipoFactor() {
+        return cesFactorSel('propCesTipo', _propCalcConfig?.tipos);
+    }
+
+    // Recalcula el total CES (base × nivel × tipo) y lo reparte entre los
+    // entregables según su participación (share), sobre-escribiendo overrides.
+    function recomputeCesFilas() {
+        if (!esServicioCes()) return;
+        const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+        const base = cesBasePorM2(m2);
+        const total = base * cesNivelFactor() * cesTipoFactor();
+        const baseEl = document.getElementById('propCesBase');
+        const totalEl = document.getElementById('propCesTotal');
+        if (baseEl) baseEl.value = base ? base.toFixed(1) : '';
+        const sumShares = _propCalcFilas.reduce((s, f) => s + (f.share || 0), 0) || 1;
+        let acc = 0;
+        _propCalcFilas.forEach((f, i) => {
+            f.m2 = m2;
+            f.cantidad = 1;
+            if (i < _propCalcFilas.length - 1) {
+                f.uf_unidad = Math.round(total * (f.share || 0) / sumShares);
+                acc += f.uf_unidad;
+            } else {
+                f.uf_unidad = Math.max(0, Math.round(total) - acc);
+            }
+        });
+        if (totalEl) totalEl.value = _propCalcFilas.reduce((s, f) => s + (f.uf_unidad || 0), 0).toFixed(0);
+    }
+
+    function poblarCesControles() {
+        const nivelSel = document.getElementById('propCesNivel');
+        const tipoSel = document.getElementById('propCesTipo');
+        if (nivelSel) {
+            nivelSel.innerHTML = (_propCalcConfig?.niveles || [])
+                .map(n => `<option value="${esc(n.label)}">${esc(n.label)}</option>`).join('');
+        }
+        if (tipoSel) {
+            tipoSel.innerHTML = (_propCalcConfig?.tipos || [])
+                .map(t => `<option value="${esc(t.label)}">${esc(t.label)}</option>`).join('');
+        }
+    }
+
+    function crearFilasCesDefault() {
+        const etapas = _propCalcConfig?.etapas || [];
+        _propCalcFilas = etapas.map(e => ({
+            label: e.nombre || 'Entregable',
+            m2: parseFloat(document.getElementById('propM2')?.value) || 0,
+            cantidad: 1,
+            uf_unidad: 0,
+            share: (parseFloat(e.porcentaje) || 0) / 100,
+        }));
+        recomputeCesFilas();
+    }
+
+    function onCesParamChange() {
+        recomputeCesFilas();
+        renderCalcPropuesta();
+        recalcularPropuesta();
+        sincronizarDatosEnTemplate();
+    }
+
     function agregarFilaCalcPropuesta(fila = null) {
+        if (esServicioCes()) {
+            const m2 = fila?.m2 ?? (parseFloat(document.getElementById('propM2').value) || 0);
+            _propCalcFilas.push({
+                label: fila?.label || 'Nuevo entregable',
+                m2,
+                cantidad: fila?.cantidad ?? 1,
+                uf_unidad: fila?.uf_unidad ?? 0,
+                share: fila?.share ?? 0,
+            });
+            renderCalcPropuesta();
+            recalcularPropuesta();
+            return;
+        }
         const m2 = fila?.m2 ?? (parseFloat(document.getElementById('propM2').value) || 140);
         const cant = fila?.cantidad ?? (parseFloat(document.getElementById('propUnidades').value) || 1);
         const tarifa = fila?.uf_unidad ?? tarifaCevRtPorM2(m2);
@@ -7092,8 +7213,19 @@
     function renderCalcPropuesta() {
         const body = document.getElementById('propCalcUnidadesBody');
         if (!body) return;
+        const ces = esServicioCes();
         body.innerHTML = _propCalcFilas.map((f, i) => {
             const sub = subtotalFilaPropuesta(f);
+            if (ces) {
+                return `<tr>
+            <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
+            <td class="text-end text-muted small">${fmtUfNum(f.m2)}</td>
+            <td class="text-end text-muted small">1</td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="1" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;_propCalcFilas[${i}].cantidad=1;recalcularPropuesta()" title="UF del entregable (editable)"></td>
+            <td class="text-end subtotal-fila" data-idx="${i}">${fmtUfNum(sub)}</td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
+        </tr>`;
+            }
             return `<tr>
             <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
             <td><input type="number" class="form-control form-control-sm text-end" value="${f.m2}" min="1" oninput="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);recalcularPropuesta()"></td>
@@ -7128,6 +7260,14 @@
         const totalUnidades = totalHonorariosPropuesta();
         const totalEl = document.getElementById('propCalcTotalUnidades');
         if (totalEl) totalEl.textContent = fmtUfNum(totalUnidades);
+        if (esServicioCes()) {
+            const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+            const baseEl = document.getElementById('propCesBase');
+            const cesTotalEl = document.getElementById('propCesTotal');
+            const base = cesBasePorM2(m2);
+            if (baseEl) baseEl.value = base ? base.toFixed(1) : '';
+            if (cesTotalEl) cesTotalEl.value = totalUnidades.toFixed(0);
+        }
         renderCalcPropuesta();
         renderEtapasPropuesta();
         document.getElementById('propUf').value = totalUnidades ? totalUnidades.toFixed(2) : '';
@@ -7135,7 +7275,14 @@
     }
 
     function serializarCalculadoraPropuesta() {
-        return JSON.stringify({ filas: _propCalcFilas, etapas: _propEtapasState, anchos: _propAnchosColumnas });
+        const payload = { filas: _propCalcFilas, etapas: _propEtapasState, anchos: _propAnchosColumnas };
+        if (esServicioCes()) {
+            payload.ces = {
+                nivel: document.getElementById('propCesNivel')?.value || '',
+                tipo: document.getElementById('propCesTipo')?.value || '',
+            };
+        }
+        return JSON.stringify(payload);
     }
 
     function restaurarCalculadoraPropuesta(jsonStr) {
@@ -7144,6 +7291,12 @@
             const data = JSON.parse(jsonStr);
             if (Array.isArray(data.filas)) _propCalcFilas = data.filas;
             if (Array.isArray(data.etapas)) _propEtapasState = data.etapas;
+            if (data.ces) {
+                const nivelSel = document.getElementById('propCesNivel');
+                const tipoSel = document.getElementById('propCesTipo');
+                if (nivelSel && data.ces.nivel) nivelSel.value = data.ces.nivel;
+                if (tipoSel && data.ces.tipo) tipoSel.value = data.ces.tipo;
+            }
             if (data.anchos && typeof data.anchos === 'object') {
                 _propAnchosColumnas = { ..._propAnchosColumnas, ...data.anchos };
                 if (_propAnchosColumnas.calcEtapas?.[1] != null && _propAnchosColumnas.calcEtapas[1] < 72) {
@@ -7159,6 +7312,16 @@
     function descripcionUnidadesPropuesta() {
         const detalle = document.getElementById('propDetalle')?.value?.trim();
         if (detalle) return detalle;
+        if (esServicioCes()) {
+            const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+            const nivel = document.getElementById('propCesNivel')?.value || '';
+            const tipo = document.getElementById('propCesTipo')?.value || '';
+            const partes = [];
+            if (m2) partes.push(`una superficie de ${fmtUfNum(m2)} m²`);
+            if (nivel) partes.push(`nivel ${nivel}`);
+            if (tipo) partes.push(tipo);
+            return partes.length ? partes.join(', ') : 'el proyecto';
+        }
         const filas = _propCalcFilas.filter(f => f.cantidad > 0);
         if (!filas.length) return 'las unidades del proyecto';
         const partes = filas.map(f => {
@@ -7633,19 +7796,36 @@
         document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
         document.getElementById('propUf').readOnly = true;
 
-        if (!_propCalcFilas.length) {
-            const m2 = parseFloat(document.getElementById('propM2').value) || 140;
-            const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
-            agregarFilaCalcPropuesta({ m2, cantidad: cant, uf_unidad: tarifaCevRtPorM2(m2) });
-        } else {
+        const cesControls = document.getElementById('propCesControls');
+        if (esServicioCes()) {
+            cesControls?.classList.remove('d-none');
+            poblarCesControles();
+            crearFilasCesDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
+        } else {
+            cesControls?.classList.add('d-none');
+            if (!_propCalcFilas.length) {
+                const m2 = parseFloat(document.getElementById('propM2').value) || 140;
+                const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
+                agregarFilaCalcPropuesta({ m2, cantidad: cant, uf_unidad: tarifaCevRtPorM2(m2) });
+            } else {
+                renderCalcPropuesta();
+                recalcularPropuesta();
+            }
         }
         await actualizarTemplatePropuesta(true);
         await sincronizarDatosEnTemplate();
     }
 
     function onPropSuperficieChange() {
+        if (esServicioCes()) {
+            recomputeCesFilas();
+            renderCalcPropuesta();
+            recalcularPropuesta();
+            sincronizarDatosEnTemplate();
+            return;
+        }
         if (_propCalcFilas.length === 1 && _propCalcConfig) {
             const m2 = parseFloat(document.getElementById('propM2').value) || 140;
             const cant = parseFloat(document.getElementById('propUnidades').value) || 1;
@@ -7908,6 +8088,7 @@
         _propLogoCache = { empId: null, data: null };
         _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
         document.getElementById('propCalcContenido')?.classList.add('d-none');
+        document.getElementById('propCesControls')?.classList.add('d-none');
         document.getElementById('propCalcAviso')?.classList.remove('d-none');
         const aviso = document.getElementById('propCalcAviso');
         if (aviso) aviso.textContent = 'Seleccione un servicio con calculadora.';
