@@ -8,10 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/summernote-lite.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.20/dist/lang/summernote-es-ES.min.js"></script>
     <style>
         :root {
             --teal-green: #008080;
@@ -230,6 +226,7 @@
             padding: 0.25rem 0.35rem;
             border-bottom: 1px solid var(--border-color);
         }
+        #tabla-propuestas-grid .prop-col-oculta { display: none !important; }
         .table-panel th, .table-panel td { vertical-align: middle; }
         .btn-teal { background: var(--teal-green); color: #fff; border: none; }
         .btn-teal:hover { background: #006666; color: #fff; }
@@ -377,23 +374,25 @@
             display: flex;
             flex-direction: column;
         }
-        #modalPropuesta #propTemplateSummernote { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-        #modalPropuesta #propTemplateSummernote .note-editor { flex: 1; display: flex; flex-direction: column; min-height: 0; border-color: var(--border-color); }
-        #modalPropuesta #propTemplateSummernote .note-editing-area { flex: 1; min-height: 0; }
-        #modalPropuesta #propTemplateSummernote .note-editable {
-            min-height: 280px;
+        #modalPropuesta #propTemplate,
+        #modalPlantillaPropuesta #plantillaPropuestaEditor {
+            flex: 1;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+            resize: none;
             font-family: 'Roboto', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
             line-height: 1.5;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1.25rem;
         }
-        #modalPropuesta .prop-col-config { font-size: 0.65rem; margin-bottom: 0.35rem; }
-        #modalPropuesta .prop-col-config input { font-size: 0.65rem; padding: 0.1rem 0.25rem; }
-        .note-editable .prop-doc-logo { max-height: 56px; max-width: 120px; }
-        .note-editable .prop-tabla { width: 100%; border-collapse: collapse; margin: 8px 0; }
-        .note-editable .prop-tabla th, .note-editable .prop-tabla td { border: 1px solid #dee2e6; padding: 5px 8px; }
-        .note-editable .prop-tabla th { background: #f1f3f5; }
-        .note-editable .prop-doc-seccion { color: #008080; font-weight: 700; border-bottom: 1px solid #ddd; }
-        #modalPlantillaPropuesta #plantillaSummernote .note-editable { min-height: 360px; font-family: 'Roboto', sans-serif; font-size: 0.9rem; }
+        #modalPlantillaPropuesta #plantillaPropuestaEditor {
+            min-height: 420px;
+            max-height: calc(100vh - 220px);
+        }
         #modalPropuesta .prop-seccion { border: none; border-radius: 0; padding: 0; margin: 0; background: transparent; }
         #modalPropuesta .prop-seccion h6 { display: none; }
         #modalPropuesta #propCalcContenido { padding: 0 0.65rem 0.65rem; }
@@ -402,7 +401,38 @@
         #modalPropuesta #propCalcContenido .table td { padding: 0.2rem 0.35rem; }
         #modalPropuesta #propCalcAviso { font-size: 0.68rem; padding: 0.5rem 0.65rem; margin: 0; }
         #modalPropuesta #propCalcContenido .btn-sm { font-size: 0.68rem; padding: 0.15rem 0.4rem; }
+        .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
+        .prop-template-editor .prop-doc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--teal-green); }
+        .prop-template-editor .prop-doc-titulo { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 0.35rem; line-height: 1.3; }
+        .prop-template-editor .prop-doc-subtitulo { font-size: 0.95rem; font-weight: 500; color: var(--teal-green); margin: 0; }
+        .prop-template-editor .prop-doc-logo-wrap { flex-shrink: 0; }
+        .prop-template-editor .prop-doc-logo { max-height: 56px; max-width: 120px; object-fit: contain; }
+        .prop-template-editor .prop-doc-meta { width: 100%; margin-bottom: 1rem; font-size: 0.8rem; }
+        .prop-template-editor .prop-doc-meta th { text-align: left; padding: 0.15rem 0.75rem 0.15rem 0; font-weight: 600; white-space: nowrap; vertical-align: top; }
+        .prop-template-editor .prop-doc-meta td { padding: 0.15rem 0; }
+        .prop-template-editor .prop-doc-seccion { font-size: 0.88rem; font-weight: 700; color: var(--teal-green); margin: 1rem 0 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #e0e0e0; text-transform: uppercase; letter-spacing: 0.02em; }
+        .prop-template-editor h4 { font-size: 0.84rem; font-weight: 600; margin: 0.75rem 0 0.35rem; color: #222; }
+        .prop-template-editor p { margin: 0 0 0.5rem; text-align: justify; }
+        .prop-template-editor .prop-tabla { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; font-size: 0.78rem; }
+        .prop-template-editor .prop-tabla th, .prop-template-editor .prop-tabla td { border: 1px solid #dee2e6; padding: 0.35rem 0.5rem; }
+        .prop-template-editor .prop-tabla th { background: #f1f3f5; font-weight: 600; }
+        .prop-template-editor .prop-tabla .text-end { text-align: right; }
+        .prop-template-editor .prop-doc-total { margin-top: 0.75rem; font-size: 0.9rem; }
+        .prop-template-editor .prop-doc-firma, .prop-template-editor .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 0.78rem; }
         #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
+        #propCalcUnidades th, #propCalcEtapas th, .prop-template-editor .prop-tabla th { position: relative; }
+        .prop-tabla-resize { table-layout: fixed; width: 100%; }
+        .prop-col-resize-grip {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            cursor: col-resize;
+            user-select: none;
+            z-index: 2;
+        }
+        .prop-col-resize-grip:hover { background: rgba(0, 128, 128, 0.2); }
         .prop-calc-total { font-weight: 700; color: var(--teal-green); }
         .panel-toolbar { font-size: 0.8125rem; }
         .panel-toolbar .form-select-sm { font-size: 0.8125rem; }
@@ -1868,11 +1898,11 @@
                                 <th class="mov-th-sort" data-col="numero" onclick="ordenarPropuestas('numero')">N° <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="nombre" onclick="ordenarPropuestas('nombre')">Nombre <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="status" onclick="ordenarPropuestas('status')">Status <i class="fa-solid fa-sort sort-icon"></i></th>
-                                <th class="mov-th-sort" data-col="cliente" onclick="ordenarPropuestas('cliente')">Cliente <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort prop-col-oculta" data-col="cliente" onclick="ordenarPropuestas('cliente')">Cliente <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="contacto_cliente" onclick="ordenarPropuestas('contacto_cliente')">Contacto <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="servicio" onclick="ordenarPropuestas('servicio')">Servicio <i class="fa-solid fa-sort sort-icon"></i></th>
-                                <th class="mov-th-sort" data-col="detalle_servicio" onclick="ordenarPropuestas('detalle_servicio')">Detalle <i class="fa-solid fa-sort sort-icon"></i></th>
-                                <th class="mov-th-sort text-end" data-col="superficie_m2" onclick="ordenarPropuestas('superficie_m2')">m² <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort prop-col-oculta" data-col="detalle_servicio" onclick="ordenarPropuestas('detalle_servicio')">Detalle <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort text-end prop-col-oculta" data-col="superficie_m2" onclick="ordenarPropuestas('superficie_m2')">m² <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarPropuestas('monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort text-end" data-col="monto_pesos" onclick="ordenarPropuestas('monto_pesos')">Pesos <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="fecha_envio" onclick="ordenarPropuestas('fecha_envio')">Envío <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -1883,11 +1913,11 @@
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropNumero" placeholder="N°" oninput="renderPropuestas()"></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropNombre" placeholder="Buscar…" oninput="renderPropuestas()"></th>
                                 <th><select class="form-select mov-filtro" id="filtroPropStatus" onchange="renderPropuestas()"><option value="">Todos</option><option value="No enviada">No enviada</option><option value="Enviada">Enviada</option><option value="Adjudicada">Adjudicada</option><option value="No Adjudicada">No Adjudicada</option></select></th>
-                                <th><input type="text" class="form-control mov-filtro" id="filtroPropCliente" placeholder="Cliente" oninput="renderPropuestas()"></th>
+                                <th class="prop-col-oculta"><input type="text" class="form-control mov-filtro" id="filtroPropCliente" placeholder="Cliente" oninput="renderPropuestas()"></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropContacto" placeholder="Contacto" oninput="renderPropuestas()"></th>
                                 <th><select class="form-select mov-filtro" id="filtroPropServicio" onchange="renderPropuestas()"><option value="">Todos</option></select></th>
-                                <th><input type="text" class="form-control mov-filtro" id="filtroPropDetalle" placeholder="Detalle" oninput="renderPropuestas()"></th>
-                                <th><input type="text" class="form-control mov-filtro" id="filtroPropM2" placeholder="m²" oninput="renderPropuestas()"></th>
+                                <th class="prop-col-oculta"><input type="text" class="form-control mov-filtro" id="filtroPropDetalle" placeholder="Detalle" oninput="renderPropuestas()"></th>
+                                <th class="prop-col-oculta"><input type="text" class="form-control mov-filtro" id="filtroPropM2" placeholder="m²" oninput="renderPropuestas()"></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropUf" placeholder="UF" oninput="renderPropuestas()"></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroPropPesos" placeholder="Monto" oninput="renderPropuestas()"></th>
                                 <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroPropEnvio" placeholder="dd-mm-aaaa" oninput="renderPropuestas()"></th>
@@ -2489,12 +2519,6 @@
                                     <tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end prop-calc-total" id="propCalcTotalEtapas">0</td></tr></tfoot>
                                 </table>
                             </div>
-                            <div class="prop-col-config mt-2" id="propColConfig">
-                                <div class="fw-semibold mb-1" style="font-size:0.68rem">Ancho columnas — Honorarios</div>
-                                <div id="propColHonorarios"></div>
-                                <div class="fw-semibold mb-1 mt-2" style="font-size:0.68rem">Ancho columnas — Forma de pago</div>
-                                <div id="propColPago"></div>
-                            </div>
                         </div>
                     </div>
                 </aside>
@@ -2510,7 +2534,7 @@
                         </div>
                     </div>
                     <div class="prop-template-wrap">
-                        <div id="propTemplateSummernote"></div>
+                        <div id="propTemplate" class="prop-template-editor" contenteditable="true" data-editado="0"></div>
                     </div>
                 </main>
             </div>
@@ -2524,8 +2548,8 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloModalPlantilla">Editar plantilla</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-3">
-            <p class="small text-muted">Edite la plantilla base del servicio con el editor de texto. Los marcadores <code>{{PROYECTO}}</code>, <code>{{CLIENTE}}</code>, <code>{{HONORARIOS_TABLA}}</code> y <code>{{PAGO_TABLA}}</code> se reemplazan automáticamente al generar propuestas.</p>
-            <div id="plantillaSummernote"></div>
+            <p class="small text-muted mb-2">Vista del documento con marcadores como <code>{{PROYECTO}}</code>, <code>{{CLIENTE}}</code>, <code>{{HONORARIOS_TABLA}}</code>, etc. Edite directamente el texto formateado.</p>
+            <div id="plantillaPropuestaEditor" class="prop-template-editor" contenteditable="true" data-servicio=""></div>
         </div>
         <div class="modal-footer border-0">
             <button class="btn btn-outline-secondary btn-sm" onclick="restaurarPlantillaDefault()">Restaurar default</button>
@@ -2754,21 +2778,8 @@
     let _propEtapasState = [];
     let _propTemplateBase = '';
     let _propPlantillaServicio = '';
-    let _propTemplateEditado = false;
-    let _propTemplatePending = null;
-    let _propSummernoteReady = false;
-    const PROP_TABLA_COLS_DEFAULT = {
-        honorarios: { cols: [
-            { key: 'item', label: 'ITEM', width: 55 },
-            { key: 'cant', label: 'Cant', width: 15, align: 'end' },
-            { key: 'monto', label: 'Monto [UF]', width: 30, align: 'end' },
-        ]},
-        pago: { cols: [
-            { key: 'item', label: 'ITEM', width: 65 },
-            { key: 'monto', label: 'Monto [UF]', width: 35, align: 'end' },
-        ]},
-    };
-    let _propTablaCols = JSON.parse(JSON.stringify(PROP_TABLA_COLS_DEFAULT));
+    let _propLogoCache = { empId: null, data: null };
+    let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
     let _propModalSplitDrag = null;
@@ -6828,6 +6839,7 @@
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
         </tr>`;
         }).join('');
+        initTablaColumnasResizables(document.getElementById('propCalcUnidades'), 'calcUnidades', [null, 48, 48, 52, 56, 24], [5]);
     }
 
     function renderEtapasPropuesta() {
@@ -6845,6 +6857,7 @@
         }).join('');
         const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
         if (totalEtapasEl) totalEtapasEl.textContent = fmtUfNum(total);
+        initTablaColumnasResizables(document.getElementById('propCalcEtapas'), 'calcEtapas', [null, 52, 70], []);
     }
 
     function recalcularPropuesta() {
@@ -6858,7 +6871,7 @@
     }
 
     function serializarCalculadoraPropuesta() {
-        return JSON.stringify({ filas: _propCalcFilas, etapas: _propEtapasState, tabla_cols: _propTablaCols });
+        return JSON.stringify({ filas: _propCalcFilas, etapas: _propEtapasState, anchos: _propAnchosColumnas });
     }
 
     function restaurarCalculadoraPropuesta(jsonStr) {
@@ -6867,129 +6880,13 @@
             const data = JSON.parse(jsonStr);
             if (Array.isArray(data.filas)) _propCalcFilas = data.filas;
             if (Array.isArray(data.etapas)) _propEtapasState = data.etapas;
-            if (data.tabla_cols?.honorarios?.cols?.length) {
-                _propTablaCols = data.tabla_cols;
-            } else {
-                _propTablaCols = JSON.parse(JSON.stringify(PROP_TABLA_COLS_DEFAULT));
+            if (data.anchos && typeof data.anchos === 'object') {
+                _propAnchosColumnas = { ..._propAnchosColumnas, ...data.anchos };
             }
-            renderColConfigPropuesta();
             return true;
         } catch (_) {
             return false;
         }
-    }
-
-    function summernoteToolbarPropuesta() {
-        return [
-            ['style', ['style']],
-            ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
-            ['fontname', ['fontname']],
-            ['fontsize', ['fontsize']],
-            ['color', ['color']],
-            ['para', ['ul', 'ol', 'paragraph']],
-            ['table', ['table']],
-            ['insert', ['link']],
-            ['view', ['fullscreen']],
-        ];
-    }
-
-    function initPropSummernote() {
-        const $el = $('#propTemplateSummernote');
-        if (!$el.length || $el.next('.note-editor').length) return;
-        const pending = $el.html();
-        $el.summernote({
-            height: '100%',
-            lang: 'es-ES',
-            toolbar: summernoteToolbarPropuesta(),
-            callbacks: {
-                onChange: () => { _propTemplateEditado = true; },
-            },
-        });
-        if (pending?.trim()) $el.summernote('code', pending);
-        _propSummernoteReady = true;
-    }
-
-    function initPlantillaSummernote() {
-        const $el = $('#plantillaSummernote');
-        if (!$el.length) return;
-        if ($el.next('.note-editor').length) $el.summernote('destroy');
-        $el.summernote({
-            height: 420,
-            lang: 'es-ES',
-            toolbar: summernoteToolbarPropuesta(),
-        });
-    }
-
-    function destroyPropSummernote() {
-        const $el = $('#propTemplateSummernote');
-        if ($el.next('.note-editor').length) $el.summernote('destroy');
-        _propSummernoteReady = false;
-    }
-
-    function getPropTemplateHtml() {
-        const $el = $('#propTemplateSummernote');
-        if ($el.next('.note-editor').length) return $el.summernote('code') || '';
-        return $el.html() || '';
-    }
-
-    function setPropTemplateHtml(html) {
-        const $el = $('#propTemplateSummernote');
-        if ($el.next('.note-editor').length) {
-            $el.summernote('code', html || '');
-        } else {
-            $el.html(html || '');
-        }
-    }
-
-    function getPlantillaEditorHtml() {
-        const $el = $('#plantillaSummernote');
-        if ($el.next('.note-editor').length) return $el.summernote('code') || '';
-        return $el.html() || '';
-    }
-
-    function setPlantillaEditorHtml(html) {
-        const $el = $('#plantillaSummernote');
-        if ($el.next('.note-editor').length) {
-            $el.summernote('code', html || '');
-        } else {
-            $el.html(html || '');
-        }
-    }
-
-    function aplicarTemplatePropuestaPendiente() {
-        initPropSummernote();
-        if (_propTemplatePending !== null) {
-            setPropTemplateHtml(_propTemplatePending);
-            _propTemplateEditado = !!_propTemplatePending.trim();
-            _propTemplatePending = null;
-            sincronizarDatosEnTemplate();
-            return;
-        }
-        if (getPropTemplateHtml().trim()) {
-            sincronizarDatosEnTemplate();
-        } else if (_propTemplateBase) {
-            actualizarTemplatePropuesta(true);
-        }
-    }
-
-    function colgroupHtmlPropuesta(tabla) {
-        const cols = _propTablaCols[tabla]?.cols || [];
-        return '<colgroup>' + cols.map(c => `<col style="width:${c.width}%">`).join('') + '</colgroup>';
-    }
-
-    function renderColConfigPropuesta() {
-        const hon = document.getElementById('propColHonorarios');
-        const pago = document.getElementById('propColPago');
-        if (!hon || !pago) return;
-        const filaCol = (tabla, i, c) => `<div class="d-flex gap-1 align-items-center mb-1">
-            <input type="text" class="form-control form-control-sm flex-fill" value="${esc(c.label)}"
-                oninput="_propTablaCols.${tabla}.cols[${i}].label=this.value;actualizarBloquesTemplate()">
-            <input type="number" class="form-control form-control-sm" style="width:44px" value="${c.width}" min="5" max="90" step="1"
-                oninput="_propTablaCols.${tabla}.cols[${i}].width=Math.max(5,Math.min(90,parseFloat(this.value)||10));actualizarBloquesTemplate()">
-            <span>%</span>
-        </div>`;
-        hon.innerHTML = (_propTablaCols.honorarios?.cols || []).map((c, i) => filaCol('honorarios', i, c)).join('');
-        pago.innerHTML = (_propTablaCols.pago?.cols || []).map((c, i) => filaCol('pago', i, c)).join('');
     }
 
     function descripcionUnidadesPropuesta() {
@@ -7004,17 +6901,140 @@
         return partes.slice(0, -1).join(', ') + ' y ' + partes[partes.length - 1];
     }
 
-    function logoHtmlPropuesta() {
+    function datosPropuestaActuales() {
+        const clienteSel = document.getElementById('propClienteId');
+        const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
+        const cliente = document.getElementById('propClienteNombre').value.trim()
+            || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '—');
+        return {
+            proyecto: document.getElementById('propNombre').value.trim() || '—',
+            cliente,
+            presentado_por: document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile',
+            fecha: fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value) || '—',
+            numero: document.getElementById('propNumero').value || '—',
+            unidades: descripcionUnidadesPropuesta(),
+            total_uf: totalHonorariosPropuesta(),
+        };
+    }
+
+    async function cargarLogoPropuesta() {
         const emp = empresaActiva();
         const url = logoUrlEmpresa(emp);
-        if (!url) return '';
-        const abs = url.startsWith('http') ? url : (window.location.origin + url);
-        return `<img src="${abs}" alt="${esc(emp?.nombre || 'Logo')}" class="prop-doc-logo">`;
+        if (!url) {
+            _propLogoCache = { empId: null, data: null };
+            return null;
+        }
+        if (_propLogoCache.empId === emp.id && _propLogoCache.data) return _propLogoCache.data;
+        try {
+            const res = await apiFetch(url);
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            const data = await new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+            });
+            _propLogoCache = { empId: emp.id, data };
+            return data;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function sincronizarLogoTemplate() {
+        const editor = document.getElementById('propTemplate');
+        if (!editor) return;
+        const wrap = editor.querySelector('[data-prop="logo"]') || editor.querySelector('.prop-doc-logo-wrap');
+        if (!wrap) return;
+        const data = await cargarLogoPropuesta();
+        if (data) {
+            wrap.innerHTML = `<img src="${data}" alt="Logo" class="prop-doc-logo">`;
+        } else {
+            wrap.innerHTML = '';
+        }
+    }
+
+    function colgroupHtml(key, defaultWidths) {
+        const widths = _propAnchosColumnas[key] || defaultWidths;
+        if (!_propAnchosColumnas[key]) _propAnchosColumnas[key] = defaultWidths.slice();
+        return `<colgroup>${widths.map(w => {
+            if (w == null) return '<col>';
+            return `<col style="width:${typeof w === 'number' ? w + 'px' : w}">`;
+        }).join('')}</colgroup>`;
+    }
+
+    function initTablaColumnasResizables(table, key, defaultWidths, skipIdx = []) {
+        if (!table) return;
+        if (table._resizeInit) return;
+        table._resizeInit = true;
+        table.classList.add('prop-tabla-resize');
+        table.style.tableLayout = 'fixed';
+        if (!_propAnchosColumnas[key]) _propAnchosColumnas[key] = defaultWidths.slice();
+        const saved = _propAnchosColumnas[key];
+        let cg = table.querySelector('colgroup');
+        if (!cg) {
+            cg = document.createElement('colgroup');
+            saved.forEach(w => {
+                const col = document.createElement('col');
+                if (w != null) col.style.width = typeof w === 'number' ? w + 'px' : w;
+                cg.appendChild(col);
+            });
+            table.insertBefore(cg, table.firstChild);
+        }
+        const ths = [...table.querySelectorAll('thead th')];
+        ths.forEach((th, idx) => {
+            if (skipIdx.includes(idx) || idx === ths.length - 1) return;
+            const grip = document.createElement('span');
+            grip.className = 'prop-col-resize-grip';
+            grip.title = 'Arrastrar para ajustar ancho';
+            th.appendChild(grip);
+            grip.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const startX = e.clientX;
+                const startW = th.offsetWidth;
+                const cols = table.querySelectorAll('colgroup col');
+                const onMove = (ev) => {
+                    const newW = Math.max(28, startW + (ev.clientX - startX));
+                    th.style.width = newW + 'px';
+                    if (cols[idx]) cols[idx].style.width = newW + 'px';
+                    const widths = ths.map((h, i) => (skipIdx.includes(i) ? saved[i] : h.offsetWidth));
+                    _propAnchosColumnas[key] = widths;
+                };
+                const onUp = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                };
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+            });
+        });
+    }
+
+    function normalizarHtmlTemplate(html) {
+        if (!html) return '';
+        if (Array.isArray(html)) return html.join('');
+        let out = String(html);
+        if (/&lt;\/?[a-z]/i.test(out)) {
+            const tmp = document.createElement('textarea');
+            tmp.innerHTML = out;
+            out = tmp.value;
+        }
+        return out;
+    }
+
+    function asignarHtmlEditor(editor, html) {
+        if (!editor) return;
+        editor.innerHTML = normalizarHtmlTemplate(html);
+    }
+
+    function leerHtmlEditor(editor) {
+        return editor?.innerHTML?.trim() || '';
     }
 
     function aplicarVarsPlantilla(plantilla, vars) {
-        if (Array.isArray(plantilla)) plantilla = plantilla.join('');
-        let out = String(plantilla ?? '');
+        let out = normalizarHtmlTemplate(plantilla);
         const keys = Object.keys(vars).filter(Boolean).sort((a, b) => b.length - a.length);
         for (const k of keys) {
             out = out.split(k).join(String(vars[k] ?? ''));
@@ -7023,56 +7043,45 @@
     }
 
     function tablaHonorariosPropuesta() {
-        const cols = _propTablaCols.honorarios?.cols || PROP_TABLA_COLS_DEFAULT.honorarios.cols;
-        const filas = _propCalcFilas.filter(f => f.cantidad > 0);
-        const ths = cols.map(c => `<th class="${c.align === 'end' ? 'text-end' : ''}">${esc(c.label)}</th>`).join('');
-        if (!filas.length) {
-            return `<table class="prop-tabla">${colgroupHtmlPropuesta('honorarios')}<thead><tr>${ths}</tr></thead><tbody><tr><td colspan="${cols.length}" class="text-muted">Sin unidades</td></tr></tbody></table>`;
-        }
-        const rows = filas.map((f, i) => {
-            const cells = [
-                `<td>${i + 1} ${esc(f.label)}</td>`,
-                `<td class="text-end">${f.cantidad}</td>`,
-                `<td class="text-end">${((f.cantidad || 0) * (f.uf_unidad || 0)).toFixed(0)}</td>`,
-            ];
-            return `<tr>${cells.slice(0, cols.length).join('')}</tr>`;
-        }).join('');
-        const total = filas.reduce((s, f) => s + (f.cantidad || 0) * (f.uf_unidad || 0), 0);
-        const spanTotal = Math.max(1, cols.length - 1);
-        return `<table class="prop-tabla">${colgroupHtmlPropuesta('honorarios')}<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="${spanTotal}" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(0)}</td></tr></tfoot></table>`;
+        const filas = _propCalcFilas.length ? _propCalcFilas : [];
+        const inner = !filas.length
+            ? '<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody><tr><td colspan="3" class="text-muted">Sin unidades</td></tr></tbody>'
+            : (() => {
+                const rows = filas.map((f, i) => `<tr><td>${i + 1} ${esc(f.label)}</td><td class="text-end">${f.cantidad || 0}</td><td class="text-end">${subtotalFilaPropuesta(f).toFixed(0)}</td></tr>`).join('');
+                const total = filas.reduce((s, f) => s + subtotalFilaPropuesta(f), 0);
+                return `<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(0)}</td></tr></tfoot>`;
+            })();
+        return `<table class="prop-tabla prop-tabla-resize" data-resize-key="honTpl">${colgroupHtml('honTpl', [null, 80, 90])}${inner}</table>`;
     }
 
     function tablaPagoPropuesta() {
-        const cols = _propTablaCols.pago?.cols || PROP_TABLA_COLS_DEFAULT.pago.cols;
         const total = totalHonorariosPropuesta();
-        const ths = cols.map(c => `<th class="${c.align === 'end' ? 'text-end' : ''}">${esc(c.label)}</th>`).join('');
-        if (!_propEtapasState.length) {
-            return `<table class="prop-tabla">${colgroupHtmlPropuesta('pago')}<tbody><tr><td>TOTAL</td><td class="text-end">UF 0</td></tr></tbody></table>`;
-        }
-        const rows = _propEtapasState.map((e, i) => {
-            const monto = total * (e.porcentaje || 0) / 100;
-            const cod = e.codigo ? `${esc(e.codigo)} ` : `${i + 1}. `;
-            return `<tr><td>${cod}${esc(e.nombre)}</td><td class="text-end">UF ${monto.toFixed(2).replace('.', ',')}</td></tr>`;
-        }).join('');
-        return `<table class="prop-tabla">${colgroupHtmlPropuesta('pago')}<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">UF ${total.toFixed(1).replace('.', ',')}</td></tr></tfoot></table>`;
+        const inner = !_propEtapasState.length
+            ? '<tbody><tr><td>TOTAL</td><td class="text-end">UF 0</td></tr></tbody>'
+            : (() => {
+                const rows = _propEtapasState.map((e, i) => {
+                    const monto = total * (e.porcentaje || 0) / 100;
+                    const cod = e.codigo ? `${esc(e.codigo)} ` : `${i + 1}. `;
+                    return `<tr><td>${cod}${esc(e.nombre)}</td><td class="text-end">UF ${monto.toFixed(2).replace('.', ',')}</td></tr>`;
+                }).join('');
+                return `<thead><tr><th>ITEM</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">UF ${total.toFixed(1).replace('.', ',')}</td></tr></tfoot>`;
+            })();
+        return `<table class="prop-tabla prop-tabla-resize" data-resize-key="pagoTpl">${colgroupHtml('pagoTpl', [null, 100])}${inner}</table>`;
     }
 
     function varsTemplatePropuesta() {
-        const total = totalHonorariosPropuesta();
-        const clienteSel = document.getElementById('propClienteId');
-        const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
-        const cliente = document.getElementById('propClienteNombre').value.trim() || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '');
+        const d = datosPropuestaActuales();
         return {
-            '{{LOGO}}': logoHtmlPropuesta(),
-            '{{PROYECTO}}': esc(document.getElementById('propNombre').value.trim() || '—'),
-            '{{CLIENTE}}': esc(cliente || '—'),
-            '{{PRESENTADO_POR}}': esc(document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile'),
-            '{{FECHA}}': esc(fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value)),
-            '{{NUMERO}}': esc(document.getElementById('propNumero').value || '—'),
-            '{{UNIDADES_DESCRIPCION}}': esc(descripcionUnidadesPropuesta()),
+            '{{LOGO}}': '',
+            '{{PROYECTO}}': esc(d.proyecto),
+            '{{CLIENTE}}': esc(d.cliente),
+            '{{PRESENTADO_POR}}': esc(d.presentado_por),
+            '{{FECHA}}': esc(d.fecha),
+            '{{NUMERO}}': esc(d.numero),
+            '{{UNIDADES_DESCRIPCION}}': esc(d.unidades),
             '{{HONORARIOS_TABLA}}': tablaHonorariosPropuesta(),
             '{{PAGO_TABLA}}': tablaPagoPropuesta(),
-            '{{TOTAL_UF}}': total ? total.toFixed(1).replace('.', ',') : '0',
+            '{{TOTAL_UF}}': d.total_uf ? d.total_uf.toFixed(1).replace('.', ',') : '0',
         };
     }
 
@@ -7080,66 +7089,100 @@
         return aplicarVarsPlantilla(template || _propTemplateBase || '', varsTemplatePropuesta());
     }
 
-    function datosPropTemplateMap() {
-        const total = totalHonorariosPropuesta();
-        const clienteSel = document.getElementById('propClienteId');
-        const clienteVinculado = clienteSel?.selectedOptions?.[0]?.text?.trim();
-        const cliente = document.getElementById('propClienteNombre').value.trim() || (clienteVinculado && clienteVinculado !== '— Sin vínculo —' ? clienteVinculado : '');
-        return {
-            proyecto: esc(document.getElementById('propNombre').value.trim() || '—'),
-            cliente: esc(cliente || '—'),
-            presentado: esc(document.getElementById('propContactoBgreen').value.trim() || 'B-green Chile'),
-            fecha: esc(fmtFechaPropuestaLarga(document.getElementById('propFechaEnvio').value)),
-            numero: esc(document.getElementById('propNumero').value || '—'),
-            unidades: esc(descripcionUnidadesPropuesta()),
-            logo: logoHtmlPropuesta(),
-            total_uf: total ? total.toFixed(1).replace('.', ',') : '0',
-        };
-    }
-
-    function sincronizarDatosEnTemplate() {
-        const html = getPropTemplateHtml();
-        if (!html.trim()) return;
-        const wrap = document.createElement('div');
-        wrap.innerHTML = html;
-        const datos = datosPropTemplateMap();
-        wrap.querySelectorAll('[data-prop]').forEach(el => {
-            const key = el.getAttribute('data-prop');
-            if (datos[key] !== undefined) el.innerHTML = datos[key];
-        });
-        const hon = wrap.querySelector('#prop-bloque-honorarios');
-        const pago = wrap.querySelector('#prop-bloque-pago');
-        const totalEl = wrap.querySelector('.prop-doc-total');
-        if (hon) hon.innerHTML = tablaHonorariosPropuesta();
-        if (pago) pago.innerHTML = tablaPagoPropuesta();
-        if (totalEl) totalEl.innerHTML = `<strong>TOTAL: UF ${datos.total_uf}</strong>`;
-        const subtitulo = wrap.querySelector('.prop-doc-subtitulo');
-        if (subtitulo && !subtitulo.querySelector('[data-prop]')) subtitulo.innerHTML = datos.proyecto;
-        setPropTemplateHtml(wrap.innerHTML);
+    function asegurarBloquesTemplate(editor) {
+        if (!editor) return;
+        if (!editor.querySelector('#prop-bloque-honorarios')) {
+            const honSec = [...editor.querySelectorAll('.prop-doc-seccion, h3, h4')].find(s => /honorarios/i.test(s.textContent));
+            if (honSec) {
+                const div = document.createElement('div');
+                div.id = 'prop-bloque-honorarios';
+                honSec.insertAdjacentElement('afterend', div);
+            }
+        }
+        if (!editor.querySelector('#prop-bloque-pago')) {
+            const pagoSec = [...editor.querySelectorAll('.prop-doc-seccion, h3, h4')].find(s => /forma de pago|condiciones de pago|pago/i.test(s.textContent));
+            if (pagoSec) {
+                const div = document.createElement('div');
+                div.id = 'prop-bloque-pago';
+                pagoSec.insertAdjacentElement('afterend', div);
+            }
+        }
     }
 
     function actualizarBloquesTemplate() {
-        sincronizarDatosEnTemplate();
+        const editor = document.getElementById('propTemplate');
+        if (!editor || !editor.innerHTML.trim()) return;
+        asegurarBloquesTemplate(editor);
+        const hon = editor.querySelector('#prop-bloque-honorarios');
+        const pago = editor.querySelector('#prop-bloque-pago');
+        const totalEl = editor.querySelector('[data-prop="total_uf"]') || editor.querySelector('.prop-doc-total');
+        if (hon) {
+            hon.innerHTML = tablaHonorariosPropuesta();
+            initTablaColumnasResizables(hon.querySelector('table'), 'honTpl', [null, 80, 90], []);
+        }
+        if (pago) {
+            pago.innerHTML = tablaPagoPropuesta();
+            initTablaColumnasResizables(pago.querySelector('table'), 'pagoTpl', [null, 100], []);
+        }
+        const total = totalHonorariosPropuesta();
+        if (totalEl) {
+            const uf = total ? total.toFixed(1).replace('.', ',') : '0';
+            totalEl.innerHTML = `<strong>TOTAL: UF ${uf}</strong>`;
+        }
     }
 
-    function actualizarTemplatePropuesta(forzar = false) {
-        if (!_propTemplateBase) return;
-        const html = getPropTemplateHtml();
-        if (!forzar && html.trim()) {
-            sincronizarDatosEnTemplate();
+    async function sincronizarDatosEnTemplate() {
+        const editor = document.getElementById('propTemplate');
+        if (!editor) return;
+        if (!editor.innerHTML.trim()) {
+            if (_propTemplateBase) await actualizarTemplatePropuesta(true);
             return;
         }
-        if (forzar && _propTemplateEditado && html.trim() && !confirm('¿Regenerar la propuesta? Se perderán las ediciones manuales del texto.')) return;
-        setPropTemplateHtml(rellenarTemplatePropuesta(_propTemplateBase));
-        _propTemplateEditado = false;
+        const d = datosPropuestaActuales();
+        const map = {
+            proyecto: d.proyecto,
+            cliente: d.cliente,
+            presentado_por: d.presentado_por,
+            fecha: d.fecha,
+            numero: 'P' + d.numero,
+            unidades: d.unidades,
+        };
+        for (const [prop, val] of Object.entries(map)) {
+            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => { el.textContent = val; });
+        }
+        if (!editor.querySelector('[data-prop="cliente"]')) {
+            const meta = editor.querySelector('.prop-doc-meta');
+            if (meta) {
+                const tds = meta.querySelectorAll('td');
+                if (tds[0]) tds[0].textContent = d.cliente;
+                if (tds[1]) tds[1].textContent = d.presentado_por;
+                if (tds[2]) tds[2].textContent = d.fecha;
+                if (tds[3]) tds[3].textContent = 'P' + d.numero;
+            }
+            const sub = editor.querySelector('.prop-doc-subtitulo');
+            if (sub) sub.textContent = d.proyecto;
+        }
+        actualizarBloquesTemplate();
+        await sincronizarLogoTemplate();
+    }
+
+    async function actualizarTemplatePropuesta(forzar = false) {
+        const editor = document.getElementById('propTemplate');
+        if (!editor || !_propTemplateBase) return;
+        if (!forzar && editor.dataset.editado === '1' && editor.innerHTML.trim()) {
+            await sincronizarDatosEnTemplate();
+            return;
+        }
+        if (forzar && editor.dataset.editado === '1' && !confirm('¿Regenerar la propuesta? Se perderán las ediciones manuales del texto.')) return;
+        asignarHtmlEditor(editor, rellenarTemplatePropuesta(_propTemplateBase));
+        editor.dataset.editado = '0';
+        asegurarBloquesTemplate(editor);
+        actualizarBloquesTemplate();
+        await sincronizarLogoTemplate();
     }
 
     function onPropCampoTemplate() {
-        if (getPropTemplateHtml().trim() || _propTemplateBase) {
-            sincronizarDatosEnTemplate();
-        } else {
-            actualizarTemplatePropuesta();
-        }
+        sincronizarDatosEnTemplate();
     }
 
     async function onPropServicioChange() {
@@ -7151,10 +7194,13 @@
         _propEtapasState = [];
         _propTemplateBase = '';
         _propPlantillaServicio = '';
-        _propTemplateEditado = false;
-        _propTemplatePending = null;
-        destroyPropSummernote();
-        $('#propTemplateSummernote').html('');
+        _propLogoCache = { empId: null, data: null };
+        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
+        const editor = document.getElementById('propTemplate');
+        if (editor) {
+            editor.innerHTML = '';
+            editor.dataset.editado = '0';
+        }
 
         if (!servicio) {
             aviso.classList.remove('d-none');
@@ -7176,9 +7222,7 @@
         _propCalcConfig = await res.json();
         _propTemplateBase = _propCalcConfig.template || '';
         _propPlantillaServicio = _propTemplateBase;
-        _propTablaCols = JSON.parse(JSON.stringify(PROP_TABLA_COLS_DEFAULT));
         initEtapasPropuesta(_propCalcConfig.etapas);
-        renderColConfigPropuesta();
         aviso.classList.add('d-none');
         contenido.classList.remove('d-none');
         document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
@@ -7193,10 +7237,6 @@
             recalcularPropuesta();
         }
         actualizarTemplatePropuesta(true);
-        if (document.getElementById('modalPropuesta')?.classList.contains('show')) {
-            initPropSummernote();
-            sincronizarDatosEnTemplate();
-        }
     }
 
     function onPropSuperficieChange() {
@@ -7210,6 +7250,7 @@
             renderCalcPropuesta();
             recalcularPropuesta();
         }
+        sincronizarDatosEnTemplate();
     }
 
     function onPropClienteVinculado() {
@@ -7234,32 +7275,29 @@
         }
         const data = await res.json();
         document.getElementById('tituloModalPlantilla').innerText = `Plantilla — ${servicio}`;
-        document.getElementById('plantillaSummernote').dataset.servicio = servicio;
-        const modalEl = document.getElementById('modalPlantillaPropuesta');
-        const onShown = () => {
-            initPlantillaSummernote();
-            setPlantillaEditorHtml(data.contenido_html || '');
-            modalEl.removeEventListener('shown.bs.modal', onShown);
-        };
-        modalEl.addEventListener('shown.bs.modal', onShown);
-        new bootstrap.Modal(modalEl).show();
+        const editorPlantilla = document.getElementById('plantillaPropuestaEditor');
+        asignarHtmlEditor(editorPlantilla, data.contenido_html || '');
+        editorPlantilla.dataset.servicio = servicio;
+        new bootstrap.Modal(document.getElementById('modalPlantillaPropuesta')).show();
     }
 
     function restaurarPlantillaDefault() {
+        const editorPlantilla = document.getElementById('plantillaPropuestaEditor');
         if (_propPlantillaServicio) {
-            setPlantillaEditorHtml(_propPlantillaServicio);
+            asignarHtmlEditor(editorPlantilla, _propPlantillaServicio);
             return;
         }
-        const servicio = document.getElementById('plantillaSummernote')?.dataset?.servicio;
+        const servicio = editorPlantilla?.dataset.servicio;
         if (servicio) onPropServicioChange().then(() => {
-            setPlantillaEditorHtml(_propTemplateBase);
+            asignarHtmlEditor(editorPlantilla, _propTemplateBase);
         });
     }
 
     async function guardarPlantillaServicio() {
-        const servicio = document.getElementById('plantillaSummernote')?.dataset?.servicio
+        const editorPlantilla = document.getElementById('plantillaPropuestaEditor');
+        const servicio = editorPlantilla?.dataset.servicio
             || document.getElementById('propServicio').value;
-        const contenido = getPlantillaEditorHtml().trim();
+        const contenido = leerHtmlEditor(editorPlantilla);
         if (!servicio || !contenido) {
             alert('Servicio y contenido requeridos.');
             return;
@@ -7277,13 +7315,13 @@
         _propTemplateBase = contenido;
         bootstrap.Modal.getInstance(document.getElementById('modalPlantillaPropuesta')).hide();
         if (confirm('¿Regenerar la propuesta actual con la plantilla guardada?')) {
-            actualizarTemplatePropuesta(true);
+            await actualizarTemplatePropuesta(true);
         }
     }
 
     async function exportarPropuesta(formato) {
-        sincronizarDatosEnTemplate();
-        const contenido = getPropTemplateHtml().trim() || '';
+        const editor = document.getElementById('propTemplate');
+        const contenido = leerHtmlEditor(editor);
         if (!contenido) {
             alert('No hay contenido de propuesta para exportar.');
             return;
@@ -7407,18 +7445,15 @@
                 : `${items.length} de ${_propuestasCache.length} propuestas`;
         }
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-4">Sin propuestas para mostrar</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Sin propuestas para mostrar</td></tr>';
             return;
         }
         tbody.innerHTML = items.map(p => `<tr>
             <td class="text-nowrap">${p.numero}</td>
             <td class="fw-medium text-truncate" style="max-width:200px" title="${esc(p.nombre)}">${esc(p.nombre)}</td>
             <td>${badgePropuestaStatus(p.status)}</td>
-            <td class="text-truncate" style="max-width:140px" title="${esc(p.cliente)}">${esc(p.cliente) || '—'}</td>
             <td class="text-truncate" style="max-width:120px">${esc(p.contacto_cliente) || '—'}</td>
             <td class="text-muted text-truncate" style="max-width:100px;font-size:0.75rem">${esc(p.servicio) || '—'}</td>
-            <td class="text-muted text-truncate" style="max-width:120px;font-size:0.75rem">${esc(p.detalle_servicio) || '—'}</td>
-            <td class="text-end text-nowrap">${p.superficie_m2 ? Number(p.superficie_m2).toLocaleString('es-CL') : '—'}</td>
             <td class="text-end text-nowrap">${p.monto_uf ? fmtUf(p.monto_uf) : '—'}</td>
             <td class="text-end text-nowrap">${fmt(p.monto_pesos || 0)}</td>
             <td class="text-nowrap">${fmtFecha(p.fecha_envio)}</td>
@@ -7453,24 +7488,24 @@
         document.getElementById('propStatus').value = 'No enviada';
         document.getElementById('propClienteId').value = '';
         document.getElementById('propServicio').value = '';
-        destroyPropSummernote();
-        $('#propTemplateSummernote').html('');
-        _propTemplateEditado = false;
-        _propTemplatePending = null;
-        _propTablaCols = JSON.parse(JSON.stringify(PROP_TABLA_COLS_DEFAULT));
+        const editorTpl = document.getElementById('propTemplate');
+        if (editorTpl) {
+            editorTpl.innerHTML = '';
+            editorTpl.dataset.editado = '0';
+        }
         _propCalcConfig = null;
         _propCalcFilas = [];
         _propEtapasState = [];
         _propTemplateBase = '';
         _propPlantillaServicio = '';
+        _propLogoCache = { empId: null, data: null };
+        _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
         document.getElementById('propCalcContenido')?.classList.add('d-none');
         document.getElementById('propCalcAviso')?.classList.remove('d-none');
         const aviso = document.getElementById('propCalcAviso');
         if (aviso) aviso.textContent = 'Seleccione un servicio con calculadora.';
         document.getElementById('propCalcUnidadesBody').innerHTML = '';
         document.getElementById('propCalcEtapasBody').innerHTML = '';
-        document.getElementById('propColHonorarios').innerHTML = '';
-        document.getElementById('propColPago').innerHTML = '';
         document.getElementById('propBlockDatos')?.classList.add('collapsed');
         document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
     }
@@ -7515,11 +7550,13 @@
                     renderEtapasPropuesta();
                     recalcularPropuesta();
                 }
-                if (p.template_html) {
-                    _propTemplatePending = p.template_html;
-                    _propTemplateEditado = true;
+                const editor = document.getElementById('propTemplate');
+                if (p.template_html && editor) {
+                    asignarHtmlEditor(editor, p.template_html);
+                    editor.dataset.editado = '1';
+                    await sincronizarDatosEnTemplate();
                 } else {
-                    _propTemplatePending = null;
+                    await actualizarTemplatePropuesta(true);
                 }
             }
         } else {
@@ -7529,20 +7566,16 @@
                 document.getElementById('propNumero').value = data.numero;
             }
             document.getElementById('propFechaEnvio').value = new Date().toISOString().slice(0, 10);
-            _propTemplatePending = null;
         }
-        const modalEl = document.getElementById('modalPropuesta');
-        const onShown = () => {
-            aplicarTemplatePropuestaPendiente();
-            modalEl.removeEventListener('shown.bs.modal', onShown);
-        };
-        modalEl.addEventListener('shown.bs.modal', onShown);
-        modalEl.addEventListener('hidden.bs.modal', () => destroyPropSummernote(), { once: true });
-        new bootstrap.Modal(modalEl).show();
+        const ta = document.getElementById('propTemplate');
+        if (ta && !ta._propBound) {
+            ta._propBound = true;
+            ta.addEventListener('input', () => { ta.dataset.editado = '1'; });
+        }
+        new bootstrap.Modal(document.getElementById('modalPropuesta')).show();
     }
 
     async function guardarPropuesta() {
-        sincronizarDatosEnTemplate();
         const id = document.getElementById('propId').value;
         const numeroVal = document.getElementById('propNumero').value;
         const payload = {
@@ -7561,7 +7594,7 @@
             monto_pesos: document.getElementById('propPesos').value || 0,
             fecha_envio: document.getElementById('propFechaEnvio').value || null,
             fecha_adjudicacion: document.getElementById('propFechaAdjud').value || null,
-            template_html: getPropTemplateHtml() || null,
+            template_html: leerHtmlEditor(document.getElementById('propTemplate')) || null,
             calculadora_json: serializarCalculadoraPropuesta(),
         };
         const res = await apiFetch(id ? `/api/propuestas/${id}` : '/api/propuestas', {
