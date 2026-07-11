@@ -245,6 +245,9 @@ def _normalizar_html_para_pdf(html: str) -> str:
     import html as html_mod
 
     out = html_mod.unescape(str(html or ''))
+    out = re.sub(r'\{7,0(?:\{7,0|[LG]7,0|\})+\}', '', out)
+    out = re.sub(r'\{\{LOGO\}\}', '', out)
+    out = re.sub(r'<div[^>]*id=["\']footerContent["\'][^>]*>[\s\S]*?</div>', '', out, flags=re.I)
     out = re.sub(r'<span[^>]*class="[^"]*prop-col-resize-grip[^"]*"[^>]*></span>', '', out, flags=re.I)
     out = re.sub(r'\scontenteditable="[^"]*"', '', out, flags=re.I)
     out = re.sub(r'\sdata-(?:prop|resize-key|editado|servicio)="[^"]*"', '', out, flags=re.I)

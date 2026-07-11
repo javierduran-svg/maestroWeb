@@ -465,13 +465,14 @@
         }
         #modalPropuesta #propCalcContenido .prop-calc-table .text-end { white-space: nowrap; }
         #modalPropuesta #propCalcContenido .prop-calc-table .prop-calc-total { font-size: 0.75rem; font-weight: 600; }
-        #modalPropuesta .prop-template-font-ctrl .prop-font-label {
-            font-size: 0.72rem;
-            min-width: 4.5rem;
-            pointer-events: none;
-            opacity: 1;
-            color: #495057;
+        #modalPropuesta .prop-template-font-ctrl .prop-font-hint {
+            font-size: 0.68rem;
+            color: #6c757d;
+            white-space: nowrap;
+            margin-right: 0.15rem;
         }
+        #modalPropuesta .prop-template-font-ctrl .prop-font-hint.text-warning { color: #b58100; }
+        #modalPropuesta .prop-template-font-ctrl .btn { min-width: 1.85rem; padding-left: 0.35rem; padding-right: 0.35rem; font-size: 0.72rem; }
         #modalPropuesta .prop-template-page-hint {
             flex-shrink: 0;
             text-align: right;
@@ -484,10 +485,12 @@
         #modalPropuesta #propCalcContenido .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.45rem; }
         .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
         .prop-template-editor { font-family: 'Roboto', sans-serif; }
-        .prop-template-editor table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid var(--teal-green); margin-bottom: 1rem; }
-        .prop-template-editor table.prop-doc-header td { vertical-align: top; padding: 0 0 0.75rem 0; border: none; }
+        .prop-template-editor table.prop-doc-header { display: table; width: 100%; table-layout: fixed; border-collapse: collapse; border-bottom: 2px solid var(--teal-green); margin-bottom: 1rem; }
+        .prop-template-editor table.prop-doc-header tr { display: table-row; }
+        .prop-template-editor table.prop-doc-header td { display: table-cell; vertical-align: top; padding: 0 0 0.75rem 0; border: none; }
         .prop-template-editor .prop-doc-header-text { width: 72%; }
-        .prop-template-editor .prop-doc-logo-wrap { width: 28%; text-align: right; }
+        .prop-template-editor .prop-doc-logo-wrap { width: 28%; text-align: right; vertical-align: top; }
+        .prop-template-editor .prop-doc-logo-wrap[align="right"] { text-align: right; }
         .prop-template-editor .prop-doc-titulo { font-size: 1rem; font-weight: 700; color: #111; margin: 0 0 0.35rem; line-height: 1.3; }
         .prop-template-editor .prop-doc-subtitulo { font-size: 0.95rem; font-weight: 700; color: var(--teal-green); margin: 0; }
         .prop-template-editor .prop-doc-logo { max-height: 56px; max-width: 120px; object-fit: contain; }
@@ -2626,10 +2629,16 @@
                     <div class="prop-template-toolbar">
                         <h6><i class="fa-solid fa-file-lines me-1"></i> Propuesta</h6>
                         <div class="d-flex align-items-center gap-2">
-                            <div class="prop-template-font-ctrl btn-group btn-group-sm" role="group" title="Tamaño de texto">
-                                <button type="button" class="btn btn-outline-secondary" onclick="cambiarFontPropuesta(-1)" title="Reducir texto"><i class="fa-solid fa-minus"></i></button>
-                                <span class="btn btn-outline-secondary disabled prop-font-label" id="propFontSizeLabel">Normal</span>
-                                <button type="button" class="btn btn-outline-secondary" onclick="cambiarFontPropuesta(1)" title="Aumentar texto"><i class="fa-solid fa-plus"></i></button>
+                            <div class="prop-template-font-ctrl d-flex align-items-center" title="Tamaño de texto en selección">
+                                <span class="prop-font-hint" id="propFontHint">Seleccione texto y elija tamaño</span>
+                                <div class="btn-group btn-group-sm ms-1" role="group" aria-label="Tamaño de fuente">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(8)" title="8 pt">8</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(9)" title="9 pt">9</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(10)" title="10 pt">10</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(11)" title="11 pt">11</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(12)" title="12 pt">12</button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="aplicarFontSizePropSeleccion(14)" title="14 pt">14</button>
+                                </div>
                             </div>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplatePropuesta(true)" title="Regenerar completo desde datos"><i class="fa-solid fa-rotate"></i></button>
                             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="abrirEditorPlantilla()" title="Editar plantilla del servicio"><i class="fa-solid fa-file-pen"></i></button>
@@ -2887,13 +2896,7 @@
     let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null };
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
-    const PROP_TEMPLATE_FONT_KEY = 'propTemplateFontSize';
-    const PROP_FONT_SIZES = [
-        { key: 'small', label: 'Pequeño', size: '0.72rem' },
-        { key: 'normal', label: 'Normal', size: '0.82rem' },
-        { key: 'large', label: 'Grande', size: '0.95rem' },
-    ];
-    let _propFontSizeIdx = 1;
+    let _propFontHintTimer = null;
     let _propModalSplitDrag = null;
     let _propModalResizeDrag = null;
 
@@ -2901,28 +2904,50 @@
         document.getElementById(id)?.classList.toggle('collapsed');
     }
 
-    function aplicarFontPropuesta(idx) {
-        _propFontSizeIdx = Math.max(0, Math.min(PROP_FONT_SIZES.length - 1, idx));
-        const cfg = PROP_FONT_SIZES[_propFontSizeIdx];
+    function selectionEnPropTemplate() {
         const editor = document.getElementById('propTemplate');
-        if (editor) editor.style.fontSize = cfg.size;
-        const label = document.getElementById('propFontSizeLabel');
-        if (label) label.textContent = cfg.label;
-        try { localStorage.setItem(PROP_TEMPLATE_FONT_KEY, cfg.key); } catch (_) {}
+        const sel = window.getSelection();
+        if (!editor || !sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+        if (!editor.contains(sel.anchorNode) || !editor.contains(sel.focusNode)) return null;
+        return sel;
     }
 
-    function cambiarFontPropuesta(delta) {
-        aplicarFontPropuesta(_propFontSizeIdx + delta);
+    function mostrarHintFontPropuesta(msg) {
+        const el = document.getElementById('propFontHint');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('text-warning');
+        clearTimeout(_propFontHintTimer);
+        _propFontHintTimer = setTimeout(() => {
+            el.textContent = 'Seleccione texto y elija tamaño';
+            el.classList.remove('text-warning');
+        }, 2200);
     }
 
-    function restaurarFontPropuesta() {
-        try {
-            const key = localStorage.getItem(PROP_TEMPLATE_FONT_KEY);
-            const idx = PROP_FONT_SIZES.findIndex(s => s.key === key);
-            aplicarFontPropuesta(idx >= 0 ? idx : 1);
-        } catch (_) {
-            aplicarFontPropuesta(1);
+    function aplicarFontSizePropSeleccion(pt) {
+        const editor = document.getElementById('propTemplate');
+        const sel = selectionEnPropTemplate();
+        if (!editor || !sel) {
+            mostrarHintFontPropuesta('Seleccione texto en la propuesta');
+            return;
         }
+        editor.focus();
+        const range = sel.getRangeAt(0);
+        const selectedText = range.toString();
+        if (!selectedText) {
+            mostrarHintFontPropuesta('Seleccione texto en la propuesta');
+            return;
+        }
+        document.execCommand('styleWithCSS', false, true);
+        try {
+            const span = document.createElement('span');
+            span.style.fontSize = pt + 'pt';
+            range.surroundContents(span);
+        } catch (_) {
+            const safe = selectedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            document.execCommand('insertHTML', false, `<span style="font-size:${pt}pt">${safe}</span>`);
+        }
+        editor.dataset.editado = '1';
     }
 
     function aplicarPropModalSize(w, h) {
@@ -7246,6 +7271,88 @@
         });
     }
 
+    function limpiarHtmlTemplateCorrupto(html) {
+        let out = String(html || '');
+        out = out.replace(/<div[^>]*id=["']footerContent["'][^>]*>[\s\S]*?<\/div>/gi, '');
+        out = out.replace(/<\/?pdf:[^>]+>/gi, '');
+        out = out.replace(/\{7,0(?:\{7,0|[LG]7,0|\})+\}/g, '');
+        out = out.replace(/\{\{LOGO\}\}/g, '');
+        out = out.replace(
+            /<div class="prop-doc-header">\s*<div class="prop-doc-header-text">/gi,
+            '<table class="prop-doc-header" cellpadding="0" cellspacing="0"><tr><td class="prop-doc-header-text" valign="top">'
+        );
+        out = out.replace(
+            /<\/div>\s*<div class="prop-doc-logo-wrap"([^>]*)>/gi,
+            '</td><td class="prop-doc-logo-wrap"$1 valign="top" align="right">'
+        );
+        out = out.replace(
+            /<\/div>\s*<\/div>\s*(<table class="prop-doc-meta")/gi,
+            '</td></tr></table>$1'
+        );
+        out = out.replace(/<font[^>]*>([\s\S]*?)<\/font>/gi, '$1');
+        out = out.replace(/(<div class="prop-doc"[^>]*)\sstyle="[^"]*font-size:[^"]*"/gi, '$1');
+        return out;
+    }
+
+    function limpiarNodosBasuraEditor(editor) {
+        if (!editor) return;
+        editor.querySelectorAll('#footerContent').forEach(el => el.remove());
+        editor.querySelectorAll('style').forEach(el => {
+            if (/footerContent|pdf-frame/i.test(el.textContent || '')) el.remove();
+        });
+        const basura = /^\{7,0|^\{\{LOGO\}\}$|^Página\s+\d+/i;
+        const header = editor.querySelector('table.prop-doc-header, .prop-doc-header');
+        while (header && header.previousSibling) {
+            const prev = header.previousSibling;
+            if (prev.nodeType === Node.TEXT_NODE) {
+                const txt = prev.textContent.trim();
+                if (!txt || basura.test(txt)) { prev.remove(); continue; }
+            } else if (prev.nodeName === 'BR') {
+                prev.remove();
+                continue;
+            }
+            break;
+        }
+        editor.querySelectorAll('td[data-prop="logo"], .prop-doc-logo-wrap').forEach(cell => {
+            [...cell.childNodes].forEach(ch => {
+                if (ch.nodeType === Node.TEXT_NODE && basura.test(ch.textContent.trim())) ch.remove();
+            });
+        });
+    }
+
+    function repararHeaderTemplate(editor) {
+        if (!editor) return;
+        limpiarNodosBasuraEditor(editor);
+        const header = editor.querySelector('table.prop-doc-header');
+        if (!header) return;
+        header.style.tableLayout = 'fixed';
+        header.style.width = '100%';
+        let tr = header.querySelector('tr');
+        if (!tr) {
+            tr = document.createElement('tr');
+            [...header.querySelectorAll(':scope > td')].forEach(td => tr.appendChild(td));
+            header.appendChild(tr);
+        }
+        const textCell = tr.querySelector('.prop-doc-header-text') || tr.querySelector('td:first-child');
+        let logoCell = tr.querySelector('.prop-doc-logo-wrap') || tr.querySelector('[data-prop="logo"]');
+        if (!logoCell && textCell) {
+            logoCell = document.createElement('td');
+            logoCell.className = 'prop-doc-logo-wrap';
+            logoCell.setAttribute('data-prop', 'logo');
+            tr.appendChild(logoCell);
+        }
+        if (textCell && textCell.parentElement !== tr) tr.insertBefore(textCell, tr.firstChild);
+        if (logoCell && logoCell.parentElement !== tr) tr.appendChild(logoCell);
+        if (logoCell) {
+            logoCell.setAttribute('valign', 'top');
+            logoCell.setAttribute('align', 'right');
+            logoCell.style.textAlign = 'right';
+            logoCell.style.verticalAlign = 'top';
+            logoCell.style.width = '28%';
+        }
+        if (textCell && textCell !== logoCell) textCell.style.width = '72%';
+    }
+
     function normalizarHtmlTemplate(html) {
         if (!html) return '';
         if (Array.isArray(html)) return html.join('');
@@ -7255,16 +7362,19 @@
             tmp.innerHTML = out;
             out = tmp.value;
         }
-        return out;
+        return limpiarHtmlTemplateCorrupto(out);
     }
 
     function asignarHtmlEditor(editor, html) {
         if (!editor) return;
         editor.innerHTML = normalizarHtmlTemplate(html);
+        editor.style.fontSize = '';
+        repararHeaderTemplate(editor);
     }
 
     function leerHtmlEditor(editor) {
-        return editor?.innerHTML?.trim() || '';
+        const html = editor?.innerHTML?.trim() || '';
+        return html ? limpiarHtmlTemplateCorrupto(html) : '';
     }
 
     function aplicarVarsPlantilla(plantilla, vars) {
@@ -7372,9 +7482,11 @@
             if (_propTemplateBase) await actualizarTemplatePropuesta(true);
             return;
         }
+        repararHeaderTemplate(editor);
         actualizarCamposDatosEnEditor(editor, datosPropuestaActuales());
         actualizarBloquesTemplate();
         await sincronizarLogoTemplate();
+        repararHeaderTemplate(editor);
     }
 
     async function actualizarTemplatePropuesta(forzar = false) {
@@ -7412,6 +7524,7 @@
         if (editor) {
             editor.innerHTML = '';
             editor.dataset.editado = '0';
+            editor.style.fontSize = '';
         }
 
         if (!servicio) {
@@ -7705,6 +7818,7 @@
         if (editorTpl) {
             editorTpl.innerHTML = '';
             editorTpl.dataset.editado = '0';
+            editorTpl.style.fontSize = '';
         }
         _propCalcConfig = null;
         _propCalcFilas = [];
@@ -7736,7 +7850,6 @@
         limpiarFormPropuesta();
         restaurarPropModalSize();
         restaurarPropModalSideW();
-        restaurarFontPropuesta();
         document.getElementById('tituloModalPropuesta').innerText = id ? 'Editar propuesta' : 'Nueva propuesta';
         if (id) {
             document.getElementById('propBlockDatos')?.classList.remove('collapsed');
