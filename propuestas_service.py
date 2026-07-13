@@ -15,6 +15,7 @@ from models import PlantillaPropuesta, Propuesta
 SERVICIOS_PROPUESTA = [
     'CES',
     'CEV+RT',
+    'CEV',
     'RT',
     'CVS',
     'CES Evaluadora',
@@ -71,6 +72,27 @@ TIPOS_PROYECTO_RT = [
 ETAPAS_PAGO_RT = [
     {'codigo': '1', 'nombre': 'Anticipo (inicio de servicio)', 'porcentaje': 50.0},
     {'codigo': '1.1', 'nombre': 'Informe cumplimiento RT [DOM]', 'porcentaje': 50.0},
+]
+
+# ---------------------------------------------------------------------------
+# CEV — Calificación Energética de Viviendas (sin Reglamentación Térmica)
+# ---------------------------------------------------------------------------
+# Servicio análogo a CEV+RT pero SIN el componente de Reglamentación Térmica:
+# solo se realiza la evaluación energética CEV (precalificación + calificación).
+# Reutiliza el cálculo por unidad/superficie de CEV+RT (tarifaCevRtPorM2 en el
+# frontend); los valores UF por unidad son editables por fila en la calculadora,
+# de modo que el usuario puede ajustarlos al no incluir el informe RT.
+TARIFAS_CEV = [
+    {'label': 'Casas 140 m²', 'm2': 140, 'uf_unidad': 5},
+    {'label': 'Casas 200 m²', 'm2': 200, 'uf_unidad': 7},
+    {'label': 'Casas 320 m²', 'm2': 320, 'uf_unidad': 11},
+]
+
+# Etapas de pago para CEV: precalificación (etapa de diseño) y calificación
+# (posterior a la Recepción Final). Sin entregable de Reglamentación Térmica.
+ETAPAS_PAGO_CEV = [
+    {'codigo': '1', 'nombre': 'Pre Calificación CEV', 'porcentaje': 50.0},
+    {'codigo': '2', 'nombre': 'Calificación CEV', 'porcentaje': 50.0},
 ]
 
 # ---------------------------------------------------------------------------
@@ -336,6 +358,67 @@ De acuerdo con la normativa actualizada, las viviendas deberán incorporar siste
 </div>
 </div>"""
 
+TEMPLATE_CEV = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Calificación Energética de Viviendas (CEV).</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Introducción</h3>
+<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong>, y tiene por objetivo realizar la evaluación energética integral del conjunto habitacional en el marco de la Calificación Energética de Viviendas (CEV) del Ministerio de Vivienda y Urbanismo (MINVU).</p>
+<p>El encargo considera la Precalificación y Calificación Energética CEV de cada una de las viviendas del proyecto, correspondiente a <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong>, con el objetivo de optimizar su desempeño energético y alcanzar la mejor calificación posible dentro del marco normativo vigente.</p>
+<p>La Calificación Energética de Viviendas es un instrumento que informa sobre el desempeño energético de una vivienda en su etapa de uso, entregando una etiqueta de eficiencia energética de conocimiento público que constituye un valor agregado para el proyecto tanto en su comercialización como en el confort de sus futuros ocupantes.</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>La presente propuesta técnica está orientada a evaluar el desempeño energético del proyecto en etapa de diseño y a gestionar su Calificación Energética de Viviendas ante la plataforma del MINVU.</p>
+
+<h4>Calificación energética de viviendas CEV</h4>
+<p>La propuesta incluye la evaluación en la etapa de diseño de los aspectos definidos en la normativa vigente, recientemente actualizada, y los parámetros de la calificación energética de viviendas CEV. Producto de esa evaluación se busca obtener la calificación óptima para el proyecto.</p>
+<p><strong>1. Análisis Preliminar CEV y propuestas de mejora.</strong><br>
+Se llevará a cabo la simulación de la vivienda para determinar tempranamente la calificación energética. Se entregará un informe con los resultados preliminares calculados según los planos y especificaciones técnicas de arquitectura. En caso de no cumplir con el objetivo trazado por el mandante, se propondrán mejoras con el fin de alcanzar la calificación deseada.</p>
+<p><strong>2. Precalificación CEV.</strong><br>
+Para la precalificación CEV de la vivienda, es requisito contar con el permiso de edificación aprobado. Se realizará la simulación de cada una de las unidades utilizando la Herramienta de Cálculo de la Calificación Energética de Viviendas (PBDT) del MINVU, obteniendo el informe de precalificación que acompaña al proyecto durante la etapa de construcción.</p>
+<p><strong>3. Verificación en obra.</strong><br>
+Durante la fase de construcción, se realizará una visita obligatoria para verificar que la envolvente especificada se esté implementando conforme al proyecto. Para ello, se solicitará a la constructora la entrega de una copia de las facturas de compra de los elementos de la envolvente (aislantes térmicos, cristales, etc.).</p>
+<p><strong>4. Calificación CEV.</strong><br>
+Una vez finalizada la construcción y obtenida la Recepción Final, se procederá a la Calificación CEV. En esta etapa será necesario subir las planillas de simulación a la página del MINVU. Para las viviendas existentes, se deberá considerar la envolvente construida. El resultado de esta etapa es la etiqueta de eficiencia energética definitiva de cada vivienda.</p>
+
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Para definir el monto de los honorarios profesionales se considera el servicio de Calificación Energética de Viviendas descrito en la presente propuesta:</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+
+<h4>Forma de pago</h4>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+
+<div class="prop-doc-firma">
+  <div class="prop-doc-firma-space"><br></div>
+  <div class="prop-doc-firma-linea"></div>
+  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES | Calificador Energético CEV.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
 TEMPLATE_CES = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -545,6 +628,7 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 
 TEMPLATES_POR_SERVICIO = {
     'CEV+RT': TEMPLATE_CEV_RT,
+    'CEV': TEMPLATE_CEV,
     'RT': TEMPLATE_RT,
     'CES': TEMPLATE_CES,
     'CES Evaluadora': TEMPLATE_CES_EVALUADORA,
@@ -783,6 +867,14 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'servicio': 'CEV+RT',
             'tarifas': TARIFAS_CEV_RT,
             'etapas': ETAPAS_PAGO_CEV_RT,
+            'template': None,
+            'format': 'html',
+        }
+    if servicio == 'CEV':
+        return {
+            'servicio': 'CEV',
+            'tarifas': TARIFAS_CEV,
+            'etapas': ETAPAS_PAGO_CEV,
             'template': None,
             'format': 'html',
         }
