@@ -250,7 +250,9 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
-  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <div class="prop-doc-firma-space"><br></div>
+  <div class="prop-doc-firma-linea"></div>
+  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
   <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
@@ -315,7 +317,9 @@ De acuerdo con la normativa actualizada, las viviendas deberán incorporar siste
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
-  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <div class="prop-doc-firma-space"><br></div>
+  <div class="prop-doc-firma-linea"></div>
+  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
   <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
@@ -402,7 +406,9 @@ Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación d
 <p class="text-muted">A. Entidad Administradora (arancel CES EA): valor afecto a IVA (19%). B. Entidad Evaluadora (arancel CES EE): no incluye visita de obra.</p>
 
 <div class="prop-doc-firma">
-  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <div class="prop-doc-firma-space"><br></div>
+  <div class="prop-doc-firma-linea"></div>
+  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
   <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES.<br>
   B-green Chile</p>
@@ -516,7 +522,9 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 &#8226; Se considera emisión de factura exenta.</p>
 
 <div class="prop-doc-firma">
-  <p><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+  <div class="prop-doc-firma-space"><br></div>
+  <div class="prop-doc-firma-linea"></div>
+  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
   <p>Socio B-green Chile<br>
   Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES.<br>
@@ -567,6 +575,9 @@ table.prop-tabla tfoot td { font-weight: bold; }
 .text-muted { color: #6c757d; }
 .prop-doc-total { margin-top: 10px; font-size: 10pt; }
 .prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
+.prop-doc-firma-space { min-height: 80px; height: 80px; }
+.prop-doc-firma-linea { width: 200px; border-top: 1px solid #333333; margin: 0 0 4px 0; }
+.prop-doc-firma-nombre { margin: 0 0 4px 0; }
 """
 
 PROP_PDF_CSS = """

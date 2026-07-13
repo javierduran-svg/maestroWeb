@@ -523,6 +523,11 @@
         .prop-template-editor table.prop-tabla .text-end { text-align: right; }
         .prop-template-editor .prop-doc-total { margin-top: 0.75rem; font-size: 10pt; }
         .prop-template-editor .prop-doc-firma, .prop-template-editor .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
+        /* Espacio para insertar/pegar una firma (imagen o texto) sobre el nombre.
+           Es parte del área editable: sin data-prop ni prop-campo-auto. */
+        .prop-template-editor .prop-doc-firma-space { min-height: 80px; height: 80px; }
+        .prop-template-editor .prop-doc-firma-linea { width: 200px; border-top: 1px solid #333; margin: 0 0 0.25rem; }
+        .prop-template-editor .prop-doc-firma-nombre { margin: 0 0 0.25rem; }
         /* Campos autogestionados (se completan desde "Datos"): resaltado sutil y
            no editables. El resaltado NO se exporta (se limpia en export/servidor). */
         .prop-template-editor .prop-campo-auto {
@@ -537,6 +542,9 @@
         .prop-auto-legend { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.68rem; color: #6c757d; font-weight: 400; text-transform: none; letter-spacing: 0; }
         .prop-auto-legend .prop-auto-swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; background: rgba(255, 214, 0, 0.35); box-shadow: 0 0 0 1px rgba(199, 146, 0, 0.5); }
         #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
+        .prop-calc-table input[type=number]::-webkit-outer-spin-button,
+        .prop-calc-table input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .prop-calc-table input[type=number] { -moz-appearance: textfield; appearance: textfield; }
         #propCalcUnidades th, #propCalcEtapas th, .prop-template-editor table.prop-tabla th { position: relative; }
         .prop-tabla-resize { table-layout: fixed; width: 100%; }
         .prop-col-resize-grip {
@@ -7382,16 +7390,16 @@
             <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
             <td class="text-end text-muted small">${fmtUfNum(f.m2)}</td>
             <td class="text-end text-muted small">1</td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="1" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;_propCalcFilas[${i}].cantidad=1;recalcularPropuesta()" title="UF del entregable (editable)"></td>
+            <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="1" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;_propCalcFilas[${i}].cantidad=1;recalcularPropuestaLive()" title="UF del entregable (editable)"></td>
             <td class="text-end subtotal-fila" data-idx="${i}">${fmtUfNum(sub)}</td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
         </tr>`;
             }
             return `<tr>
             <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.m2}" min="1" oninput="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);recalcularPropuesta()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" oninput="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
-            <td><input type="number" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="0.01" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;recalcularPropuesta()"></td>
+            <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.m2}" min="1" oninput="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);recalcularPropuestaLive()"></td>
+            <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" oninput="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuestaLive()"></td>
+            <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.uf_unidad}" min="0" step="0.01" oninput="_propCalcFilas[${i}].uf_unidad=parseFloat(this.value)||0;recalcularPropuestaLive()"></td>
             <td class="text-end subtotal-fila" data-idx="${i}">${fmtUfNum(sub)}</td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
         </tr>`;
@@ -7411,8 +7419,8 @@
             const cod = e.codigo ? `${e.codigo} ` : '';
             return `<tr>
                 <td><input type="text" class="form-control form-control-sm" value="${esc(cod + e.nombre)}" oninput="_propEtapasState[${i}].nombre=this.value.replace(/^[\d.]+\s*/, '');actualizarBloquesTemplate()"></td>
-                <td><input type="number" class="form-control form-control-sm text-end" value="${(e.porcentaje || 0).toFixed(2)}" min="0" max="100" step="0.01" oninput="_propEtapasState[${i}].porcentaje=parseFloat(this.value)||0;renderEtapasPropuesta();actualizarBloquesTemplate()"></td>
-                <td class="text-end">${fmtUfNum(monto)}</td>
+                <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${(e.porcentaje || 0).toFixed(2)}" min="0" max="100" step="0.01" oninput="_propEtapasState[${i}].porcentaje=parseFloat(this.value)||0;_actualizarEtapasMontosLive();actualizarBloquesTemplate()"></td>
+                <td class="text-end etapa-monto" data-idx="${i}">${fmtUfNum(monto)}</td>
                 <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarEtapaPropuesta(${i})" title="Quitar etapa"><i class="fa-solid fa-xmark"></i></button></td>
             </tr>`;
         }).join('');
@@ -7449,6 +7457,44 @@
         }
         renderCalcPropuesta();
         renderEtapasPropuesta();
+        document.getElementById('propUf').value = totalUnidades ? totalUnidades.toFixed(2) : '';
+        actualizarBloquesTemplate();
+    }
+
+    // Actualiza SOLO los montos por etapa (y el total) mediante textContent, sin
+    // reconstruir la tabla, para no perder el foco del input que se está editando.
+    function _actualizarEtapasMontosLive() {
+        const total = totalHonorariosPropuesta();
+        _propEtapasState.forEach((e, i) => {
+            const cell = document.querySelector(`#propCalcEtapasBody .etapa-monto[data-idx="${i}"]`);
+            if (cell) cell.textContent = fmtUfNum(total * (e.porcentaje || 0) / 100);
+        });
+        const totalEtapasEl = document.getElementById('propCalcTotalEtapas');
+        if (totalEtapasEl) totalEtapasEl.textContent = fmtUfNum(total);
+    }
+
+    // Variante "en vivo" de recalcularPropuesta: recalcula totales, subtotales,
+    // valores CES derivados y sincroniza el documento, pero SIN reconstruir los
+    // <tbody> de las tablas de la calculadora. Así el input que el usuario está
+    // escribiendo conserva el foco y admite valores multidígito/decimales.
+    function recalcularPropuestaLive() {
+        const totalUnidades = totalHonorariosPropuesta();
+        _propCalcFilas.forEach((f, i) => {
+            const cell = document.querySelector(`#propCalcUnidadesBody .subtotal-fila[data-idx="${i}"]`);
+            if (cell) cell.textContent = fmtUfNum(subtotalFilaPropuesta(f));
+        });
+        const totalEl = document.getElementById('propCalcTotalUnidades');
+        if (totalEl) totalEl.textContent = fmtUfNum(totalUnidades);
+        if (esServicioCes()) {
+            const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+            const baseEl = document.getElementById('propCesBase');
+            const cesTotalEl = document.getElementById('propCesTotal');
+            const base = cesBasePorM2(m2);
+            if (baseEl) baseEl.value = base ? base.toFixed(1) : '';
+            if (cesTotalEl) cesTotalEl.value = totalUnidades.toFixed(0);
+            renderOtrosGastosCes();
+        }
+        _actualizarEtapasMontosLive();
         document.getElementById('propUf').value = totalUnidades ? totalUnidades.toFixed(2) : '';
         actualizarBloquesTemplate();
     }
