@@ -7921,9 +7921,9 @@
         const inner = !filas.length
             ? '<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody><tr><td colspan="3" class="text-muted">Sin unidades</td></tr></tbody>'
             : (() => {
-                const rows = filas.map((f, i) => `<tr><td>${i + 1} ${esc(f.label)}</td><td class="text-end">${f.cantidad || 0}</td><td class="text-end">${subtotalFilaPropuesta(f).toFixed(0)}</td></tr>`).join('');
+                const rows = filas.map((f, i) => `<tr><td>${i + 1} ${esc(f.label)}</td><td class="text-end">${f.cantidad || 0}</td><td class="text-end">${subtotalFilaPropuesta(f).toFixed(1).replace('.', ',')}</td></tr>`).join('');
                 const total = filas.reduce((s, f) => s + subtotalFilaPropuesta(f), 0);
-                return `<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(0)}</td></tr></tfoot>`;
+                return `<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(1).replace('.', ',')}</td></tr></tfoot>`;
             })();
         return `<table class="prop-tabla prop-tabla-resize" data-resize-key="honTpl">${colgroupHtml('honTpl', [null, 80, 90])}${inner}</table>`;
     }
