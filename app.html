@@ -7288,19 +7288,22 @@
         return Math.round((parseFloat(v) || 0) * 100) / 100;
     }
 
-    // Filas por defecto para CES Evaluadora. Dos partes:
-    //   A) tipo 'arancel_ee': honorario de la Entidad Evaluadora, calculado
-    //      automáticamente desde la superficie (m²) con arancelCesEE().
-    //   B) tipo 'manual': visita de obra, valor UF definido por el usuario.
-    // Ambas quedan editables; solo la fila 'arancel_ee' se recalcula al
-    // cambiar la superficie.
+    // Filas por defecto para CES Evaluadora. Tres filas:
+    //   A) tipo 'arancel_ee' (factor 0.63): Evaluación Precertificación =
+    //      arancelCesEE(m²) × 0.63, calculada desde la superficie.
+    //   B) tipo 'arancel_ee' (factor 0.37): Certificación = arancelCesEE(m²) ×
+    //      0.37. A + B reconstruyen el arancel EE completo.
+    //   C) tipo 'manual': visita de obra, valor UF definido por el usuario.
+    // Todas quedan editables; solo las filas 'arancel_ee' se recalculan al
+    // cambiar la superficie, cada una con su propio factor.
     function crearFilasEvaluadoraDefault() {
         const filas = _propCalcConfig?.filas || [];
         const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
         _propCalcFilas = filas.map(f => {
             const tipo = f.tipo || 'manual';
+            const factor = (typeof f.factor === 'number') ? f.factor : 1;
             const uf = (tipo === 'arancel_ee' && m2 > 0)
-                ? _ufRound2(arancelCesEE(m2))
+                ? _ufRound2(arancelCesEE(m2) * factor)
                 : (parseFloat(f.uf_unidad) || 0);
             return {
                 label: f.label || 'Entregable',
@@ -7309,6 +7312,7 @@
                 uf_unidad: uf,
                 share: 0,
                 tipo,
+                factor,
             };
         });
     }
@@ -8161,14 +8165,16 @@
             return;
         }
         if (esServicioCesEvaluadora()) {
-            // El honorario de la Entidad Evaluadora (fila 'arancel_ee') se
-            // recalcula desde la superficie; la visita de obra ('manual') se
-            // conserva tal como la definió el usuario.
+            // Las filas del arancel de la Entidad Evaluadora ('arancel_ee') se
+            // recalculan desde la superficie, cada una con su factor de etapa
+            // (Precertificación 0.63, Certificación 0.37); la visita de obra
+            // ('manual') se conserva tal como la definió el usuario.
             const m2 = parseFloat(document.getElementById('propM2').value) || 0;
             _propCalcFilas.forEach(f => {
                 f.m2 = m2;
                 if (f.tipo === 'arancel_ee') {
-                    f.uf_unidad = m2 > 0 ? _ufRound2(arancelCesEE(m2)) : 0;
+                    const factor = (typeof f.factor === 'number') ? f.factor : 1;
+                    f.uf_unidad = m2 > 0 ? _ufRound2(arancelCesEE(m2) * factor) : 0;
                 }
             });
             renderCalcPropuesta();

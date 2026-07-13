@@ -172,18 +172,22 @@ ARANCEL_CES_EE = [
 # sino directamente del arancel de la Entidad Evaluadora (mismo tarifario
 # ARANCEL_CES_EE), interpolado por tramos según la superficie del proyecto.
 #
-# El honorario se estructura en dos partes:
-#   A) Evaluación / Certificación Entidad Evaluadora: se calcula de forma
-#      automática desde la superficie (m²) usando ARANCEL_CES_EE. Es editable
-#      si el usuario desea sobre-escribir el valor sugerido (tipo 'arancel_ee').
-#   B) Visita de obra: valor en UF definido manualmente por el usuario. NO se
+# El honorario se estructura en tres filas:
+#   A) Evaluación Precertificación: 63% del arancel de la Entidad Evaluadora,
+#      calculado automáticamente desde la superficie (m²) con ARANCEL_CES_EE
+#      (tipo 'arancel_ee', factor 0.63).
+#   B) Certificación: 37% del arancel de la Entidad Evaluadora, calculado
+#      automáticamente desde la superficie (tipo 'arancel_ee', factor 0.37).
+#      A + B = arancel EE completo, dividido en las dos etapas del proceso CES.
+#   C) Visita de obra: valor en UF definido manualmente por el usuario. NO se
 #      calcula automáticamente (tipo 'manual').
 #
 # NOTA: al ser B-green la propia Entidad Evaluadora, NO se incluye el bloque de
 # "otros gastos" (aranceles EA/EE) que sí aplica al servicio de asesoría CES:
 # el arancel de la Entidad Evaluadora ES el honorario de esta propuesta.
 FILAS_CES_EVALUADORA = [
-    {'label': 'Evaluación / Certificación Entidad Evaluadora', 'uf_unidad': 29, 'tipo': 'arancel_ee'},
+    {'label': 'Evaluación Precertificación', 'uf_unidad': 18.27, 'tipo': 'arancel_ee', 'factor': 0.63},
+    {'label': 'Certificación', 'uf_unidad': 10.73, 'tipo': 'arancel_ee', 'factor': 0.37},
     {'label': 'Visita de obra', 'uf_unidad': 50, 'tipo': 'manual'},
 ]
 
@@ -515,7 +519,7 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 <p><strong>Nota de Vigencia y Modificaciones:</strong> El Pre-certificado de Diseño expira automáticamente a los 6 meses de obtenida la recepción municipal o al emitirse el certificado final. Si las obras no se inician en 2 años, deberá renovarse. Durante la operación, el cliente se obliga a declarar cualquier cambio menor o mayor (umbrales del 5% y 20% de la superficie o instalaciones) que pueda alterar el puntaje u obligar a repetir la certificación.</p>
 
 <h3 class="prop-doc-seccion">Propuesta Económica — Honorarios Profesionales</h3>
-<p>Los honorarios de evaluación se derivan del arancel de la Entidad Evaluadora según la superficie del proyecto, más la visita de obra. Se considera el pago anticipado de los costos y honorarios en cada revisión.</p>
+<p>Los honorarios de evaluación se derivan del arancel de la Entidad Evaluadora según la superficie del proyecto, dividido en sus dos etapas: <strong>Evaluación Precertificación</strong> (63% del arancel, fase de diseño) y <strong>Certificación</strong> (37% del arancel, fase de edificio terminado), más la visita de obra. Se considera el pago anticipado de los costos y honorarios en cada revisión.</p>
 <div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 <p class="text-muted">&#8226; El valor anterior no incluye una eventual revisión en etapa de apelación. En caso de requerirse una revisión de apelación, el costo es de 6 UF.<br>
