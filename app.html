@@ -524,8 +524,9 @@
         .prop-template-editor .prop-doc-total { margin-top: 0.75rem; font-size: 10pt; }
         .prop-template-editor .prop-doc-firma, .prop-template-editor .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
         /* Bloque de firma alineado a la derecha vía tabla (celda derecha de ancho
-           fijo), para render idéntico en preview y en el PDF de xhtml2pdf. La
-           imagen se posa sobre la línea mediante un margen inferior negativo. */
+           fijo), para render idéntico en preview y en el PDF de xhtml2pdf.
+           Sin margen negativo: xhtml2pdf lo aplica mal y solapa el nombre; la
+           línea debe llevar &nbsp; o el motor omite el border-top. */
         .prop-template-editor table.prop-doc-firma-tabla { width: 100%; border-collapse: collapse; }
         .prop-template-editor table.prop-doc-firma-tabla td { border: none; padding: 0; }
         .prop-template-editor td.prop-doc-firma-bloque {
@@ -534,21 +535,28 @@
             vertical-align: top;
         }
         .prop-template-editor .prop-doc-firma-space {
-            min-height: 56px;
+            min-height: 40px;
             height: auto;
             line-height: 0;
             text-align: center;
         }
         .prop-template-editor .prop-doc-firma-img {
             display: block;
-            margin: 0 auto -28px auto;
-            height: 70px;
-            max-width: 230px;
+            margin: 0 auto;
+            max-height: 70px;
+            max-width: 220px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
         }
         .prop-template-editor .prop-doc-firma-linea {
             width: 100%;
+            border: 0;
             border-top: 1px solid #333;
-            margin: 0 0 0.25rem;
+            margin: 2px 0 0.25rem;
+            height: 1px;
+            font-size: 1px;
+            line-height: 1px;
         }
         .prop-template-editor .prop-doc-firma-nombre { margin: 0 0 0.25rem; text-align: center; }
         .prop-template-editor .prop-doc-firma-cargo { text-align: right; margin: 0.25rem 0 0; }
@@ -1401,6 +1409,8 @@
             overflow: hidden;
         }
         .trab-firma-preview {
+            width: auto;
+            height: auto;
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
@@ -5107,14 +5117,17 @@
             return datasets;
         }
 
+        // Never enable scales.stacked for bars: with proyección ON it shifted Y bases
+        // across series (Gastos floated above Facturado). Proyección is a normal
+        // grouped bar from y=0 alongside its series — no stack IDs needed.
         const datasets = [
             base('Facturado', data.facturado, facturadoColor, '#007bff'),
-            base('Ingresos', data.ingresos, ingresosColor, '#008080', { stack: 'ingresos' }),
+            base('Ingresos', data.ingresos, ingresosColor, '#008080'),
             base('Gastos', data.gastos, gastosColor, '#dc3545'),
         ];
         if (proyeccion && data.ingresos_proyectados) {
             datasets.splice(2, 0, base('Proyección ingresos', data.ingresos_proyectados, proyectadoColor, '#20b2aa', {
-                stack: 'ingresos', borderDash: [4, 3],
+                borderDash: [4, 3],
             }));
         }
         if (proyeccion && data.gastos_proyectados) {
@@ -5160,20 +5173,31 @@
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } },
+                    tooltip: {
+                        callbacks: {
+                            label(ctx) {
+                                if (ctx.raw == null || ctx.raw === '') return null;
+                                return `${ctx.dataset.label}: ${fmt(ctx.raw)}`;
+                            },
+                        },
+                    },
                 },
                 scales: {
                     x: {
                         grid: { display: false },
                         ticks: { font: { size: 10 }, maxRotation: 45 },
-                        stacked: !acumulado && proyeccion,
+                        stacked: false,
                     },
                     y: {
+                        beginAtZero: true,
                         ticks: { callback: v => fmt(v), font: { size: 10 } },
                         grid: { color: '#eef1f3' },
-                        stacked: !acumulado && proyeccion,
+                        stacked: false,
                     },
                 },
+                ...(acumulado ? {} : {
+                    datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9 } },
+                }),
             },
         });
         _renderDashboardWaterfall(data, proyeccion);
@@ -7855,7 +7879,11 @@
         let nombre = firma.querySelector('.prop-doc-firma-nombre');
         if (!td) {
             if (!space) { space = document.createElement('div'); space.className = 'prop-doc-firma-space'; }
-            if (!linea) { linea = document.createElement('div'); linea.className = 'prop-doc-firma-linea'; }
+            if (!linea) {
+                linea = document.createElement('div');
+                linea.className = 'prop-doc-firma-linea';
+                linea.innerHTML = '&nbsp;';
+            }
             if (!nombre) {
                 nombre = document.createElement('p');
                 nombre.className = 'prop-doc-firma-nombre';
@@ -7886,12 +7914,23 @@
         } else {
             if (space && space.parentElement !== td) td.insertBefore(space, td.firstChild);
             if (!space) { space = document.createElement('div'); space.className = 'prop-doc-firma-space'; td.insertBefore(space, td.firstChild); }
-            if (linea && linea.parentElement !== td) td.appendChild(linea);
+            if (!linea) {
+                linea = document.createElement('div');
+                linea.className = 'prop-doc-firma-linea';
+                linea.innerHTML = '&nbsp;';
+                const after = space.nextSibling;
+                if (after) td.insertBefore(linea, after);
+                else td.appendChild(linea);
+            } else if (linea.parentElement !== td) {
+                td.appendChild(linea);
+            }
             if (nombre && nombre.parentElement !== td) td.appendChild(nombre);
         }
         space.setAttribute('data-prop', 'firma_img');
         space.classList.add('prop-campo-auto');
         space.setAttribute('contenteditable', 'false');
+        // xhtml2pdf descarta divs vacíos con solo border-top: asegura contenido.
+        if (linea && !(linea.textContent || '').trim()) linea.innerHTML = '&nbsp;';
         // Marca los párrafos de cargo (fuera de la celda de firma) para alinearlos
         // a la derecha; el nombre queda dentro del td y no se toca aquí.
         [...firma.children].forEach(ch => {

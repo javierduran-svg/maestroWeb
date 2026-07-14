@@ -280,7 +280,7 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
     <td class="prop-doc-firma-espaciador"></td>
     <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
       <div class="prop-doc-firma-space" data-prop="firma_img"></div>
-      <div class="prop-doc-firma-linea"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
       <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
     </td>
   </tr></table>
@@ -352,7 +352,7 @@ De acuerdo con la normativa actualizada, las viviendas deberán incorporar siste
     <td class="prop-doc-firma-espaciador"></td>
     <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
       <div class="prop-doc-firma-space" data-prop="firma_img"></div>
-      <div class="prop-doc-firma-linea"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
       <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
     </td>
   </tr></table>
@@ -418,7 +418,7 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
     <td class="prop-doc-firma-espaciador"></td>
     <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
       <div class="prop-doc-firma-space" data-prop="firma_img"></div>
-      <div class="prop-doc-firma-linea"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
       <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
     </td>
   </tr></table>
@@ -512,7 +512,7 @@ Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación d
     <td class="prop-doc-firma-espaciador"></td>
     <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
       <div class="prop-doc-firma-space" data-prop="firma_img"></div>
-      <div class="prop-doc-firma-linea"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
       <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
     </td>
   </tr></table>
@@ -633,7 +633,7 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
     <td class="prop-doc-firma-espaciador"></td>
     <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
       <div class="prop-doc-firma-space" data-prop="firma_img"></div>
-      <div class="prop-doc-firma-linea"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
       <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
     </td>
   </tr></table>
@@ -695,9 +695,12 @@ table.prop-doc-firma-tabla { width: 100%; border-collapse: collapse; }
 table.prop-doc-firma-tabla td { border: none; padding: 0; }
 .prop-doc-firma-espaciador { border: none; }
 td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top; }
-.prop-doc-firma-space { min-height: 56px; height: auto; line-height: 0; text-align: center; }
-.prop-doc-firma-img { display: block; margin: 0 auto -28px auto; height: 70px; max-width: 230px; }
-.prop-doc-firma-linea { width: 100%; border-top: 1px solid #333333; margin: 0 0 4px 0; }
+/* La línea va debajo de la imagen (sin margen negativo): xhtml2pdf ignora
+   márgenes negativos de forma impredecible y además descarta divs vacíos
+   con solo border-top, por lo que la línea debe contener &nbsp;. */
+.prop-doc-firma-space { min-height: 40px; height: auto; line-height: 0; text-align: center; }
+.prop-doc-firma-img { display: block; margin: 0 auto 0 auto; max-height: 70px; max-width: 220px; width: auto; height: auto; }
+.prop-doc-firma-linea { width: 100%; border: 0; border-top: 1px solid #333333; margin: 2px 0 4px 0; height: 1px; font-size: 1px; line-height: 1px; }
 .prop-doc-firma-nombre { margin: 0 0 4px 0; text-align: center; }
 .prop-doc-firma-cargo { text-align: right; margin: 4px 0 0 0; }
 """
@@ -804,6 +807,14 @@ def _normalizar_html_para_pdf(html: str) -> str:
     out = re.sub(r'\sclass="\s*"', '', out, flags=re.I)
     out = re.sub(r'<(br)([^>]*)>', r'<\1\2/>', out, flags=re.I)
     out = re.sub(r'<img([^>]*?)(?<!/)>', r'<img\1/>', out, flags=re.I)
+    # xhtml2pdf no dibuja bordes de divs vacíos: la línea de firma necesita
+    # contenido (&nbsp;) o desaparece del PDF.
+    out = re.sub(
+        r'(<div[^>]*class="[^"]*prop-doc-firma-linea[^"]*"[^>]*>)\s*(</div>)',
+        r'\1&nbsp;\2',
+        out,
+        flags=re.I,
+    )
     out = re.sub(r'<colgroup>.*?</colgroup>', '', out, flags=re.I | re.S)
     out = re.sub(r'\sclass="([^"]*\s)?prop-tabla-resize(\s[^"]*)?"', ' class="prop-tabla"', out, flags=re.I)
     out = re.sub(r'<div class="prop-doc-header">\s*<div class="prop-doc-header-text">', '<table class="prop-doc-header" cellpadding="0" cellspacing="0"><tr><td class="prop-doc-header-text" valign="top">', out, flags=re.I | re.S)
