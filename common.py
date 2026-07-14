@@ -2117,7 +2117,9 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         fecha_estado_pago=_parse_fecha(data.get('fecha_estado_pago')),
         fecha_facturacion=_parse_fecha(data.get('fecha_facturacion')),
         monto_pesos=float(data['monto']),
-        centro_costo=proyecto.nombre,
+        # Proyecto.nombre admite hasta 150 caracteres, pero Movimiento.centro_costo
+        # está limitado a 50. Postgres rechaza el INSERT si no se normaliza.
+        centro_costo=proyecto.nombre[:50],
         clase='estado_pago',
         cta_origen_id=origen.id,
         cta_destino_id=destino.id,
@@ -2144,7 +2146,7 @@ def _crear_gasto(proyecto_id: int, data: dict, empresa_id: int) -> Movimiento:
         empresa_id=empresa_id,
         fecha_movimiento=_parse_fecha(data['fecha']),
         monto_pesos=float(data['monto']),
-        centro_costo=proyecto.nombre,
+        centro_costo=proyecto.nombre[:50],
         clase='gasto',
         cta_origen_id=origen.id,
         cta_destino_id=destino.id,
