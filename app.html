@@ -7751,11 +7751,12 @@
     async function cargarFirmantesPropuesta(force = false) {
         if (_propFirmantesCache && !force) return _propFirmantesCache;
         try {
-            let meta = _personalMeta;
-            if (!meta) {
-                const res = await apiFetch('/api/personal');
-                meta = res.ok ? await res.json() : { trabajadores: [] };
-            }
+            // Siempre se pide la lista fresca al construir/forzar el caché: así
+            // se refleja una firma recién subida sin depender de un _personalMeta
+            // potencialmente antiguo (que no incluiría el firma_url nuevo).
+            const res = await apiFetch('/api/personal');
+            const meta = res.ok ? await res.json() : (_personalMeta || { trabajadores: [] });
+            if (res.ok) _personalMeta = meta;
             const todos = meta.trabajadores || [];
             // Solo administradores (socios) pueden firmar propuestas.
             _propFirmantesCache = todos.filter(t => String(t.rol || '').toLowerCase() === 'admin');
@@ -7765,10 +7766,10 @@
         return _propFirmantesCache;
     }
 
-    async function poblarSelectFirmantes(firmanteId = null) {
+    async function poblarSelectFirmantes(firmanteId = null, force = false) {
         const sel = document.getElementById('propFirmanteId');
         if (!sel) return;
-        const firmantes = await cargarFirmantesPropuesta();
+        const firmantes = await cargarFirmantesPropuesta(force);
         const actual = firmanteId != null ? String(firmanteId) : sel.value;
         sel.innerHTML = '<option value="">— Seleccionar administrador —</option>' +
             firmantes.map(t => {
@@ -8761,7 +8762,9 @@
         await poblarClientesPropuestaModal();
         await cargarServiciosPropuesta();
         limpiarFormPropuesta();
-        await poblarSelectFirmantes();
+        // force=true: refresca la lista de firmantes por si se subió/quitó una
+        // firma en Personas sin recargar la página (caché podría estar viejo).
+        await poblarSelectFirmantes(null, true);
         restaurarPropModalSize();
         restaurarPropModalSideW();
         document.getElementById('tituloModalPropuesta').innerText = id ? 'Editar propuesta' : 'Nueva propuesta';
@@ -10163,6 +10166,8 @@
     async function cargarPersonal() {
         const data = await (await apiFetch('/api/personal')).json();
         _personalMeta = data;
+        // Personal cambió: invalida el caché de firmantes de propuestas.
+        _propFirmantesCache = null;
         const trabajadores = data.trabajadores || [];
         document.getElementById('tabla-trabajadores').innerHTML = trabajadores.length
             ? trabajadores.map(t => `<tr>
@@ -10351,8 +10356,13 @@
                 msg.className = 'small mt-2 text-warning';
                 msg.textContent = (data.mensaje || 'Guardado') + ', pero falló la subida de firma: ' + (firmaData.error || '');
             }
+            // Invalida cachés de firmantes/firma para que la propuesta vea la nueva firma.
+            _propFirmantesCache = null;
+            _propFirmaCache = { trabId: null, data: null };
         } else if (trabId && _trabFirmaQuitar) {
             await apiFetch(`/api/personal/${trabId}/firma`, { method: 'DELETE' });
+            _propFirmantesCache = null;
+            _propFirmaCache = { trabId: null, data: null };
         }
         bootstrap.Modal.getInstance(document.getElementById('modalTrabajador')).hide();
         await cargarPersonal();

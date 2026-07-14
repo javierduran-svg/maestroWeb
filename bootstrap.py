@@ -468,6 +468,10 @@ def _migrar_schema_legacy() -> None:
                 ('email', 'VARCHAR(255)'),
                 ('password_hash', 'VARCHAR(255)'),
                 ('rol', "VARCHAR(20) DEFAULT 'trabajador'"),
+                ('factor_overhead', 'FLOAT DEFAULT 1.0'),
+                ('costo_hh_manual', 'FLOAT'),
+                ('foto_path', 'VARCHAR(255)'),
+                ('firma_path', 'VARCHAR(255)'),
             ):
                 if col not in cols_t:
                     conn.execute(text(f'ALTER TABLE trabajadores ADD COLUMN {col} {tipo}'))
@@ -615,6 +619,27 @@ def ensure_schema_bootstrap() -> None:
     db.session.commit()
 
 
+def _asegurar_columnas_imagenes_trabajador() -> None:
+    """Garantiza que trabajadores tenga foto_path/firma_path en cualquier motor.
+
+    Idempotente: consulta el inspector y solo hace ALTER si la columna falta, así
+    no choca con la migración Alembic (que en producción corre antes del arranque).
+    Cubre el caso de una BD ya migrada hasta foto_path pero sin la migración de
+    firma aún aplicada, evitando que la subida de firma falle silenciosamente.
+    """
+    if not inspect(db.engine).has_table('trabajadores'):
+        return
+    cols = {c['name'] for c in inspect(db.engine).get_columns('trabajadores')}
+    faltantes = [c for c in ('foto_path', 'firma_path') if c not in cols]
+    if not faltantes:
+        return
+    with db.engine.connect() as conn:
+        for col in faltantes:
+            conn.execute(text(f'ALTER TABLE trabajadores ADD COLUMN {col} VARCHAR(255)'))
+        conn.commit()
+    logger.warning('Columnas añadidas a trabajadores: %s', ', '.join(faltantes))
+
+
 def ensure_schema() -> None:
     """Esquema: Flask-Migrate en Postgres; legacy SQLite si no hay alembic_version."""
     tiene_alembic = inspect(db.engine).has_table('alembic_version')
@@ -632,4 +657,5 @@ def ensure_schema() -> None:
             )
             db.create_all()
         asegurar_empresa_default()
+    _asegurar_columnas_imagenes_trabajador()
     ensure_schema_bootstrap()
