@@ -30,6 +30,8 @@ def _rrhh_requiere_admin():
         return None
     if request.method == 'GET' and request.path.rstrip('/').endswith('/foto'):
         return None
+    if request.method == 'GET' and request.path.rstrip('/').endswith('/firma'):
+        return None
     if not _es_admin():
         return jsonify({'error': 'Acceso restringido a administradores'}), 403
     return None
@@ -217,6 +219,35 @@ def manejar_foto_trabajador(trabajador_id):
     if error:
         return jsonify({'error': error}), 400
     return jsonify({'mensaje': 'Foto actualizada', 'trabajador': _trabajador_a_dict(trabajador)})
+
+
+@bp.route('/api/personal/<int:trabajador_id>/firma', methods=['GET', 'POST', 'DELETE'])
+def manejar_firma_trabajador(trabajador_id):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    trabajador = Trabajador.query.filter_by(empresa_id=eid, id=trabajador_id).first_or_404()
+
+    if request.method == 'GET':
+        path = _firma_path(trabajador)
+        if not path:
+            if trabajador.firma_path:
+                trabajador.firma_path = None
+                db.session.commit()
+            abort(404)
+        return send_file(path, mimetype=_firma_mimetype(trabajador))
+
+    if request.method == 'DELETE':
+        if trabajador.firma_path:
+            _eliminar_firma_trabajador(trabajador)
+            db.session.commit()
+        return jsonify({'mensaje': 'Firma eliminada', 'trabajador': _trabajador_a_dict(trabajador)})
+
+    archivo = request.files.get('firma')
+    _, error = _guardar_firma_trabajador(trabajador, archivo)
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify({'mensaje': 'Firma actualizada', 'trabajador': _trabajador_a_dict(trabajador)})
 
 
 @bp.route('/api/personal/importar-excel', methods=['POST'])

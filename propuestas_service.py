@@ -276,10 +276,15 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
-  <div class="prop-doc-firma-space"><br></div>
-  <div class="prop-doc-firma-linea"></div>
-  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
-  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea"></div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
 </div>
@@ -343,10 +348,15 @@ De acuerdo con la normativa actualizada, las viviendas deberán incorporar siste
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
-  <div class="prop-doc-firma-space"><br></div>
-  <div class="prop-doc-firma-linea"></div>
-  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
-  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea"></div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
 </div>
@@ -404,10 +414,15 @@ Una vez finalizada la construcción y obtenida la Recepción Final, se proceder�
 <p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
 
 <div class="prop-doc-firma">
-  <div class="prop-doc-firma-space"><br></div>
-  <div class="prop-doc-firma-linea"></div>
-  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
-  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea"></div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES | Calificador Energético CEV.<br>
   B-green Chile</p>
 </div>
@@ -493,10 +508,15 @@ Ingreso del expediente de construcción a la Entidad Evaluadora, coordinación d
 <p class="text-muted">A. Entidad Administradora (arancel CES EA): valor afecto a IVA (19%). B. Entidad Evaluadora (arancel CES EE): no incluye visita de obra.</p>
 
 <div class="prop-doc-firma">
-  <div class="prop-doc-firma-space"><br></div>
-  <div class="prop-doc-firma-linea"></div>
-  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
-  <p>Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea"></div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES.<br>
   B-green Chile</p>
 </div>
@@ -609,10 +629,15 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 &#8226; Se considera emisión de factura exenta.</p>
 
 <div class="prop-doc-firma">
-  <div class="prop-doc-firma-space"><br></div>
-  <div class="prop-doc-firma-linea"></div>
-  <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
-  <p>Socio B-green Chile<br>
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea"></div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Socio B-green Chile<br>
   Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
   LEED AP | Asesor CES.<br>
   B-green Chile</p>
@@ -663,9 +688,18 @@ table.prop-tabla tfoot td { font-weight: bold; }
 .text-muted { color: #6c757d; }
 .prop-doc-total { margin-top: 10px; font-size: 10pt; }
 .prop-doc-firma, .prop-doc-empresa { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
-.prop-doc-firma-space { min-height: 80px; height: 80px; }
-.prop-doc-firma-linea { width: 200px; border-top: 1px solid #333333; margin: 0 0 4px 0; }
-.prop-doc-firma-nombre { margin: 0 0 4px 0; }
+/* Bloque de firma alineado a la derecha mediante una tabla: la celda derecha
+   tiene ancho fijo (250px) y la izquierda actúa de espaciador. xhtml2pdf respeta
+   anchos de celda pero no el shrink-wrap de inline-block, por eso se usa tabla. */
+table.prop-doc-firma-tabla { width: 100%; border-collapse: collapse; }
+table.prop-doc-firma-tabla td { border: none; padding: 0; }
+.prop-doc-firma-espaciador { border: none; }
+td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top; }
+.prop-doc-firma-space { min-height: 56px; height: auto; line-height: 0; text-align: center; }
+.prop-doc-firma-img { display: block; margin: 0 auto -28px auto; height: 70px; max-width: 230px; }
+.prop-doc-firma-linea { width: 100%; border-top: 1px solid #333333; margin: 0 0 4px 0; }
+.prop-doc-firma-nombre { margin: 0 0 4px 0; text-align: center; }
+.prop-doc-firma-cargo { text-align: right; margin: 4px 0 0 0; }
 """
 
 PROP_PDF_CSS = """

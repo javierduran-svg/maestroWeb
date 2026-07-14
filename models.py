@@ -189,6 +189,7 @@ class Trabajador(db.Model):
     factor_overhead = db.Column(db.Float, default=1.0, nullable=False)
     costo_hh_manual = db.Column(db.Float, nullable=True)
     foto_path = db.Column(db.String(255), nullable=True)
+    firma_path = db.Column(db.String(255), nullable=True)
 
     cuenta_gasto = db.relationship('Cuenta')
     liquidaciones = db.relationship('Liquidacion', backref='trabajador_rel', lazy=True)

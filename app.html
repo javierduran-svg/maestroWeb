@@ -523,11 +523,35 @@
         .prop-template-editor table.prop-tabla .text-end { text-align: right; }
         .prop-template-editor .prop-doc-total { margin-top: 0.75rem; font-size: 10pt; }
         .prop-template-editor .prop-doc-firma, .prop-template-editor .prop-doc-empresa { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #e9ecef; font-size: 8.5pt; }
-        /* Espacio para insertar/pegar una firma (imagen o texto) sobre el nombre.
-           Es parte del área editable: sin data-prop ni prop-campo-auto. */
-        .prop-template-editor .prop-doc-firma-space { min-height: 80px; height: 80px; }
-        .prop-template-editor .prop-doc-firma-linea { width: 200px; border-top: 1px solid #333; margin: 0 0 0.25rem; }
-        .prop-template-editor .prop-doc-firma-nombre { margin: 0 0 0.25rem; }
+        /* Bloque de firma alineado a la derecha vía tabla (celda derecha de ancho
+           fijo), para render idéntico en preview y en el PDF de xhtml2pdf. La
+           imagen se posa sobre la línea mediante un margen inferior negativo. */
+        .prop-template-editor table.prop-doc-firma-tabla { width: 100%; border-collapse: collapse; }
+        .prop-template-editor table.prop-doc-firma-tabla td { border: none; padding: 0; }
+        .prop-template-editor td.prop-doc-firma-bloque {
+            width: 250px;
+            text-align: center;
+            vertical-align: top;
+        }
+        .prop-template-editor .prop-doc-firma-space {
+            min-height: 56px;
+            height: auto;
+            line-height: 0;
+            text-align: center;
+        }
+        .prop-template-editor .prop-doc-firma-img {
+            display: block;
+            margin: 0 auto -28px auto;
+            height: 70px;
+            max-width: 230px;
+        }
+        .prop-template-editor .prop-doc-firma-linea {
+            width: 100%;
+            border-top: 1px solid #333;
+            margin: 0 0 0.25rem;
+        }
+        .prop-template-editor .prop-doc-firma-nombre { margin: 0 0 0.25rem; text-align: center; }
+        .prop-template-editor .prop-doc-firma-cargo { text-align: right; margin: 0.25rem 0 0; }
         /* Campos autogestionados (se completan desde "Datos"): resaltado sutil y
            no editables. El resaltado NO se exporta (se limpia en export/servidor). */
         .prop-template-editor .prop-campo-auto {
@@ -1364,6 +1388,30 @@
         .gestion-proyecto-header:hover td { background: #e9ecef !important; }
         .gestion-entrega-row.gestion-entrega-agrupada .col-meta-proyecto { visibility: hidden; }
         .trab-foto-preview-wrap { position: relative; display: inline-block; }
+        .trab-firma-preview-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 220px;
+            height: 90px;
+            border: 1px dashed #ced4da;
+            border-radius: 6px;
+            background: #fafafa;
+            overflow: hidden;
+        }
+        .trab-firma-preview {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .trab-firma-placeholder {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #adb5bd;
+            font-size: 1.75rem;
+        }
         .app-shell.app-hidden { visibility: hidden; pointer-events: none; }
         #time-tracker-widget {
             position: fixed;
@@ -2626,7 +2674,8 @@
                                 <div class="prop-field span-2 prop-subheading">Datos</div>
                                 <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control" id="propClienteNombre" placeholder="Nombre en propuesta" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Vincular cliente</label><select class="form-select" id="propClienteId" onchange="onPropClienteVinculado()"><option value="">— Sin vínculo —</option></select></div>
-                                <div class="prop-field span-2"><label>Contacto b-green</label><input type="text" class="form-control" id="propContactoBgreen" oninput="onPropCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>Presentado por</label><select class="form-select" id="propFirmanteId" onchange="onPropFirmanteChange()"><option value="">— Seleccionar administrador —</option></select></div>
+                                <div class="prop-field span-2"><label>Nombre en propuesta</label><input type="text" class="form-control" id="propContactoBgreen" placeholder="Se completa al elegir el firmante" oninput="onPropCampoTemplate()"></div>
                                 <div class="prop-field"><label>m²</label><input type="number" step="any" class="form-control" id="propM2" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>Unidades</label><input type="number" step="any" class="form-control" id="propUnidades" oninput="onPropSuperficieChange()"></div>
                                 <div class="prop-field"><label>UF</label><input type="number" step="any" class="form-control" id="propUf"></div>
@@ -2862,6 +2911,16 @@
                     <input type="file" class="form-control form-control-sm" id="trabFotoFile" accept="image/png,image/jpeg,image/webp,image/gif">
                     <button type="button" class="btn btn-sm btn-link text-danger d-none mt-1" id="trabFotoQuitar" onclick="quitarTrabFotoPreview()">Quitar foto</button>
                 </div>
+                <div class="col-md-5 text-center">
+                    <label class="form-label small fw-bold d-block">Firma <span class="text-muted fw-normal">(administradores · se usa en propuestas)</span></label>
+                    <div class="trab-firma-preview-wrap mb-2">
+                        <img id="trabFirmaPreview" class="trab-firma-preview d-none" alt="Firma">
+                        <span id="trabFirmaPlaceholder" class="trab-firma-placeholder"><i class="fa-solid fa-signature"></i></span>
+                    </div>
+                    <input type="file" class="form-control form-control-sm" id="trabFirmaFile" accept="image/png,image/jpeg,image/webp">
+                    <button type="button" class="btn btn-sm btn-link text-danger d-none mt-1" id="trabFirmaQuitar" onclick="quitarTrabFirmaPreview()">Quitar firma</button>
+                    <div class="form-text small">PNG con fondo transparente recomendado.</div>
+                </div>
             </div>
             <div class="row g-3">
                 <div class="col-md-4"><label class="form-label small fw-bold">RUT</label><input type="text" class="form-control" id="trabRut" placeholder="12.345.678-9" required></div>
@@ -2967,6 +3026,8 @@
     let _propTemplateBase = '';
     let _propPlantillaServicio = '';
     let _propLogoCache = { empId: null, data: null };
+    let _propFirmantesCache = null; // lista de admins (con firma_url)
+    let _propFirmaCache = { trabId: null, data: null };
     let _propAnchosColumnas = { calcUnidades: null, calcEtapas: null, honTpl: null, pagoTpl: null, otrosTpl: null };
     const PROP_MODAL_SIZE_KEY = 'propModalSize';
     const PROP_MODAL_SIDE_KEY = 'propModalSideW';
@@ -3219,6 +3280,7 @@
     let _gestionProyectosColapsados = new Set();
     let _gestionProximasAgruparProyecto = true;
     let _trabFotoQuitar = false;
+    let _trabFirmaQuitar = false;
     let _calendarioMes = new Date().getMonth() + 1;
     let _calendarioAnio = new Date().getFullYear();
     let _ganttDatos = null;
@@ -3466,6 +3528,11 @@
         return t.foto_url + '?t=' + (t.id || Date.now());
     }
 
+    function firmaUrlTrabajador(t) {
+        if (!t || !t.firma_url) return null;
+        return t.firma_url + '?t=' + (t.id || Date.now());
+    }
+
     function avatarHtml(fotoUrl, sizeClass = 'avatar-round-sm') {
         if (fotoUrl) {
             return `<img src="${esc(fotoUrl)}" class="avatar-round ${sizeClass}" alt="">`;
@@ -3529,6 +3596,34 @@
         _trabFotoQuitar = true;
         resetTrabFotoPreview(null);
         const file = document.getElementById('trabFotoFile');
+        if (file) file.value = '';
+    }
+
+    function resetTrabFirmaPreview(firmaUrl = null) {
+        _trabFirmaQuitar = false;
+        const file = document.getElementById('trabFirmaFile');
+        if (file) file.value = '';
+        const img = document.getElementById('trabFirmaPreview');
+        const ph = document.getElementById('trabFirmaPlaceholder');
+        const btnQuitar = document.getElementById('trabFirmaQuitar');
+        if (!img || !ph) return;
+        if (firmaUrl) {
+            img.src = firmaUrl;
+            img.classList.remove('d-none');
+            ph.classList.add('d-none');
+            btnQuitar?.classList.remove('d-none');
+        } else {
+            img.classList.add('d-none');
+            img.removeAttribute('src');
+            ph.classList.remove('d-none');
+            btnQuitar?.classList.add('d-none');
+        }
+    }
+
+    function quitarTrabFirmaPreview() {
+        _trabFirmaQuitar = true;
+        resetTrabFirmaPreview(null);
+        const file = document.getElementById('trabFirmaFile');
         if (file) file.value = '';
     }
 
@@ -4343,6 +4438,27 @@
             preview.classList.remove('d-none');
             document.getElementById('trabFotoPlaceholder')?.classList.add('d-none');
             document.getElementById('trabFotoQuitar')?.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('trabFirmaFile')?.addEventListener('change', function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) {
+            document.getElementById('trabMsg').textContent = 'La firma no puede superar 2 MB';
+            document.getElementById('trabMsg').className = 'small mt-2 text-danger';
+            this.value = '';
+            return;
+        }
+        _trabFirmaQuitar = false;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const preview = document.getElementById('trabFirmaPreview');
+            preview.src = ev.target.result;
+            preview.classList.remove('d-none');
+            document.getElementById('trabFirmaPlaceholder')?.classList.add('d-none');
+            document.getElementById('trabFirmaQuitar')?.classList.remove('d-none');
         };
         reader.readAsDataURL(file);
     });
@@ -7632,6 +7748,158 @@
         }
     }
 
+    async function cargarFirmantesPropuesta(force = false) {
+        if (_propFirmantesCache && !force) return _propFirmantesCache;
+        try {
+            let meta = _personalMeta;
+            if (!meta) {
+                const res = await apiFetch('/api/personal');
+                meta = res.ok ? await res.json() : { trabajadores: [] };
+            }
+            const todos = meta.trabajadores || [];
+            // Solo administradores (socios) pueden firmar propuestas.
+            _propFirmantesCache = todos.filter(t => String(t.rol || '').toLowerCase() === 'admin');
+        } catch (_) {
+            _propFirmantesCache = [];
+        }
+        return _propFirmantesCache;
+    }
+
+    async function poblarSelectFirmantes(firmanteId = null) {
+        const sel = document.getElementById('propFirmanteId');
+        if (!sel) return;
+        const firmantes = await cargarFirmantesPropuesta();
+        const actual = firmanteId != null ? String(firmanteId) : sel.value;
+        sel.innerHTML = '<option value="">— Seleccionar administrador —</option>' +
+            firmantes.map(t => {
+                const nombre = t.nombre_display || t.nombre_completo || `${t.nombres} ${t.apellido_paterno}`;
+                const marca = t.firma_url ? '' : ' (sin firma)';
+                return `<option value="${t.id}" data-nombre="${esc(nombre)}" data-tiene-firma="${t.firma_url ? '1' : '0'}">${esc(nombre)}${marca}</option>`;
+            }).join('');
+        if (actual && [...sel.options].some(o => o.value === actual)) sel.value = actual;
+    }
+
+    async function onPropFirmanteChange() {
+        const sel = document.getElementById('propFirmanteId');
+        const opt = sel?.selectedOptions?.[0];
+        if (opt && opt.value) {
+            const nombre = opt.getAttribute('data-nombre') || opt.textContent.replace(/\s*\(sin firma\)\s*$/, '').trim();
+            const input = document.getElementById('propContactoBgreen');
+            if (input) input.value = nombre;
+        }
+        await sincronizarFirmaTemplate();
+        onPropCampoTemplate();
+    }
+
+    async function cargarFirmaPropuesta(trabId) {
+        if (!trabId) {
+            _propFirmaCache = { trabId: null, data: null };
+            return null;
+        }
+        if (_propFirmaCache.trabId === String(trabId) && _propFirmaCache.data) {
+            return _propFirmaCache.data;
+        }
+        try {
+            const res = await apiFetch(`/api/personal/${trabId}/firma`);
+            if (!res.ok) {
+                _propFirmaCache = { trabId: String(trabId), data: null };
+                return null;
+            }
+            const blob = await res.blob();
+            const data = await new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = () => resolve(r.result);
+                r.onerror = reject;
+                r.readAsDataURL(blob);
+            });
+            _propFirmaCache = { trabId: String(trabId), data };
+            return data;
+        } catch (_) {
+            _propFirmaCache = { trabId: String(trabId), data: null };
+            return null;
+        }
+    }
+
+    async function sincronizarFirmaTemplate() {
+        const editor = document.getElementById('propTemplate');
+        if (!editor) return;
+        repararFirmaTemplate(editor);
+        const wrap = editor.querySelector('[data-prop="firma_img"]') || editor.querySelector('.prop-doc-firma-space');
+        if (!wrap) return;
+        const firmanteId = document.getElementById('propFirmanteId')?.value || '';
+        if (!firmanteId) {
+            // Sin firmante seleccionado: deja el espacio vacío (línea visible).
+            wrap.innerHTML = '';
+            return;
+        }
+        const data = await cargarFirmaPropuesta(firmanteId);
+        if (data) {
+            wrap.innerHTML = `<img src="${data}" alt="Firma" class="prop-doc-firma-img"/>`;
+        } else {
+            wrap.innerHTML = '';
+        }
+    }
+
+    // Asegura la estructura del bloque de firma (tabla con celda derecha de ancho
+    // fijo: space + linea + nombre) tanto en plantillas nuevas como en las
+    // guardadas con formatos antiguos (space/linea/nombre sueltos o dentro de un
+    // div.prop-doc-firma-bloque). Deja el/los párrafos de cargo a la derecha.
+    function repararFirmaTemplate(editor) {
+        if (!editor) return;
+        const firma = editor.querySelector('.prop-doc-firma');
+        if (!firma) return;
+        let td = firma.querySelector('td.prop-doc-firma-bloque');
+        let space = firma.querySelector('.prop-doc-firma-space');
+        let linea = firma.querySelector('.prop-doc-firma-linea');
+        let nombre = firma.querySelector('.prop-doc-firma-nombre');
+        if (!td) {
+            if (!space) { space = document.createElement('div'); space.className = 'prop-doc-firma-space'; }
+            if (!linea) { linea = document.createElement('div'); linea.className = 'prop-doc-firma-linea'; }
+            if (!nombre) {
+                nombre = document.createElement('p');
+                nombre.className = 'prop-doc-firma-nombre';
+                nombre.innerHTML = '<strong data-prop="presentado_por"></strong>';
+            }
+            const table = document.createElement('table');
+            table.className = 'prop-doc-firma-tabla';
+            table.setAttribute('cellpadding', '0');
+            table.setAttribute('cellspacing', '0');
+            table.setAttribute('width', '100%');
+            const tr = document.createElement('tr');
+            const tdSpacer = document.createElement('td');
+            tdSpacer.className = 'prop-doc-firma-espaciador';
+            td = document.createElement('td');
+            td.className = 'prop-doc-firma-bloque';
+            td.setAttribute('width', '250');
+            td.setAttribute('align', 'center');
+            td.setAttribute('valign', 'top');
+            td.appendChild(space);
+            td.appendChild(linea);
+            td.appendChild(nombre);
+            tr.appendChild(tdSpacer);
+            tr.appendChild(td);
+            table.appendChild(tr);
+            firma.insertBefore(table, firma.firstChild);
+            // Elimina un posible contenedor div antiguo ya vaciado.
+            firma.querySelectorAll('div.prop-doc-firma-bloque').forEach(b => b.remove());
+        } else {
+            if (space && space.parentElement !== td) td.insertBefore(space, td.firstChild);
+            if (!space) { space = document.createElement('div'); space.className = 'prop-doc-firma-space'; td.insertBefore(space, td.firstChild); }
+            if (linea && linea.parentElement !== td) td.appendChild(linea);
+            if (nombre && nombre.parentElement !== td) td.appendChild(nombre);
+        }
+        space.setAttribute('data-prop', 'firma_img');
+        space.classList.add('prop-campo-auto');
+        space.setAttribute('contenteditable', 'false');
+        // Marca los párrafos de cargo (fuera de la celda de firma) para alinearlos
+        // a la derecha; el nombre queda dentro del td y no se toca aquí.
+        [...firma.children].forEach(ch => {
+            if (ch.tagName === 'P' && !ch.classList.contains('prop-doc-firma-nombre')) {
+                ch.classList.add('prop-doc-firma-cargo');
+            }
+        });
+    }
+
     function actualizarCamposDatosEnEditor(editor, d) {
         if (!editor || !d) return;
         const uf = d.total_uf ? d.total_uf.toFixed(1).replace('.', ',') : '0';
@@ -7647,7 +7915,7 @@
         };
         for (const [prop, val] of Object.entries(map)) {
             editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
-                if (prop === 'logo') return;
+                if (prop === 'logo' || prop === 'firma_img') return;
                 el.textContent = val;
             });
         }
@@ -7688,7 +7956,14 @@
     function marcarCamposAutomaticos(editor, { noEditable = true } = {}) {
         if (!editor) return;
         editor.querySelectorAll('[data-prop]').forEach(el => {
-            if (el.getAttribute('data-prop') === 'logo') return;
+            const prop = el.getAttribute('data-prop');
+            if (prop === 'logo' || prop === 'firma_img') {
+                // Logo y firma se gestionan por sincronizar*Template (imagen),
+                // no vía textContent. Se marcan igual como automáticos.
+                el.classList.add('prop-campo-auto');
+                if (noEditable) el.setAttribute('contenteditable', 'false');
+                return;
+            }
             el.classList.add('prop-campo-auto');
             if (noEditable) el.setAttribute('contenteditable', 'false');
         });
@@ -8047,6 +8322,7 @@
         actualizarCamposDatosEnEditor(editor, datosPropuestaActuales());
         actualizarBloquesTemplate();
         await sincronizarLogoTemplate();
+        await sincronizarFirmaTemplate();
         repararHeaderTemplate(editor);
         marcarCamposAutomaticos(editor);
     }
@@ -8065,6 +8341,7 @@
         actualizarBloquesTemplate();
         actualizarCamposDatosEnEditor(editor, datosPropuestaActuales());
         await sincronizarLogoTemplate();
+        await sincronizarFirmaTemplate();
         marcarCamposAutomaticos(editor);
     }
 
@@ -8405,6 +8682,7 @@
             <td class="text-nowrap">${fmtFecha(p.fecha_adjudicacion)}</td>
             <td class="text-end text-nowrap">
                 <button class="btn btn-outline-secondary btn-accion" onclick="abrirPropuestaModal(${p.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn btn-outline-secondary btn-accion" onclick="duplicarPropuesta(${p.id})" title="Duplicar"><i class="fa-solid fa-copy"></i></button>
                 <button class="btn btn-outline-danger btn-accion" onclick="borrarPropuesta(${p.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
             </td>
         </tr>`).join('');
@@ -8433,6 +8711,9 @@
         document.getElementById('propStatus').value = 'No enviada';
         document.getElementById('propClienteId').value = '';
         document.getElementById('propServicio').value = '';
+        const firmanteSel = document.getElementById('propFirmanteId');
+        if (firmanteSel) firmanteSel.value = '';
+        _propFirmaCache = { trabId: null, data: null };
         const editorTpl = document.getElementById('propTemplate');
         if (editorTpl) {
             editorTpl.innerHTML = '';
@@ -8464,10 +8745,23 @@
         document.getElementById('propSeccionCalculadora')?.classList.remove('collapsed');
     }
 
+    // Busca un administrador cuyo nombre coincida con el texto "Presentado por"
+    // guardado (contacto_bgreen), para preseleccionar su firma al editar.
+    function matchFirmantePorNombre(nombre) {
+        const objetivo = String(nombre || '').trim().toLowerCase();
+        if (!objetivo || !Array.isArray(_propFirmantesCache)) return null;
+        return _propFirmantesCache.find(t => {
+            const cands = [t.nombre_display, t.nombre_completo, `${t.nombres} ${t.apellido_paterno}`, t.alias]
+                .filter(Boolean).map(s => String(s).trim().toLowerCase());
+            return cands.includes(objetivo);
+        }) || null;
+    }
+
     async function abrirPropuestaModal(id = null) {
         await poblarClientesPropuestaModal();
         await cargarServiciosPropuesta();
         limpiarFormPropuesta();
+        await poblarSelectFirmantes();
         restaurarPropModalSize();
         restaurarPropModalSideW();
         document.getElementById('tituloModalPropuesta').innerText = id ? 'Editar propuesta' : 'Nueva propuesta';
@@ -8479,6 +8773,11 @@
             document.getElementById('propNombre').value = p.nombre;
             document.getElementById('propStatus').value = p.status || 'No enviada';
             document.getElementById('propContactoBgreen').value = p.contacto_bgreen || '';
+            const firmanteMatch = matchFirmantePorNombre(p.contacto_bgreen);
+            if (firmanteMatch) {
+                const fsel = document.getElementById('propFirmanteId');
+                if (fsel) fsel.value = String(firmanteMatch.id);
+            }
             document.getElementById('propClienteNombre').value = p.cliente_nombre || '';
             document.getElementById('propClienteId').value = p.cliente_id || '';
             document.getElementById('propServicio').value = p.servicio || '';
@@ -8512,6 +8811,7 @@
                 } else {
                     await actualizarTemplatePropuesta(true);
                 }
+                await sincronizarFirmaTemplate();
             }
         } else {
             const resNum = await apiFetch('/api/propuestas/siguiente-numero');
@@ -8577,6 +8877,57 @@
             return;
         }
         await listarPropuestas();
+    }
+
+    // Crea una copia de una propuesta existente: conserva servicio, datos,
+    // plantilla y calculadora, pero asigna un nuevo N° correlativo, marca el
+    // nombre como "(copia)", reinicia el estado a "No enviada" y limpia las
+    // fechas de seguimiento (recepción/envío/adjudicación).
+    async function duplicarPropuesta(id) {
+        if (!confirm('¿Duplicar esta propuesta?')) return;
+        try {
+            const resP = await apiFetch(`/api/propuestas/${id}`);
+            if (!resP.ok) throw new Error('No se pudo cargar la propuesta');
+            const p = await resP.json();
+
+            let nuevoNumero = null;
+            const resNum = await apiFetch('/api/propuestas/siguiente-numero');
+            if (resNum.ok) nuevoNumero = (await resNum.json()).numero;
+
+            const payload = {
+                numero: nuevoNumero,
+                nombre: `${p.nombre || 'Propuesta'} (copia)`,
+                status: 'No enviada',
+                contacto_bgreen: p.contacto_bgreen || '',
+                cliente_nombre: p.cliente_nombre || '',
+                cliente_id: p.cliente_id || null,
+                contacto_cliente: p.contacto_cliente || '',
+                servicio: p.servicio || '',
+                detalle_servicio: p.detalle_servicio || '',
+                superficie_m2: p.superficie_m2 ?? '',
+                unidades: p.unidades ?? '',
+                monto_uf: p.monto_uf ?? '',
+                monto_pesos: p.monto_pesos ?? 0,
+                fecha_recepcion: null,
+                fecha_envio: null,
+                fecha_adjudicacion: null,
+                template_html: p.template_html || null,
+                calculadora_json: p.calculadora_json || null,
+            };
+            const res = await apiFetch('/api/propuestas', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || 'Error al duplicar');
+                return;
+            }
+            await listarPropuestas();
+        } catch (e) {
+            alert(e.message || 'Error al duplicar');
+        }
     }
 
     async function importarPropuestasExcel() {
@@ -9865,6 +10216,7 @@
         document.getElementById('trabIsapreUf').value = '0';
         document.getElementById('trabMsg').textContent = '';
         resetTrabFotoPreview(null);
+        resetTrabFirmaPreview(null);
         toggleIsapreTrabajador();
 
         const cargarYMostrar = (meta, trabajador = null) => {
@@ -9901,6 +10253,7 @@
                 document.getElementById('trabCuenta').value = trabajador.cuenta_gasto_id;
                 toggleIsapreTrabajador();
                 resetTrabFotoPreview(fotoUrlTrabajador(trabajador));
+                resetTrabFirmaPreview(firmaUrlTrabajador(trabajador));
             }
             new bootstrap.Modal(document.getElementById('modalTrabajador')).show();
         };
@@ -9987,6 +10340,19 @@
                 _authUser = { ..._authUser, foto_url: null };
                 actualizarAvataresUsuario(_authUser);
             }
+        }
+        const firmaFile = document.getElementById('trabFirmaFile')?.files[0];
+        if (trabId && firmaFile) {
+            const fd = new FormData();
+            fd.append('firma', firmaFile);
+            const firmaRes = await apiFetch(`/api/personal/${trabId}/firma`, { method: 'POST', body: fd });
+            const firmaData = await firmaRes.json().catch(() => ({}));
+            if (!firmaRes.ok) {
+                msg.className = 'small mt-2 text-warning';
+                msg.textContent = (data.mensaje || 'Guardado') + ', pero falló la subida de firma: ' + (firmaData.error || '');
+            }
+        } else if (trabId && _trabFirmaQuitar) {
+            await apiFetch(`/api/personal/${trabId}/firma`, { method: 'DELETE' });
         }
         bootstrap.Modal.getInstance(document.getElementById('modalTrabajador')).hide();
         await cargarPersonal();

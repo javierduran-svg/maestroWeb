@@ -204,13 +204,18 @@ MONEDAS_CUENTA = ('CLP', 'USD')
 
 LOGOS_DIR = Path(__file__).parent / 'uploads' / 'logos'
 TRABAJADORES_FOTOS_DIR = Path(__file__).parent / 'uploads' / 'trabajadores'
+FIRMAS_DIR = Path(__file__).parent / 'uploads' / 'firmas'
 CERTIFICADOS_DIR = Path(__file__).parent / 'uploads' / 'certificados'
 LOGO_MAX_BYTES = 2 * 1024 * 1024
 FOTO_MAX_BYTES = 2 * 1024 * 1024
 FOTO_MAX_PX = 200
+FIRMA_MAX_BYTES = 2 * 1024 * 1024
 CERTIFICADO_MAX_BYTES = 5 * 1024 * 1024
 LOGO_ALLOWED_EXT = {'.png', '.jpg', '.jpeg', '.webp'}
 FOTO_ALLOWED_EXT = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+# La firma conserva su formato original (idealmente PNG con transparencia) para
+# poder superponerla sobre la línea de firma en las propuestas.
+FIRMA_ALLOWED_EXT = {'.png', '.jpg', '.jpeg', '.webp'}
 CERTIFICADO_ALLOWED_EXT = {'.pfx', '.p12'}
 SECRET_MASK = '****'
 
@@ -759,6 +764,75 @@ def _guardar_foto_trabajador(trabajador: Trabajador, archivo) -> tuple[Trabajado
     return trabajador, None
 
 
+def _asegurar_firmas_dir():
+    FIRMAS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _firma_relativa_trabajador(trabajador: Trabajador, ext: str) -> str:
+    return f'{trabajador.empresa_id}/{trabajador.id}{ext}'
+
+
+def _firma_url(trabajador: Trabajador) -> str | None:
+    if trabajador.firma_path and _firma_path(trabajador):
+        return f'/api/personal/{trabajador.id}/firma'
+    return None
+
+
+def _firma_path(trabajador: Trabajador) -> Path | None:
+    if not trabajador.firma_path:
+        return None
+    path = FIRMAS_DIR / trabajador.firma_path
+    return path if path.is_file() else None
+
+
+def _firma_mimetype(trabajador: Trabajador) -> str:
+    ext = Path(trabajador.firma_path or '').suffix.lower()
+    return {
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+    }.get(ext, 'image/png')
+
+
+def _eliminar_firma_trabajador(trabajador: Trabajador) -> None:
+    path = _firma_path(trabajador)
+    if path and path.is_file():
+        path.unlink(missing_ok=True)
+    trabajador.firma_path = None
+
+
+def _guardar_firma_trabajador(trabajador: Trabajador, archivo) -> tuple[Trabajador | None, str | None]:
+    """Guarda la firma conservando su formato original (PNG con transparencia
+    idealmente), para poder superponerla sobre la línea de firma en el PDF."""
+    if not archivo or not getattr(archivo, 'filename', None):
+        return None, 'Archivo de firma requerido'
+    ext = Path(secure_filename(archivo.filename)).suffix.lower()
+    if ext not in FIRMA_ALLOWED_EXT:
+        return None, f'Formato no permitido. Use: {", ".join(sorted(FIRMA_ALLOWED_EXT))}'
+    raw = archivo.read()
+    if not raw:
+        return None, 'Archivo vacío'
+    if len(raw) > FIRMA_MAX_BYTES:
+        return None, f'La firma no puede superar {FIRMA_MAX_BYTES // (1024 * 1024)} MB'
+
+    empresa_dir = FIRMAS_DIR / str(trabajador.empresa_id)
+    empresa_dir.mkdir(parents=True, exist_ok=True)
+
+    # Elimina una firma previa aunque tenga otra extensión.
+    if trabajador.firma_path:
+        prev = FIRMAS_DIR / trabajador.firma_path
+        if prev.is_file():
+            prev.unlink(missing_ok=True)
+
+    rel = _firma_relativa_trabajador(trabajador, ext)
+    dest = FIRMAS_DIR / rel
+    dest.write_bytes(raw)
+    trabajador.firma_path = rel
+    db.session.commit()
+    return trabajador, None
+
+
 def _guardar_logo_empresa(empresa: Empresa, archivo) -> tuple[Empresa | None, str | None]:
     if not archivo or not getattr(archivo, 'filename', None):
         return None, 'Archivo de logo requerido'
@@ -1224,6 +1298,7 @@ def _trabajador_a_dict(t: Trabajador, uf_clp: float | None = None) -> dict:
         'costo_hh_manual': float(t.costo_hh_manual) if t.costo_hh_manual is not None else None,
         'costo_hh_real': round(t.costo_hh_real, 2),
         'foto_url': _foto_url(t),
+        'firma_url': _firma_url(t),
     }
 
 
