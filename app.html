@@ -496,6 +496,134 @@
         }
         #modalPropuesta #propCalcAviso { font-size: 0.75rem; padding: 0.5rem 0.65rem; margin: 0; }
         #modalPropuesta #propCalcContenido .btn-sm { font-size: 0.75rem; padding: 0.2rem 0.45rem; }
+
+        /* Estado de pago: mismo layout de modal que propuestas */
+        #modalEstadoPago .prop-modal-dialog {
+            margin: 0.25rem auto;
+            width: var(--ep-modal-w, min(96vw, 1200px));
+            height: var(--ep-modal-h, 90vh);
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+        #modalEstadoPago .prop-modal-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            min-width: 720px;
+            min-height: 480px;
+        }
+        #modalEstadoPago .prop-modal-resize-grip {
+            position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
+            cursor: nwse-resize; z-index: 10;
+            background: linear-gradient(135deg, transparent 50%, rgba(0,128,128,0.45) 50%);
+            border-bottom-right-radius: 0.3rem;
+        }
+        #modalEstadoPago .modal-header,
+        #modalEstadoPago .modal-footer { flex-shrink: 0; padding-top: 0.45rem; padding-bottom: 0.45rem; }
+        #modalEstadoPago .modal-body.prop-modal-body {
+            flex: 1; min-height: 0; overflow: hidden; padding: 0;
+        }
+        #modalEstadoPago .prop-modal-layout { display: flex; height: 100%; min-height: 0; }
+        #modalEstadoPago .prop-modal-side {
+            flex: 0 0 var(--ep-side-w, 320px); min-width: 180px;
+            overflow-y: auto; overflow-x: hidden;
+            background: #f8f9fa; border-right: 1px solid var(--border-color);
+        }
+        #modalEstadoPago .prop-modal-divider {
+            flex: 0 0 5px; cursor: col-resize; background: var(--border-color);
+            touch-action: none; user-select: none;
+        }
+        #modalEstadoPago .prop-modal-divider:hover,
+        body.ep-modal-split-resizing #modalEstadoPago .prop-modal-divider { background: var(--teal-green); }
+        body.ep-modal-split-resizing { cursor: col-resize !important; user-select: none !important; }
+        body.ep-modal-size-resizing { cursor: nwse-resize !important; user-select: none !important; }
+        #modalEstadoPago .prop-modal-main {
+            flex: 1 1 auto; min-width: 0; min-height: 0;
+            display: flex; flex-direction: column; background: #fff;
+        }
+        #modalEstadoPago .prop-side-block { border-bottom: 1px solid var(--border-color); }
+        #modalEstadoPago .prop-side-toggle {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 0.4rem 0.65rem; border: 0; background: #eef1f3;
+            color: var(--teal-green); font-size: 0.72rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.03em; cursor: pointer;
+        }
+        #modalEstadoPago .prop-side-toggle:hover { background: #e4e9ec; }
+        #modalEstadoPago .prop-side-toggle .fa-chevron-down { transition: transform 0.15s; font-size: 0.65rem; }
+        #modalEstadoPago .prop-side-block.collapsed .prop-side-toggle .fa-chevron-down { transform: rotate(-90deg); }
+        #modalEstadoPago .prop-side-block.collapsed .prop-side-body { display: none; }
+        #modalEstadoPago .prop-side-body { padding: 0.5rem 0.65rem 0.65rem; }
+        #modalEstadoPago .prop-compact-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem 0.45rem;
+        }
+        #modalEstadoPago .prop-compact-grid .span-2 { grid-column: span 2; }
+        #modalEstadoPago .prop-compact-grid .prop-subheading {
+            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.05em; color: #6c757d; border-bottom: 1px solid #dee2e6;
+            padding-bottom: 0.15rem; margin-top: 0.25rem;
+        }
+        #modalEstadoPago .prop-field label {
+            display: block; font-size: 0.65rem; font-weight: 600; color: #6c757d;
+            margin-bottom: 0.1rem; line-height: 1.2;
+        }
+        #modalEstadoPago .prop-field .form-control,
+        #modalEstadoPago .prop-field .form-select {
+            font-size: 0.75rem; padding: 0.2rem 0.4rem; min-height: 1.65rem;
+        }
+        #modalEstadoPago .prop-template-toolbar {
+            flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
+            padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border-color); background: #fafbfc;
+        }
+        #modalEstadoPago .prop-template-toolbar h6 {
+            margin: 0; font-size: 0.78rem; font-weight: 700; color: var(--teal-green);
+            text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        #modalEstadoPago .prop-template-wrap {
+            flex: 1; min-height: 0; overflow: hidden; padding: 0.5rem 0.75rem 0.75rem;
+            display: flex; flex-direction: column;
+        }
+        #modalEstadoPago #epTemplate,
+        #modalPlantillaEstadoPago #plantillaEstadoPagoEditor {
+            flex: 1; min-height: 0; overflow-y: auto; resize: none;
+            font-family: 'Roboto', sans-serif; font-size: 0.82rem; line-height: 1.5;
+            background: #fff; border: 1px solid var(--border-color); border-radius: 6px; padding: 1.25rem;
+        }
+        #modalPlantillaEstadoPago #plantillaEstadoPagoEditor {
+            min-height: 420px; max-height: calc(100vh - 220px);
+        }
+        #modalEstadoPago .prop-template-page-hint {
+            flex-shrink: 0; text-align: right; font-size: 0.72rem; color: #999;
+            padding: 0.2rem 0.75rem 0; font-family: 'Roboto', sans-serif;
+        }
+        #modalEstadoPago .prop-template-font-ctrl .prop-font-hint {
+            font-size: 0.68rem; color: #6c757d; white-space: nowrap; margin-right: 0.15rem;
+        }
+        #modalEstadoPago .prop-template-font-ctrl .prop-font-size-select {
+            width: auto; min-width: 4.75rem; font-size: 0.72rem;
+            padding: 0.15rem 1.5rem 0.15rem 0.4rem;
+        }
+        .prop-template-editor .ep-doc-empresa { margin: 0; font-size: 0.95rem; }
+        .prop-template-editor .ep-doc-meta { margin: 0; font-size: 0.78rem; color: #444; }
+        .prop-template-editor .ep-doc-fecha { margin: 0 0 0.75rem 0; font-size: 0.85rem; }
+        .prop-template-editor table.ep-tabla {
+            width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.78rem;
+        }
+        .prop-template-editor table.ep-tabla th,
+        .prop-template-editor table.ep-tabla td {
+            border: 1px solid #ccc; padding: 0.3rem 0.4rem; vertical-align: top;
+        }
+        .prop-template-editor table.ep-tabla th { background: #f1f3f5; font-weight: 700; }
+        .prop-template-editor table.ep-tabla tr.ep-fila-actual td { background: #e8f6f3; }
+        .prop-template-editor table.ep-doc-totales { width: 100%; margin-top: 0.75rem; border: none; }
+        .prop-template-editor table.ep-doc-totales > tbody > tr > td { border: none; padding: 0; }
+        .prop-template-editor .ep-doc-notas { width: 55%; font-size: 0.78rem; text-align: left; }
+        .prop-template-editor .ep-doc-totales-col { width: 45%; }
+        .prop-template-editor table.ep-doc-totales-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .prop-template-editor table.ep-doc-totales-tabla td { border: none; padding: 0.15rem 0.25rem; }
+        .prop-template-editor table.ep-doc-totales-tabla .ep-doc-total-row td { font-size: 1.05rem; padding-top: 0.35rem; }
+
         .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
         .prop-template-editor { font-family: 'Roboto', sans-serif; }
         .prop-template-editor table.prop-doc-header { display: table; width: 100%; table-layout: fixed; border-collapse: collapse; border-bottom: 2px solid var(--teal-green); margin-bottom: 1rem; }
@@ -2806,40 +2934,106 @@
 </div>
 
 <div class="modal fade" id="modalEstadoPago" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-dialog prop-modal-dialog"><div class="modal-content prop-modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloEstadoPago">Estado de pago</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body p-4">
-            <p class="small text-muted mb-3"><i class="fa-solid fa-arrow-right"></i> Clientes → cuenta bancaria (automático)</p>
+        <div class="modal-body prop-modal-body">
             <input type="hidden" id="epProyectoId"><input type="hidden" id="epMovId">
-            <div class="row g-3">
-                <div class="col-md-4"><label class="form-label small fw-bold">Fecha movimiento</label><input type="date" class="form-control" id="epFecha" required></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Fecha estado de pago</label><input type="date" class="form-control" id="epFechaPago"></div>
-                <div class="col-md-4"><label class="form-label small fw-bold">Fecha facturación</label><input type="date" class="form-control" id="epFechaFact"></div>
-                <div class="col-md-6"><label class="form-label small fw-bold">Monto ($)</label><input type="number" class="form-control" id="epMonto" required></div>
-                    <div class="col-md-6"><label class="form-label small fw-bold">N° Factura</label><input type="text" class="form-control" id="epNumFact"></div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Status estado de pago</label>
-                        <select class="form-select" id="epStatusPago">
-                            <option value="Por enviar">Por enviar</option>
-                            <option value="Programado">Programado</option>
-                            <option value="Enviado">Enviado</option>
-                            <option value="Facturado">Facturado</option>
-                            <option value="Pagado">Pagado</option>
-                            <option value="Cedida">Cedida (factoring)</option>
-                        </select>
+            <div class="prop-modal-layout">
+                <aside class="prop-modal-side">
+                    <div class="prop-side-block" id="epBlockDatos">
+                        <button type="button" class="prop-side-toggle" onclick="toggleEpSideBlock('epBlockDatos')">
+                            <span><i class="fa-solid fa-pen-to-square me-1"></i> Datos</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="prop-side-body">
+                            <p class="small text-muted mb-2" style="font-size:0.68rem"><i class="fa-solid fa-arrow-right"></i> Clientes → banco (automático)</p>
+                            <div class="prop-compact-grid">
+                                <div class="prop-field"><label>N° EP</label><input type="number" class="form-control" id="epNumero" min="1" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field"><label>Status</label>
+                                    <select class="form-select" id="epStatusPago" onchange="onEpCampoTemplate()">
+                                        <option value="Por enviar">Por enviar</option>
+                                        <option value="Programado">Programado</option>
+                                        <option value="Enviado">Enviado</option>
+                                        <option value="Facturado">Facturado</option>
+                                        <option value="Pagado">Pagado</option>
+                                        <option value="Cedida">Cedida (factoring)</option>
+                                    </select>
+                                </div>
+                                <div class="prop-field span-2"><label>Descripción / hito</label><input type="text" class="form-control" id="epDesc" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>A la atención de</label><input type="text" class="form-control" id="epAtencion" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field span-2 prop-subheading">Fechas</div>
+                                <div class="prop-field"><label>Movimiento</label><input type="date" class="form-control" id="epFecha" required></div>
+                                <div class="prop-field"><label>Estado de pago</label><input type="date" class="form-control" id="epFechaPago" onchange="onEpFechaPagoChange()"></div>
+                                <div class="prop-field"><label>Facturación</label><input type="date" class="form-control" id="epFechaFact"></div>
+                                <div class="prop-field"><label>Cond. pago</label>
+                                    <select class="form-select" id="epCondicionPago">
+                                        <option value="30">30 días</option>
+                                        <option value="60">60 días</option>
+                                        <option value="90">90 días</option>
+                                    </select>
+                                </div>
+                                <div class="prop-field span-2 prop-subheading">Montos</div>
+                                <div class="prop-field"><label>Monto UF</label><input type="number" step="any" class="form-control" id="epMontoUf" oninput="onEpMontoUfChange()"></div>
+                                <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="Según fecha estado de pago"></div>
+                                <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field"><label>N° Factura</label><input type="text" class="form-control" id="epNumFact" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field span-2">
+                                    <label class="d-flex align-items-center gap-2 mt-1" style="font-weight:600">
+                                        <input type="checkbox" class="form-check-input m-0" id="epIncluirIva" onchange="onEpCampoTemplate()"> Incluir IVA 19%
+                                    </label>
+                                </div>
+                                <div class="prop-field span-2"><label>Notas</label><textarea class="form-control" id="epNotas" rows="2" oninput="onEpCampoTemplate()"></textarea></div>
+                                <div class="prop-field span-2 prop-subheading">Proyecto</div>
+                                <div class="prop-field span-2"><label>Proyecto</label><input type="text" class="form-control bg-light" id="epProyectoNombre" readonly></div>
+                                <div class="prop-field span-2"><label>Servicio</label><input type="text" class="form-control bg-light" id="epServicio" readonly></div>
+                                <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control bg-light" id="epCliente" readonly></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Condición de pago</label>
-                        <select class="form-select" id="epCondicionPago">
-                            <option value="30">30 días</option>
-                            <option value="60">60 días</option>
-                            <option value="90">90 días</option>
-                        </select>
+                </aside>
+                <div class="prop-modal-divider" onmousedown="startEpModalSplitDrag(event)" title="Arrastrar para ajustar panel"></div>
+                <main class="prop-modal-main">
+                    <div class="prop-template-toolbar">
+                        <h6 class="d-flex flex-column align-items-start gap-1">
+                            <span><i class="fa-solid fa-file-invoice-dollar me-1"></i> Estado de pago</span>
+                            <span class="prop-auto-legend"><span class="prop-auto-swatch"></span> Campos resaltados se completan automáticamente.</span>
+                        </h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="prop-template-font-ctrl d-flex align-items-center" title="Tamaño de texto en selección">
+                                <span class="prop-font-hint" id="epFontHint">Seleccione texto y elija tamaño</span>
+                                <select id="epFontSizeSelect" class="form-select form-select-sm ms-1 prop-font-size-select" data-editor="epTemplate" data-hint="epFontHint" aria-label="Tamaño de fuente" onchange="onPropFontSizeSelectChange(this)">
+                                    <option value="">Tamaño</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="actualizarTemplateEstadoPago(true)" title="Regenerar desde datos"><i class="fa-solid fa-rotate"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="abrirEditorPlantillaEp()" title="Editar plantilla"><i class="fa-solid fa-file-pen"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="exportarEstadoPago('pdf')"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="exportarEstadoPago('word')"><i class="fa-solid fa-file-word me-1"></i>Word</button>
+                        </div>
                     </div>
-                <div class="col-md-12"><label class="form-label small fw-bold">Descripción</label><input type="text" class="form-control" id="epDesc"></div>
+                    <div class="prop-template-wrap">
+                        <div id="epTemplate" class="prop-template-editor" contenteditable="true" data-editado="0" onmouseup="actualizarFontSizeSelect(document.getElementById('epFontSizeSelect'))" onkeyup="actualizarFontSizeSelect(document.getElementById('epFontSizeSelect'))"></div>
+                        <div class="prop-template-page-hint" aria-hidden="true">Página 1</div>
+                    </div>
+                </main>
             </div>
         </div>
-        <div class="modal-footer border-0"><button class="btn btn-teal px-4" onclick="guardarEstadoPago()">GUARDAR</button></div>
+        <div class="modal-footer border-0"><button class="btn btn-teal px-4 btn-sm" onclick="guardarEstadoPago()">GUARDAR</button></div>
+        <div class="prop-modal-resize-grip" onmousedown="startEpModalResize(event)" title="Arrastrar para redimensionar ventana"></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalPlantillaEstadoPago" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar plantilla de estado de pago</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-3">
+            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{LOGO}}</code>.</p>
+            <div id="plantillaEstadoPagoEditor" class="prop-template-editor" contenteditable="true"></div>
+        </div>
+        <div class="modal-footer border-0">
+            <button class="btn btn-outline-secondary btn-sm" onclick="restaurarPlantillaEpDefault()">Restaurar default</button>
+            <button class="btn btn-teal btn-sm px-4" onclick="guardarPlantillaEp()">GUARDAR PLANTILLA</button>
+        </div>
     </div></div>
 </div>
 
@@ -3160,7 +3354,7 @@
             const safe = selectedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             document.execCommand('insertHTML', false, `<span style="font-size:${pt}pt">${safe}</span>`);
         }
-        if (editor.id === 'propTemplate') editor.dataset.editado = '1';
+        if (editor.id === 'propTemplate' || editor.id === 'epTemplate') editor.dataset.editado = '1';
         return true;
     }
 
@@ -5493,12 +5687,13 @@
     }
 
     function filasMovimientos(items, proyectoId, clase, vacio) {
-        const epCols = 9;
+        const epCols = 10;
         const gCols = 6;
         if (!items.length) return `<tr><td colspan="${clase === 'estado_pago' ? epCols : gCols}" class="text-center text-muted py-3">${vacio}</td></tr>`;
         if (clase === 'estado_pago') {
             return items.map(m => {
                 const gc = `guardarFilaProyectoMovimiento(${m.id}, ${proyectoId})`;
+                const ufVal = m.monto_uf != null && m.monto_uf !== '' ? Number(m.monto_uf) : '';
                 return `<tr class="proy-mov-row" data-id="${m.id}" data-clase="estado_pago">
                 <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
                 <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
@@ -5507,6 +5702,7 @@
                 <td data-field="numero_factura"><input type="text" class="form-control cell-edit cell-edit-sm" value="${esc(m.numero_factura)}" onchange="${gc}"></td>
                 <td data-field="status_pago" class="${claseStatusPagoSelect(m.status_pago || 'Por enviar')}">${selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)}</td>
                 <td data-field="condicion_pago_dias"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsCondicionPago(m.condicion_pago_dias || 30)}</select></td>
+                <td data-field="monto_uf"><input type="number" step="any" class="form-control cell-edit cell-edit-sm text-end" value="${ufVal === '' ? '' : esc(String(ufVal))}" onchange="${gc}"></td>
                 <td data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm mov-monto-ingreso" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
                 <td class="text-end">${botonesAccion(proyectoId, clase, m.id)}</td>
             </tr>`;
@@ -5536,6 +5732,7 @@
             monto: parseMontoMov(q('monto').querySelector('input').value),
         };
         if (clase === 'estado_pago') {
+            const ufRaw = q('monto_uf')?.querySelector('input')?.value;
             return {
                 ...base,
                 fecha_estado_pago: parseFechaMov(q('fecha_estado_pago').querySelector('input').value),
@@ -5543,6 +5740,7 @@
                 numero_factura: q('numero_factura').querySelector('input').value || null,
                 status_pago: q('status_pago').querySelector('select').value,
                 condicion_pago_dias: parseInt(q('condicion_pago_dias').querySelector('select').value, 10) || 30,
+                monto_uf: ufRaw === '' || ufRaw == null ? null : parseFloat(ufRaw),
             };
         }
         return {
@@ -6513,9 +6711,10 @@
                         ${thSortDetalle('numero_factura', 'N° Fact.', `ordenarDetalleEp('numero_factura')`)}
                         ${thSortDetalle('status_pago', 'Status', `ordenarDetalleEp('status_pago')`)}
                         ${thSortDetalle('condicion_pago_dias', 'Cond. pago', `ordenarDetalleEp('condicion_pago_dias')`)}
-                        ${thSortDetalle('monto', 'Monto', `ordenarDetalleEp('monto')`, 'text-end')}
+                        ${thSortDetalle('monto_uf', 'UF', `ordenarDetalleEp('monto_uf')`, 'text-end')}
+                        ${thSortDetalle('monto', 'Pesos', `ordenarDetalleEp('monto')`, 'text-end')}
                         <th></th>
-                    </tr></thead><tbody id="ep-body-${id}"><tr><td colspan="9" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
+                    </tr></thead><tbody id="ep-body-${id}"><tr><td colspan="10" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
                 </div>
                 <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0"><i class="fa-solid fa-receipt"></i> Gastos</h6><button class="btn btn-sm btn-dark" onclick="abrirGasto(${id})">+ GASTO</button></div>
@@ -8996,43 +9195,464 @@
         await listarPropuestas();
     }
 
-    function abrirEstadoPago(proyectoId, movId = null) {
+    let _epTemplateBase = '';
+    let _epProyectoCtx = null;
+    let _epListaCache = [];
+
+    function toggleEpSideBlock(id) {
+        document.getElementById(id)?.classList.toggle('collapsed');
+    }
+
+    function startEpModalSplitDrag(ev) {
+        ev.preventDefault();
+        const layout = document.querySelector('#modalEstadoPago .prop-modal-layout');
+        const side = document.querySelector('#modalEstadoPago .prop-modal-side');
+        if (!layout || !side) return;
+        const startX = ev.clientX;
+        const startW = side.getBoundingClientRect().width;
+        document.body.classList.add('ep-modal-split-resizing');
+        const onMove = (e) => {
+            const w = Math.max(180, Math.min(520, startW + (e.clientX - startX)));
+            layout.style.setProperty('--ep-side-w', `${w}px`);
+        };
+        const onUp = () => {
+            document.body.classList.remove('ep-modal-split-resizing');
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
+
+    function startEpModalResize(ev) {
+        ev.preventDefault();
+        const dlg = document.querySelector('#modalEstadoPago .prop-modal-dialog');
+        if (!dlg) return;
+        const startX = ev.clientX;
+        const startY = ev.clientY;
+        const rect = dlg.getBoundingClientRect();
+        document.body.classList.add('ep-modal-size-resizing');
+        const onMove = (e) => {
+            const w = Math.max(720, rect.width + (e.clientX - startX));
+            const h = Math.max(480, rect.height + (e.clientY - startY));
+            dlg.style.setProperty('--ep-modal-w', `${w}px`);
+            dlg.style.setProperty('--ep-modal-h', `${h}px`);
+        };
+        const onUp = () => {
+            document.body.classList.remove('ep-modal-size-resizing');
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    }
+
+    function fmtFechaEpDoc(iso) {
+        if (!iso) return '—';
+        const [y, m, d] = String(iso).split('-');
+        if (!y || !m || !d) return iso;
+        return `${Number(d)}/${Number(m)}/${y}`;
+    }
+
+    function fmtPesosEp(n) {
+        if (n == null || n === '' || Number.isNaN(Number(n))) return '—';
+        return '$ ' + Math.round(Number(n)).toLocaleString('es-CL') + '.-';
+    }
+
+    function fmtUfEp(n) {
+        if (n == null || n === '' || Number.isNaN(Number(n))) return '—';
+        return Number(n).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+    }
+
+    function epFilasParaTabla() {
+        const movId = document.getElementById('epMovId').value;
+        const actual = {
+            id: movId ? Number(movId) : null,
+            descripcion: document.getElementById('epDesc').value || '',
+            fecha_estado_pago: document.getElementById('epFechaPago').value || document.getElementById('epFecha').value,
+            monto_uf: document.getElementById('epMontoUf').value,
+            valor_uf: document.getElementById('epValorUf').value,
+            monto: document.getElementById('epMonto').value,
+            status_pago: document.getElementById('epStatusPago').value,
+            numero_factura: document.getElementById('epNumFact').value || '',
+            _actual: true,
+        };
+        const others = (_epListaCache || []).filter(m => !movId || Number(m.id) !== Number(movId));
+        const rows = [...others.map(m => ({ ...m, _actual: false })), actual];
+        rows.sort((a, b) => String(a.fecha_estado_pago || a.fecha_movimiento || '').localeCompare(String(b.fecha_estado_pago || b.fecha_movimiento || '')));
+        return rows;
+    }
+
+    function construirTablaEpHtml() {
+        const rows = epFilasParaTabla();
+        const body = rows.map(m => {
+            const uf = m.monto_uf;
+            const valor = m.valor_uf;
+            let pesos = m.monto;
+            if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
+            const cls = m._actual ? ' class="ep-fila-actual"' : '';
+            return `<tr${cls}>
+                <td>${esc(m.descripcion || '—')}</td>
+                <td class="text-end">${esc(fmtUfEp(uf))}</td>
+                <td class="text-end">${esc(fmtUfEp(valor))}</td>
+                <td class="text-nowrap">${esc(fmtFechaEpDoc(m.fecha_estado_pago || m.fecha_movimiento))}</td>
+                <td class="text-end text-nowrap">${esc(fmtPesosEp(pesos))}</td>
+                <td>${esc(m.status_pago || '—')}</td>
+                <td>${esc(m.numero_factura || '')}</td>
+            </tr>`;
+        }).join('');
+        return `<table class="prop-tabla ep-tabla" cellpadding="0" cellspacing="0">
+            <thead><tr>
+                <th>Descripción</th><th class="text-end">valor UF</th><th class="text-end">UF</th>
+                <th>Fecha</th><th class="text-end">Precio total</th><th>Estado</th><th>N° Fact.</th>
+            </tr></thead>
+            <tbody>${body || '<tr><td colspan="7" class="text-muted">Sin hitos</td></tr>'}</tbody>
+        </table>`;
+    }
+
+    function totalesEpDocumento() {
+        const subtotal = Number(document.getElementById('epMonto').value) || 0;
+        const iva = document.getElementById('epIncluirIva').checked ? Math.round(subtotal * 0.19) : 0;
+        const total = subtotal + iva;
+        return { subtotal, iva, total };
+    }
+
+    function totalServicioUfProyecto() {
+        const movId = document.getElementById('epMovId').value;
+        let total = 0;
+        for (const m of _epListaCache || []) {
+            if (movId && Number(m.id) === Number(movId)) continue;
+            total += Number(m.monto_uf) || 0;
+        }
+        total += Number(document.getElementById('epMontoUf').value) || 0;
+        return total;
+    }
+
+    function varsTemplateEstadoPago() {
+        const emp = (_empresasCache || []).find(e => e.id === _empresaActivaId) || {};
+        const tot = totalesEpDocumento();
+        const fecha = document.getElementById('epFechaPago').value || document.getElementById('epFecha').value;
+        return {
+            EMPRESA: emp.nombre || 'B-green Chile Limitada',
+            RUT: emp.rut || '',
+            DIRECCION: emp.direccion || '',
+            NUMERO_EP: document.getElementById('epNumero').value || '1',
+            FECHA: fmtFechaEpDoc(fecha),
+            ATENCION: document.getElementById('epAtencion').value || '',
+            PROYECTO: document.getElementById('epProyectoNombre').value || '',
+            SERVICIO: document.getElementById('epServicio').value || '',
+            TOTAL_SERVICIO_UF: fmtUfEp(totalServicioUfProyecto()),
+            TABLA_EP: construirTablaEpHtml(),
+            NOTAS: document.getElementById('epNotas').value || '',
+            SUBTOTAL: fmtPesosEp(tot.subtotal),
+            IVA: document.getElementById('epIncluirIva').checked ? fmtPesosEp(tot.iva) : '—',
+            TOTAL: fmtPesosEp(tot.total),
+            LOGO: '',
+        };
+    }
+
+    function rellenarTemplateEstadoPago(template) {
+        return aplicarVarsPlantilla(template || _epTemplateBase || '', varsTemplateEstadoPago());
+    }
+
+    async function sincronizarLogoEpTemplate() {
+        const editor = document.getElementById('epTemplate');
+        if (!editor) return;
+        const wrap = editor.querySelector('[data-prop="logo"]') || editor.querySelector('.prop-doc-logo-wrap');
+        if (!wrap) return;
+        const data = await cargarLogoPropuesta();
+        wrap.innerHTML = data ? `<img src="${data}" alt="Logo" class="prop-doc-logo"/>` : '';
+    }
+
+    async function sincronizarDatosEnTemplateEp() {
+        const editor = document.getElementById('epTemplate');
+        if (!editor) return;
+        const vars = varsTemplateEstadoPago();
+        const map = {
+            empresa_nombre: vars.EMPRESA,
+            empresa_rut: vars.RUT,
+            empresa_direccion: vars.DIRECCION,
+            titulo_ep: `Estado de Pago N°${vars.NUMERO_EP}`,
+            fecha: vars.FECHA,
+            atencion: vars.ATENCION,
+            proyecto: vars.PROYECTO,
+            servicio: vars.SERVICIO,
+            total_servicio_uf: `${vars.TOTAL_SERVICIO_UF} UF`,
+            notas: vars.NOTAS,
+            subtotal: vars.SUBTOTAL,
+            iva: vars.IVA,
+            total: vars.TOTAL,
+        };
+        Object.entries(map).forEach(([prop, val]) => {
+            editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
+                if (prop === 'empresa_nombre') el.innerHTML = `<strong>${esc(val)}</strong>`;
+                else el.textContent = val;
+            });
+        });
+        const bloque = editor.querySelector('#ep-bloque-tabla');
+        if (bloque) bloque.innerHTML = vars.TABLA_EP;
+        await sincronizarLogoEpTemplate();
+        editor.querySelectorAll('[data-prop]').forEach(el => el.classList.add('prop-campo-auto'));
+    }
+
+    async function actualizarTemplateEstadoPago(forzar = false) {
+        const editor = document.getElementById('epTemplate');
+        if (!editor || !_epTemplateBase) return;
+        if (!forzar && editor.dataset.editado === '1') {
+            await sincronizarDatosEnTemplateEp();
+            return;
+        }
+        asignarHtmlEditor(editor, rellenarTemplateEstadoPago(_epTemplateBase));
+        editor.dataset.editado = '0';
+        await sincronizarLogoEpTemplate();
+        editor.querySelectorAll('[data-prop]').forEach(el => el.classList.add('prop-campo-auto'));
+        poblarFontSizeSelect(document.getElementById('epFontSizeSelect'));
+    }
+
+    function onEpCampoTemplate() {
+        const editor = document.getElementById('epTemplate');
+        if (editor?.dataset.editado === '1') sincronizarDatosEnTemplateEp();
+        else actualizarTemplateEstadoPago(false);
+    }
+
+    async function consultarValorUfFecha(fecha) {
+        if (!fecha) return null;
+        try {
+            const res = await apiFetch(`/api/uf?fecha=${encodeURIComponent(fecha)}`);
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data.valor != null ? Number(data.valor) : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    async function onEpFechaPagoChange() {
+        const fecha = document.getElementById('epFechaPago').value;
+        const valor = await consultarValorUfFecha(fecha);
+        if (valor != null) {
+            document.getElementById('epValorUf').value = valor;
+            recalcularPesosDesdeUf();
+        }
+        onEpCampoTemplate();
+    }
+
+    function recalcularPesosDesdeUf() {
+        const uf = Number(document.getElementById('epMontoUf').value);
+        const valor = Number(document.getElementById('epValorUf').value);
+        if (!uf || !valor) return;
+        document.getElementById('epMonto').value = Math.round(uf * valor);
+    }
+
+    function onEpMontoUfChange() {
+        recalcularPesosDesdeUf();
+        onEpCampoTemplate();
+    }
+
+    function prepararContenidoExportEstadoPago() {
+        const editor = document.getElementById('epTemplate');
+        if (!editor) return '';
+        const clone = editor.cloneNode(true);
+        clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        clone.querySelectorAll('[data-prop],[data-resize-key],[data-editado]').forEach(el => {
+            el.removeAttribute('data-prop');
+            el.removeAttribute('data-resize-key');
+            el.removeAttribute('data-editado');
+        });
+        clone.querySelectorAll('.prop-campo-auto').forEach(el => el.classList.remove('prop-campo-auto'));
+        return clone.innerHTML.trim();
+    }
+
+    async function exportarEstadoPago(formato) {
+        await sincronizarDatosEnTemplateEp();
+        const contenido = prepararContenidoExportEstadoPago();
+        if (!contenido) {
+            alert('No hay contenido de estado de pago para exportar.');
+            return;
+        }
+        const numero = document.getElementById('epNumero').value || '1';
+        const proyecto = (document.getElementById('epProyectoNombre').value || 'proyecto').trim();
+        const titulo = `Estado de Pago N°${numero} — ${proyecto}`;
+        const res = await apiFetch(`/api/estados-pago/exportar/${formato}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                titulo,
+                contenido,
+                nombre_archivo: `EP${numero}_${proyecto}`,
+            }),
+        });
+        if (!res.ok) {
+            const errText = await res.text();
+            let msg = 'Error al exportar';
+            try { msg = JSON.parse(errText).error || msg; } catch (_) { if (errText) msg = errText.slice(0, 200); }
+            alert(msg);
+            return;
+        }
+        const blob = await res.blob();
+        const disp = res.headers.get('content-disposition') || '';
+        const match = disp.match(/filename="?([^";]+)"?/i);
+        const filename = match ? match[1] : `EP${numero}_${proyecto}.${formato === 'pdf' ? 'pdf' : 'doc'}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function abrirEditorPlantillaEp() {
+        const res = await apiFetch('/api/estados-pago/plantilla');
+        const data = res.ok ? await res.json() : { contenido_html: _epTemplateBase };
+        const editor = document.getElementById('plantillaEstadoPagoEditor');
+        asignarHtmlEditor(editor, data.contenido_html || _epTemplateBase || '');
+        new bootstrap.Modal(document.getElementById('modalPlantillaEstadoPago')).show();
+    }
+
+    async function guardarPlantillaEp() {
+        const editor = document.getElementById('plantillaEstadoPagoEditor');
+        const contenido = leerHtmlEditor(editor);
+        if (!contenido.trim()) {
+            alert('La plantilla no puede estar vacía.');
+            return;
+        }
+        const res = await apiFetch('/api/estados-pago/plantilla', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contenido_html: contenido }),
+        });
+        if (!res.ok) {
+            alert('No se pudo guardar la plantilla.');
+            return;
+        }
+        _epTemplateBase = contenido;
+        bootstrap.Modal.getInstance(document.getElementById('modalPlantillaEstadoPago')).hide();
+        await actualizarTemplateEstadoPago(true);
+    }
+
+    async function restaurarPlantillaEpDefault() {
+        if (!confirm('¿Restaurar la plantilla por defecto?')) return;
+        const res = await apiFetch('/api/estados-pago/plantilla', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ restaurar_default: true }),
+        });
+        if (!res.ok) {
+            alert('No se pudo restaurar la plantilla.');
+            return;
+        }
+        const data = await res.json();
+        _epTemplateBase = data.plantilla?.contenido_html || '';
+        asignarHtmlEditor(document.getElementById('plantillaEstadoPagoEditor'), _epTemplateBase);
+        await actualizarTemplateEstadoPago(true);
+    }
+
+    async function abrirEstadoPago(proyectoId, movId = null) {
         document.getElementById('epProyectoId').value = proyectoId;
         document.getElementById('epMovId').value = movId || '';
         document.getElementById('tituloEstadoPago').innerText = movId ? 'Editar estado de pago' : 'Nuevo estado de pago';
-        ['epFecha','epFechaPago','epFechaFact','epMonto','epNumFact','epDesc'].forEach(id => document.getElementById(id).value = '');
+        _epTemplateBase = '';
+        const editor = document.getElementById('epTemplate');
+        if (editor) { editor.innerHTML = ''; editor.dataset.editado = '0'; }
+
+        const p = (_proyItems || []).find(x => x.id === Number(proyectoId)) || {};
+        _epProyectoCtx = p;
+        document.getElementById('epProyectoNombre').value = p.nombre || '';
+        document.getElementById('epServicio').value = p.servicio || '';
+        document.getElementById('epCliente').value = p.cliente || '';
+
+        ['epFecha','epFechaPago','epFechaFact','epMonto','epMontoUf','epValorUf','epNumFact','epDesc','epAtencion','epNotas','epNumero'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         document.getElementById('epFecha').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('epFechaPago').value = new Date().toISOString().slice(0, 10);
         document.getElementById('epStatusPago').value = 'Por enviar';
         document.getElementById('epCondicionPago').value = '30';
-        if (movId) apiFetch(`/api/movimientos/${movId}`).then(r => r.json()).then(m => {
-            document.getElementById('epFecha').value = m.fecha_movimiento;
-            document.getElementById('epFechaPago').value = m.fecha_estado_pago || '';
+        document.getElementById('epIncluirIva').checked = false;
+        document.getElementById('epAtencion').value = p.cliente || '';
+
+        const [plantillaRes, movsRes, numRes] = await Promise.all([
+            apiFetch('/api/estados-pago/plantilla'),
+            apiFetch(`/api/proyectos/${proyectoId}/movimientos`),
+            movId ? Promise.resolve(null) : apiFetch(`/api/proyectos/${proyectoId}/estados-pago/siguiente-numero`),
+        ]);
+        const plantilla = plantillaRes.ok ? await plantillaRes.json() : {};
+        _epTemplateBase = plantilla.contenido_html || '';
+        const movs = movsRes.ok ? await movsRes.json() : [];
+        _epListaCache = (movs || []).filter(m => m.clase === 'estado_pago');
+
+        if (numRes && numRes.ok) {
+            const numData = await numRes.json();
+            document.getElementById('epNumero').value = numData.numero_ep || 1;
+        }
+
+        if (movId) {
+            const m = await (await apiFetch(`/api/movimientos/${movId}`)).json();
+            document.getElementById('epFecha').value = m.fecha_movimiento || '';
+            document.getElementById('epFechaPago').value = m.fecha_estado_pago || m.fecha_movimiento || '';
             document.getElementById('epFechaFact').value = m.fecha_facturacion || '';
-            document.getElementById('epMonto').value = m.monto;
+            document.getElementById('epMonto').value = m.monto ?? '';
+            document.getElementById('epMontoUf').value = m.monto_uf ?? '';
+            document.getElementById('epValorUf').value = m.valor_uf ?? '';
             document.getElementById('epNumFact').value = m.numero_factura || '';
             document.getElementById('epDesc').value = m.descripcion || '';
             document.getElementById('epStatusPago').value = m.status_pago || 'Por enviar';
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
-        });
+            document.getElementById('epNumero').value = m.numero_ep || '';
+            document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
+            document.getElementById('epNotas').value = m.notas_ep || '';
+            document.getElementById('epIncluirIva').checked = !!m.incluir_iva;
+            if (m.template_html) {
+                asignarHtmlEditor(editor, m.template_html);
+                editor.dataset.editado = '1';
+                await sincronizarDatosEnTemplateEp();
+            }
+        }
+
+        if (!document.getElementById('epValorUf').value && document.getElementById('epFechaPago').value) {
+            await onEpFechaPagoChange();
+        } else if (!movId || !document.getElementById('epTemplate').innerHTML.trim()) {
+            await actualizarTemplateEstadoPago(true);
+        } else if (editor?.dataset.editado !== '1') {
+            await actualizarTemplateEstadoPago(true);
+        }
+
+        poblarFontSizeSelect(document.getElementById('epFontSizeSelect'));
         new bootstrap.Modal(document.getElementById('modalEstadoPago')).show();
     }
 
     async function guardarEstadoPago() {
         const proyectoId = document.getElementById('epProyectoId').value;
         const movId = document.getElementById('epMovId').value;
+        await sincronizarDatosEnTemplateEp();
+        const montoUf = document.getElementById('epMontoUf').value;
+        const valorUf = document.getElementById('epValorUf').value;
         const payload = {
             fecha: document.getElementById('epFecha').value,
             fecha_estado_pago: document.getElementById('epFechaPago').value || null,
             fecha_facturacion: document.getElementById('epFechaFact').value || null,
             monto: document.getElementById('epMonto').value,
+            monto_uf: montoUf === '' ? null : parseFloat(montoUf),
+            valor_uf: valorUf === '' ? null : parseFloat(valorUf),
             numero_factura: document.getElementById('epNumFact').value || null,
             status_pago: document.getElementById('epStatusPago').value,
             condicion_pago_dias: parseInt(document.getElementById('epCondicionPago').value, 10) || 30,
             descripcion: document.getElementById('epDesc').value,
+            numero_ep: parseInt(document.getElementById('epNumero').value, 10) || null,
+            atencion_de: document.getElementById('epAtencion').value || null,
+            notas_ep: document.getElementById('epNotas').value || null,
+            incluir_iva: document.getElementById('epIncluirIva').checked,
+            template_html: leerHtmlEditor(document.getElementById('epTemplate')) || null,
         };
-        await apiFetch(movId ? `/api/movimientos/${movId}` : `/api/proyectos/${proyectoId}/estados-pago`, {
+        const res = await apiFetch(movId ? `/api/movimientos/${movId}` : `/api/proyectos/${proyectoId}/estados-pago`, {
             method: movId ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
         });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert(err.error || 'No se pudo guardar el estado de pago');
+            return;
+        }
         bootstrap.Modal.getInstance(document.getElementById('modalEstadoPago')).hide();
         await refrescarProyectos(proyectoId);
     }

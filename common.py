@@ -2036,6 +2036,8 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
         'fecha_estado_pago': m.fecha_estado_pago.strftime('%Y-%m-%d') if m.fecha_estado_pago else None,
         'fecha_facturacion': m.fecha_facturacion.strftime('%Y-%m-%d') if m.fecha_facturacion else None,
         'monto': m.monto_pesos,
+        'monto_uf': m.monto_uf,
+        'valor_uf': m.valor_uf,
         'centro_costo': m.centro_costo,
         'estado': m.estado,
         'origen': m.cta_origen.nombre if m.cta_origen else '',
@@ -2050,6 +2052,11 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
         'proyecto_id': m.proyecto_id,
         'proyecto': m.proyecto_rel.nombre if m.proyecto_rel else None,
         'transaccion': m.transaccion,
+        'numero_ep': m.numero_ep,
+        'atencion_de': m.atencion_de,
+        'notas_ep': m.notas_ep,
+        'incluir_iva': bool(m.incluir_iva) if m.incluir_iva is not None else False,
+        'template_html': m.template_html,
     }
 
 
@@ -2064,10 +2071,28 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
         mov.fecha_facturacion = _parse_fecha(data.get('fecha_facturacion'))
     if 'monto' in data:
         mov.monto_pesos = float(data['monto'])
+    if 'monto_uf' in data:
+        raw_uf = data.get('monto_uf')
+        mov.monto_uf = float(raw_uf) if raw_uf not in (None, '') else None
+    if 'valor_uf' in data:
+        raw_valor = data.get('valor_uf')
+        mov.valor_uf = float(raw_valor) if raw_valor not in (None, '') else None
     if 'descripcion' in data:
         mov.descripcion = data.get('descripcion')
     if 'numero_factura' in data:
         mov.numero_factura = data.get('numero_factura')
+    if 'numero_ep' in data:
+        raw_num = data.get('numero_ep')
+        mov.numero_ep = int(raw_num) if raw_num not in (None, '') else None
+    if 'atencion_de' in data:
+        atencion = (data.get('atencion_de') or '').strip()
+        mov.atencion_de = atencion[:150] or None
+    if 'notas_ep' in data:
+        mov.notas_ep = data.get('notas_ep') or None
+    if 'incluir_iva' in data:
+        mov.incluir_iva = bool(data.get('incluir_iva'))
+    if 'template_html' in data:
+        mov.template_html = data.get('template_html') or None
     if 'status_pago' in data:
         status = data.get('status_pago') or None
         if mov.clase == 'gasto' and status and status not in STATUS_GASTO:
@@ -2108,15 +2133,25 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
 
 
 def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimiento:
+    from estados_pago_service import siguiente_numero_ep
+
     proyecto = Proyecto.query.filter_by(empresa_id=empresa_id, id=proyecto_id).first_or_404()
     origen = _cuenta_por_nombre(NOMBRE_CUENTA_CLIENTES, empresa_id)
     destino = _cuenta_por_nombre(NOMBRE_CUENTA_BANCO_PESOS, empresa_id)
+    monto_uf = data.get('monto_uf')
+    valor_uf = data.get('valor_uf')
+    numero_ep = data.get('numero_ep')
+    if numero_ep in (None, ''):
+        numero_ep = siguiente_numero_ep(proyecto.id, empresa_id)
+    atencion = (data.get('atencion_de') or '').strip()
     mov = Movimiento(
         empresa_id=empresa_id,
         fecha_movimiento=_parse_fecha(data['fecha']),
         fecha_estado_pago=_parse_fecha(data.get('fecha_estado_pago')),
         fecha_facturacion=_parse_fecha(data.get('fecha_facturacion')),
         monto_pesos=float(data['monto']),
+        monto_uf=float(monto_uf) if monto_uf not in (None, '') else None,
+        valor_uf=float(valor_uf) if valor_uf not in (None, '') else None,
         # Proyecto.nombre admite hasta 150 caracteres, pero Movimiento.centro_costo
         # está limitado a 50. Postgres rechaza el INSERT si no se normaliza.
         centro_costo=proyecto.nombre[:50],
@@ -2129,6 +2164,11 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         status_pago=data.get('status_pago', 'Por enviar'),
         condicion_pago_dias=_parse_condicion_pago(data.get('condicion_pago_dias', 30)),
         proyecto_id=proyecto.id,
+        numero_ep=int(numero_ep) if numero_ep not in (None, '') else None,
+        atencion_de=atencion[:150] or None,
+        notas_ep=data.get('notas_ep') or None,
+        incluir_iva=bool(data.get('incluir_iva')) if 'incluir_iva' in data else False,
+        template_html=data.get('template_html') or None,
     )
     db.session.add(mov)
     return mov
@@ -2196,10 +2236,13 @@ def _estado_pago_gantt_dict(m: Movimiento) -> dict:
         'proyecto': m.proyecto_rel.nombre if m.proyecto_rel else None,
         'descripcion': m.descripcion,
         'monto': m.monto_pesos,
+        'monto_uf': m.monto_uf,
+        'valor_uf': m.valor_uf,
         'fecha_estimada': _fecha_estimada_ep(m).strftime('%Y-%m-%d'),
         'estado': _status_pago_a_estado_gantt(m.status_pago),
         'fecha_pago_real': m.fecha_estado_pago.strftime('%Y-%m-%d') if m.fecha_estado_pago else None,
         'status_pago': m.status_pago,
+        'numero_ep': m.numero_ep,
     }
 
 

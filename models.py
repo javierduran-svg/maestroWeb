@@ -146,6 +146,8 @@ class Movimiento(db.Model):
     fecha_estado_pago = db.Column(db.Date, nullable=True)
     fecha_facturacion = db.Column(db.Date, nullable=True)
     monto_pesos = db.Column(db.Float, nullable=False)
+    monto_uf = db.Column(db.Float, nullable=True)
+    valor_uf = db.Column(db.Float, nullable=True)
     centro_costo = db.Column(db.String(50), nullable=False)
     estado = db.Column(db.String(20), default='Activo')
     clase = db.Column(db.String(20), default='general', nullable=False)
@@ -157,9 +159,27 @@ class Movimiento(db.Model):
     status_pago = db.Column(db.String(30), nullable=True)
     condicion_pago_dias = db.Column(db.Integer, default=30, nullable=True)
     proyecto_id = db.Column(db.Integer, db.ForeignKey('proyectos.id'), nullable=True)
+    numero_ep = db.Column(db.Integer, nullable=True)
+    atencion_de = db.Column(db.String(150), nullable=True)
+    notas_ep = db.Column(db.Text, nullable=True)
+    incluir_iva = db.Column(db.Boolean, default=False, nullable=True)
+    template_html = db.Column(db.Text, nullable=True)
 
     cta_origen = db.relationship('Cuenta', foreign_keys=[cta_origen_id])
     cta_destino = db.relationship('Cuenta', foreign_keys=[cta_destino_id])
+
+
+class PlantillaEstadoPago(db.Model):
+    """Plantilla HTML del documento Estado de Pago (una por empresa)."""
+    __tablename__ = 'plantillas_estado_pago'
+    id = db.Column(db.Integer, primary_key=True)
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
+    contenido_html = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('empresa_id', name='uq_plantilla_ep_empresa'),
+    )
 
 
 class Trabajador(db.Model):

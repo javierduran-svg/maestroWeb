@@ -482,6 +482,8 @@ def duplicar_movimiento(mov_id):
         fecha_estado_pago=original.fecha_estado_pago,
         fecha_facturacion=original.fecha_facturacion,
         monto_pesos=original.monto_pesos,
+        monto_uf=original.monto_uf,
+        valor_uf=original.valor_uf,
         centro_costo=original.centro_costo,
         estado='Activo',
         clase=original.clase,
@@ -493,6 +495,11 @@ def duplicar_movimiento(mov_id):
         status_pago=original.status_pago,
         condicion_pago_dias=original.condicion_pago_dias or 30,
         proyecto_id=original.proyecto_id,
+        numero_ep=original.numero_ep,
+        atencion_de=original.atencion_de,
+        notas_ep=original.notas_ep,
+        incluir_iva=original.incluir_iva,
+        template_html=original.template_html,
     )
     db.session.add(copia)
     db.session.commit()

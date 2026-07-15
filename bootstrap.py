@@ -442,6 +442,17 @@ def _migrar_schema_legacy() -> None:
             conn.execute(text("ALTER TABLE movimientos ADD COLUMN status_pago VARCHAR(30)"))
         if 'condicion_pago_dias' not in columnas:
             conn.execute(text("ALTER TABLE movimientos ADD COLUMN condicion_pago_dias INTEGER DEFAULT 30"))
+        for col, tipo in (
+            ('monto_uf', 'FLOAT'),
+            ('valor_uf', 'FLOAT'),
+            ('numero_ep', 'INTEGER'),
+            ('atencion_de', 'VARCHAR(150)'),
+            ('notas_ep', 'TEXT'),
+            ('incluir_iva', 'BOOLEAN DEFAULT 0'),
+            ('template_html', 'TEXT'),
+        ):
+            if col not in columnas:
+                conn.execute(text(f'ALTER TABLE movimientos ADD COLUMN {col} {tipo}'))
         conn.commit()
     for m in Movimiento.query.filter_by(clase='estado_pago').all():
         if not m.status_pago:

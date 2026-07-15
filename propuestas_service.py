@@ -703,6 +703,23 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
 .prop-doc-firma-linea { width: 100%; border: 0; border-top: 1px solid #333333; margin: 2px 0 4px 0; height: 1px; font-size: 1px; line-height: 1px; }
 .prop-doc-firma-nombre { margin: 0 0 4px 0; text-align: center; }
 .prop-doc-firma-cargo { text-align: right; margin: 4px 0 0 0; }
+.ep-doc-empresa { margin: 0; font-size: 10pt; }
+.ep-doc-meta { margin: 0; font-size: 8.5pt; color: #444444; }
+.ep-doc-fecha { margin: 0 0 10px 0; font-size: 9pt; }
+table.ep-doc-meta-grid { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 8.5pt; }
+table.ep-doc-meta-grid th { text-align: left; padding: 2px 8px 2px 0; font-weight: bold; vertical-align: top; border: none; width: 18%; }
+table.ep-doc-meta-grid td { padding: 2px 10px 2px 0; border: none; vertical-align: top; width: 32%; }
+table.ep-tabla { width: 100%; border-collapse: collapse; margin: 8px 0 12px 0; font-size: 8pt; }
+table.ep-tabla th, table.ep-tabla td { border: 1px solid #cccccc; padding: 4px 6px; vertical-align: top; }
+table.ep-tabla th { background-color: #f1f3f5; font-weight: bold; text-align: left; }
+table.ep-tabla tr.ep-fila-actual td { background-color: #e8f6f3; }
+table.ep-doc-totales { width: 100%; border-collapse: collapse; margin-top: 10px; }
+table.ep-doc-totales td { border: none; padding: 0; vertical-align: top; }
+.ep-doc-notas { width: 55%; font-size: 8.5pt; text-align: left; }
+.ep-doc-totales-col { width: 45%; }
+table.ep-doc-totales-tabla { width: 100%; border-collapse: collapse; font-size: 9pt; }
+table.ep-doc-totales-tabla td { border: none; padding: 2px 4px; }
+table.ep-doc-totales-tabla .ep-doc-total-row td { font-size: 11pt; font-weight: bold; padding-top: 6px; }
 """
 
 PROP_PDF_CSS = """

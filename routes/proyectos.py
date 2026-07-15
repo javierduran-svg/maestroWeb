@@ -8,7 +8,17 @@ from common import *
 from contabilidad import calcular_transaccion, recalcular_proyecto
 from extensions import db
 from models import (
-    Cliente, Empresa, EntregaProgramada, Movimiento, PlantillaPropuesta, Propuesta, Proyecto, TareaEntrega,
+    Cliente, Empresa, EntregaProgramada, Movimiento, PlantillaEstadoPago, PlantillaPropuesta,
+    Propuesta, Proyecto, TareaEntrega,
+)
+from estados_pago_service import (
+    generar_docx_estado_pago,
+    generar_pdf_estado_pago,
+    guardar_plantilla_ep,
+    obtener_plantilla_ep,
+    plantilla_default,
+    plantilla_ep_a_dict,
+    siguiente_numero_ep,
 )
 from propuestas_service import (
     SERVICIOS_PROPUESTA,
@@ -603,6 +613,81 @@ def exportar_propuesta_word():
     logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
     doc_bytes, ext = generar_docx_propuesta(titulo, contenido, logo_path=logo_path)
     nombre = (data.get('nombre_archivo') or 'propuesta').strip().replace(' ', '_')
+    return send_file(
+        io.BytesIO(doc_bytes),
+        mimetype='application/msword',
+        as_attachment=True,
+        download_name=f'{nombre}.doc',
+    )
+
+
+@bp.route('/api/estados-pago/plantilla', methods=['GET', 'PUT'])
+def manejar_plantilla_estado_pago():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    if request.method == 'GET':
+        row = PlantillaEstadoPago.query.filter_by(empresa_id=eid).first()
+        return jsonify(plantilla_ep_a_dict(row, eid))
+    data = request.json or {}
+    if data.get('restaurar_default'):
+        contenido = plantilla_default()
+    else:
+        contenido = (data.get('contenido_html') or '').strip()
+        if not contenido:
+            return jsonify({'error': 'contenido_html requerido'}), 400
+    row = guardar_plantilla_ep(eid, contenido)
+    return jsonify({'mensaje': 'Plantilla guardada', 'plantilla': plantilla_ep_a_dict(row, eid)})
+
+
+@bp.route('/api/proyectos/<int:proyecto_id>/estados-pago/siguiente-numero', methods=['GET'])
+def siguiente_numero_estado_pago(proyecto_id):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    Proyecto.query.filter_by(empresa_id=eid, id=proyecto_id).first_or_404()
+    return jsonify({'numero_ep': siguiente_numero_ep(proyecto_id, eid)})
+
+
+@bp.route('/api/estados-pago/exportar/pdf', methods=['POST'])
+def exportar_estado_pago_pdf():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    data = request.json or {}
+    titulo = (data.get('titulo') or 'Estado de pago').strip()
+    contenido = data.get('contenido') or ''
+    if not contenido.strip():
+        return jsonify({'error': 'Contenido vacío'}), 400
+    empresa = Empresa.query.get(eid)
+    logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
+    try:
+        pdf_bytes = generar_pdf_estado_pago(titulo, contenido, logo_path=logo_path)
+    except Exception as exc:
+        return jsonify({'error': f'Error al generar PDF: {exc}'}), 500
+    nombre = (data.get('nombre_archivo') or 'estado_pago').strip().replace(' ', '_')
+    return send_file(
+        io.BytesIO(pdf_bytes),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'{nombre}.pdf',
+    )
+
+
+@bp.route('/api/estados-pago/exportar/word', methods=['POST'])
+def exportar_estado_pago_word():
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    data = request.json or {}
+    titulo = (data.get('titulo') or 'Estado de pago').strip()
+    contenido = data.get('contenido') or ''
+    if not contenido.strip():
+        return jsonify({'error': 'Contenido vacío'}), 400
+    empresa = Empresa.query.get(eid)
+    logo_path = str(_logo_path(empresa)) if empresa and _logo_path(empresa) else None
+    doc_bytes, _ext = generar_docx_estado_pago(titulo, contenido, logo_path=logo_path)
+    nombre = (data.get('nombre_archivo') or 'estado_pago').strip().replace(' ', '_')
     return send_file(
         io.BytesIO(doc_bytes),
         mimetype='application/msword',
