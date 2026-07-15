@@ -216,6 +216,14 @@ def movimientos_proyecto(proyecto_id):
     if clase:
         query = query.filter_by(clase=clase)
     movimientos = query.order_by(Movimiento.fecha_movimiento.desc()).all()
+    # EP en Por enviar / Programado: refrescar pesos a la UF del día.
+    cambiado = False
+    for m in movimientos:
+        if m.clase == 'estado_pago' and _sincronizar_pesos_estado_pago(m):
+            cambiado = True
+    if cambiado:
+        db.session.commit()
+        _recalcular_todos_proyectos(eid)
     return jsonify([_movimiento_a_dict(m) for m in movimientos])
 
 

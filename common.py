@@ -119,6 +119,9 @@ SERVICIOS = [
     'CEV CALIFICACION', 'CALIFICACION',
 ]
 STATUS_PAGO = ['Por enviar', 'Programado', 'Enviado', 'Facturado', 'Pagado', 'Cedida']
+# Mientras el EP está en estos status, monto_pesos sigue la UF del día.
+# Al pasar a Enviado (u otro status posterior) el monto en pesos queda fijo.
+STATUS_EP_PESOS_FLOTANTES = frozenset({'Por enviar', 'Programado'})
 STATUS_GASTO = ['', STATUS_GASTO_PROGRAMADO]
 ESTADOS_EP_GANTT = ['Pendiente', 'Facturado', 'Pagado']
 ESTADOS_ENTREGA = ['Por Hacer', 'Hecho']
@@ -2060,7 +2063,58 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
     }
 
 
+def _ep_pesos_flotantes(status: str | None) -> bool:
+    """True si el monto en pesos del EP debe seguir la UF del día."""
+    return (status or '') in STATUS_EP_PESOS_FLOTANTES
+
+
+def _resolver_uf_actual() -> float | None:
+    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(date.today(), auto_fetch=True)
+    if valor is None:
+        return None
+    return float(valor)
+
+
+def _sincronizar_pesos_estado_pago(mov: Movimiento, *, forzar_fijacion: bool = False) -> bool:
+    """Actualiza valor_uf y monto_pesos desde monto_uf × UF del día.
+
+    - Status flotante (Por enviar / Programado): siempre recalcula.
+    - forzar_fijacion: al pasar a Enviado+, congela con la UF actual una vez.
+    Devuelve True si modificó el movimiento.
+    """
+    if not _es_movimiento_estado_pago(mov):
+        return False
+    if mov.monto_uf is None:
+        return False
+    flotante = _ep_pesos_flotantes(mov.status_pago)
+    if not flotante and not forzar_fijacion:
+        return False
+    uf = _resolver_uf_actual()
+    if uf is None:
+        return False
+    pesos = round(float(mov.monto_uf) * uf)
+    if mov.valor_uf == uf and mov.monto_pesos == pesos:
+        return False
+    mov.valor_uf = uf
+    mov.monto_pesos = float(pesos)
+    return True
+
+
+def _aplicar_regla_pesos_ep(mov: Movimiento, status_prev: str | None = None) -> None:
+    """Aplica regla UF→pesos flotante / fijación al enviar."""
+    if not _es_movimiento_estado_pago(mov) or mov.monto_uf is None:
+        return
+    flotante = _ep_pesos_flotantes(mov.status_pago)
+    era_flotante = _ep_pesos_flotantes(status_prev)
+    if flotante:
+        _sincronizar_pesos_estado_pago(mov)
+    elif era_flotante and not flotante:
+        # Acaba de pasar a Enviado (u otro status posterior): fijar con UF actual.
+        _sincronizar_pesos_estado_pago(mov, forzar_fijacion=True)
+
+
 def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
+    status_prev = mov.status_pago
     if 'fecha' in data or 'fecha_movimiento' in data:
         fecha = _parse_fecha(data.get('fecha') or data.get('fecha_movimiento'))
         if fecha:
@@ -2130,6 +2184,7 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
             mov.proyecto_id = None
             if not data.get('centro_costo'):
                 mov.centro_costo = 'Administración'
+    _aplicar_regla_pesos_ep(mov, status_prev)
 
 
 def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimiento:
@@ -2171,6 +2226,12 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         template_html=data.get('template_html') or None,
     )
     db.session.add(mov)
+    # Nuevo EP: si tiene UF y status flotante (o ya viene fijado), sincronizar pesos.
+    if mov.monto_uf is not None:
+        if _ep_pesos_flotantes(mov.status_pago):
+            _sincronizar_pesos_estado_pago(mov)
+        else:
+            _sincronizar_pesos_estado_pago(mov, forzar_fijacion=True)
     return mov
 
 
@@ -2495,6 +2556,9 @@ __all__ = [
     'SERVICIOS',
     'STATUS_GASTO',
     'STATUS_PAGO',
+    'STATUS_EP_PESOS_FLOTANTES',
+    '_ep_pesos_flotantes',
+    '_sincronizar_pesos_estado_pago',
     'TASA_AFP',
     'TRABAJADORES_FOTOS_DIR',
     'FIRMAS_DIR',

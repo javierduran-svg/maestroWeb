@@ -2950,7 +2950,7 @@
                             <div class="prop-compact-grid">
                                 <div class="prop-field"><label>N° EP</label><input type="number" class="form-control" id="epNumero" min="1" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field"><label>Status</label>
-                                    <select class="form-select" id="epStatusPago" onchange="onEpCampoTemplate()">
+                                    <select class="form-select" id="epStatusPago" onchange="onEpStatusChange()">
                                         <option value="Por enviar">Por enviar</option>
                                         <option value="Programado">Programado</option>
                                         <option value="Enviado">Enviado</option>
@@ -2974,8 +2974,8 @@
                                 </div>
                                 <div class="prop-field span-2 prop-subheading">Montos</div>
                                 <div class="prop-field"><label>Monto UF</label><input type="number" step="any" class="form-control" id="epMontoUf" oninput="onEpMontoUfChange()"></div>
-                                <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="Según fecha estado de pago"></div>
-                                <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="UF actual mientras Por enviar/Programado; se fija al enviar"></div>
+                                <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate()" title="Sigue la UF actual hasta Enviado; luego queda fijo"></div>
                                 <div class="prop-field"><label>N° Factura</label><input type="text" class="form-control" id="epNumFact" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field span-2">
                                     <label class="d-flex align-items-center gap-2 mt-1" style="font-weight:600">
@@ -9198,6 +9198,7 @@
     let _epTemplateBase = '';
     let _epProyectoCtx = null;
     let _epListaCache = [];
+    let _epStatusPrev = null;
 
     function toggleEpSideBlock(id) {
         document.getElementById(id)?.classList.toggle('collapsed');
@@ -9415,10 +9416,14 @@
         else actualizarTemplateEstadoPago(false);
     }
 
-    async function consultarValorUfFecha(fecha) {
-        if (!fecha) return null;
+    function epPesosFlotantes(status) {
+        // Por enviar / Programado: pesos siguen UF actual. Desde Enviado quedan fijos.
+        return status === 'Por enviar' || status === 'Programado';
+    }
+
+    async function consultarValorUfActual() {
         try {
-            const res = await apiFetch(`/api/uf?fecha=${encodeURIComponent(fecha)}`);
+            const res = await apiFetch('/api/uf/hoy');
             if (!res.ok) return null;
             const data = await res.json();
             return data.valor != null ? Number(data.valor) : null;
@@ -9427,25 +9432,78 @@
         }
     }
 
+    function aplicarBloqueoPesosEp() {
+        const flotante = epPesosFlotantes(document.getElementById('epStatusPago').value);
+        const montoEl = document.getElementById('epMonto');
+        const valorEl = document.getElementById('epValorUf');
+        if (montoEl) {
+            montoEl.readOnly = flotante;
+            montoEl.classList.toggle('bg-light', flotante);
+            montoEl.title = flotante
+                ? 'Se actualiza con la UF del día mientras el status es Por enviar o Programado'
+                : 'Fijado al pasar a Enviado (y status posteriores)';
+        }
+        if (valorEl) {
+            valorEl.title = flotante
+                ? 'UF actual (se actualiza mientras Por enviar / Programado)'
+                : 'UF fijada al enviar el estado de pago';
+        }
+    }
+
+    async function sincronizarPesosEpSegunEstado(forzarFijacion = false) {
+        const status = document.getElementById('epStatusPago').value;
+        const flotante = epPesosFlotantes(status);
+        const montoUf = Number(document.getElementById('epMontoUf').value);
+        if (!montoUf) {
+            aplicarBloqueoPesosEp();
+            return;
+        }
+        if (flotante || forzarFijacion) {
+            const valor = await consultarValorUfActual();
+            if (valor != null) {
+                document.getElementById('epValorUf').value = valor;
+                document.getElementById('epMonto').value = Math.round(montoUf * valor);
+            }
+        }
+        aplicarBloqueoPesosEp();
+    }
+
+    async function onEpStatusChange() {
+        const status = document.getElementById('epStatusPago').value;
+        const eraFlotante = epPesosFlotantes(_epStatusPrev);
+        const flotante = epPesosFlotantes(status);
+        if (flotante) {
+            await sincronizarPesosEpSegunEstado();
+        } else if (eraFlotante) {
+            // Acaba de pasar a Enviado (u otro status posterior): fijar con UF actual.
+            await sincronizarPesosEpSegunEstado(true);
+        } else {
+            aplicarBloqueoPesosEp();
+        }
+        _epStatusPrev = status;
+        onEpCampoTemplate();
+    }
+
     async function onEpFechaPagoChange() {
-        const fecha = document.getElementById('epFechaPago').value;
-        const valor = await consultarValorUfFecha(fecha);
-        if (valor != null) {
-            document.getElementById('epValorUf').value = valor;
-            recalcularPesosDesdeUf();
+        // La fecha del EP no mueve el tipo de cambio: solo status flotante usa UF actual.
+        if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
+            await sincronizarPesosEpSegunEstado();
         }
         onEpCampoTemplate();
     }
 
     function recalcularPesosDesdeUf() {
+        if (!epPesosFlotantes(document.getElementById('epStatusPago').value)) return;
         const uf = Number(document.getElementById('epMontoUf').value);
         const valor = Number(document.getElementById('epValorUf').value);
         if (!uf || !valor) return;
         document.getElementById('epMonto').value = Math.round(uf * valor);
     }
 
-    function onEpMontoUfChange() {
-        recalcularPesosDesdeUf();
+    async function onEpMontoUfChange() {
+        if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
+            await sincronizarPesosEpSegunEstado();
+        }
         onEpCampoTemplate();
     }
 
@@ -9568,6 +9626,7 @@
         document.getElementById('epFecha').value = new Date().toISOString().slice(0, 10);
         document.getElementById('epFechaPago').value = new Date().toISOString().slice(0, 10);
         document.getElementById('epStatusPago').value = 'Por enviar';
+        _epStatusPrev = 'Por enviar';
         document.getElementById('epCondicionPago').value = '30';
         document.getElementById('epIncluirIva').checked = false;
         document.getElementById('epAtencion').value = p.cliente || '';
@@ -9598,6 +9657,7 @@
             document.getElementById('epNumFact').value = m.numero_factura || '';
             document.getElementById('epDesc').value = m.descripcion || '';
             document.getElementById('epStatusPago').value = m.status_pago || 'Por enviar';
+            _epStatusPrev = document.getElementById('epStatusPago').value;
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
             document.getElementById('epNumero').value = m.numero_ep || '';
             document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
@@ -9610,12 +9670,18 @@
             }
         }
 
-        if (!document.getElementById('epValorUf').value && document.getElementById('epFechaPago').value) {
-            await onEpFechaPagoChange();
-        } else if (!movId || !document.getElementById('epTemplate').innerHTML.trim()) {
+        if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
+            await sincronizarPesosEpSegunEstado();
+        } else {
+            aplicarBloqueoPesosEp();
+        }
+
+        if (!movId || !document.getElementById('epTemplate').innerHTML.trim()) {
             await actualizarTemplateEstadoPago(true);
         } else if (editor?.dataset.editado !== '1') {
             await actualizarTemplateEstadoPago(true);
+        } else {
+            await sincronizarDatosEnTemplateEp();
         }
 
         poblarFontSizeSelect(document.getElementById('epFontSizeSelect'));
@@ -9625,6 +9691,10 @@
     async function guardarEstadoPago() {
         const proyectoId = document.getElementById('epProyectoId').value;
         const movId = document.getElementById('epMovId').value;
+        // Antes de persistir: si sigue flotante, refrescar pesos; al enviar, fijar.
+        if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
+            await sincronizarPesosEpSegunEstado();
+        }
         await sincronizarDatosEnTemplateEp();
         const montoUf = document.getElementById('epMontoUf').value;
         const valorUf = document.getElementById('epValorUf').value;
