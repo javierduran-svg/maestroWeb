@@ -715,15 +715,15 @@ table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: to
 table.ep-tabla {
   width: 100%;
   border-collapse: collapse;
-  margin: 6px 0 10px 0;
-  font-size: 8pt;
+  margin: 8px 0 12px 0;
+  font-size: 8.5pt;
   table-layout: fixed;
 }
 table.ep-tabla th, table.ep-tabla td {
   border: 1px solid #888888;
-  padding: 1px 2px;
+  padding: 6px 8px;
   vertical-align: middle;
-  font-size: 8pt;
+  font-size: 8.5pt;
   word-wrap: break-word;
 }
 table.ep-tabla th {
@@ -737,6 +737,19 @@ table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: cente
 table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; }
 table.ep-tabla tr.ep-fila-alt td { background-color: #f2f2f2; }
 table.ep-tabla tr.ep-fila-actual td { background-color: #cfeee8; }
+/* PDF rewrite: anchos absolutos en HTML; sin width:100% ni table-layout:fixed
+   (esas + padding CSS reintroducían negative availWidth). */
+table.ep-tabla-pdf {
+  border-collapse: collapse;
+  margin: 8px 0 12px 0;
+  font-size: 8.5pt;
+}
+table.ep-tabla-pdf th, table.ep-tabla-pdf td {
+  border: 1px solid #888888;
+  padding: 6px 8px;
+  vertical-align: middle;
+  font-size: 8.5pt;
+}
 table.ep-doc-totales { width: 100%; border-collapse: collapse; margin-top: 8px; }
 table.ep-doc-totales td { border: none; padding: 0; vertical-align: top; }
 .ep-doc-notas { width: 55%; font-size: 8pt; text-align: left; }

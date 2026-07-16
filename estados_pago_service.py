@@ -153,9 +153,15 @@ def _texto_celda_html(raw: str) -> str:
     return html_mod.unescape(txt).strip()
 
 
-def _tabla_ep_segura(rows: list[list[str]]) -> str:
-    """Tabla de hitos con anchos absolutos — evita negative availWidth en xhtml2pdf."""
+def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = None) -> str:
+    """Tabla de hitos con anchos absolutos — evita negative availWidth en xhtml2pdf.
+
+    Anchos en pt que suman <480; class ep-tabla-pdf aporta padding CSS (5px 6px)
+    sin width:100% ni table-layout:fixed. cellpadding=0 evita doble conteo con CSS.
+    Sin white-space:nowrap ni width % — esa combinación disparaba el crash.
+    """
     import html as html_mod
+    import re
 
     if not rows:
         return '<p></p>'
@@ -165,42 +171,61 @@ def _tabla_ep_segura(rows: list[list[str]]) -> str:
         while len(r) < ncols:
             r.append('')
 
-    # ~480pt útiles en A4 con márgenes 2cm.
+    # ~432pt < 480pt útiles; Estado/Precio más anchos para evitar wrap/clip.
     if ncols == 7:
-        widths = [155, 48, 48, 55, 70, 58, 46]
+        widths = [128, 42, 40, 48, 62, 72, 40]
         aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center']
     else:
-        w = max(40, 480 // max(ncols, 1))
+        w = max(40, 430 // max(ncols, 1))
         widths = [w] * ncols
         aligns = ['left'] * ncols
 
+    table_w = sum(widths)
+    # ep-tabla-pdf: padding CSS sin width:100%/fixed; cellpadding=0 evita doble conteo.
     parts = [
-        '<table border="1" cellpadding="1" cellspacing="0" width="480">'
+        f'<table class="ep-tabla-pdf" border="1" cellpadding="0" cellspacing="0" width="{table_w}">'
     ]
     for i, row in enumerate(rows):
         parts.append('<tr>')
+        src_bg = (row_bgs[i] if row_bgs and i < len(row_bgs) else None) or ''
         for j, cell in enumerate(row):
             tag = 'th' if i == 0 else 'td'
-            bg = ' bgcolor="#D9D9D9"' if i == 0 else (' bgcolor="#F2F2F2"' if i % 2 == 0 else '')
+            if i == 0:
+                bg = ' bgcolor="#D9D9D9"'
+            elif src_bg and re.fullmatch(r'#[0-9A-Fa-f]{3,8}', src_bg.strip()):
+                bg = f' bgcolor="{src_bg.strip()}"'
+            else:
+                bg = ' bgcolor="#F2F2F2"' if i % 2 == 0 else ''
             align = aligns[j]
             w = widths[j]
             safe = html_mod.escape(cell) if cell else '&nbsp;'
-            parts.append(f'<{tag} width="{w}" align="{align}"{bg}>{safe}</{tag}>')
+            parts.append(
+                f'<{tag} width="{w}" align="{align}" valign="middle"{bg}>{safe}</{tag}>'
+            )
         parts.append('</tr>')
     parts.append('</table>')
     return ''.join(parts)
 
 
-def _extraer_filas_tabla(table_html: str) -> list[list[str]]:
+def _extraer_filas_tabla(table_html: str) -> tuple[list[list[str]], list[str | None]]:
     import re
 
     rows: list[list[str]] = []
+    row_bgs: list[str | None] = []
     for tr in re.finditer(r'<tr[^>]*>(.*?)</tr>', table_html, flags=re.I | re.S):
-        cells = re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', tr.group(1), flags=re.I | re.S)
-        cells = [_texto_celda_html(c) for c in cells]
-        if cells:
-            rows.append(cells)
-    return rows
+        cell_tags = list(re.finditer(r'<t[dh]([^>]*)>(.*?)</t[dh]>', tr.group(1), flags=re.I | re.S))
+        if not cell_tags:
+            continue
+        cells = [_texto_celda_html(m.group(2)) for m in cell_tags]
+        bg = None
+        for m in cell_tags:
+            bg_m = re.search(r'bgcolor=["\']([^"\']+)["\']', m.group(1), flags=re.I)
+            if bg_m:
+                bg = bg_m.group(1).strip()
+                break
+        rows.append(cells)
+        row_bgs.append(bg)
+    return rows, row_bgs
 
 
 def _preparar_html_ep_para_pdf(html: str) -> str:
@@ -217,7 +242,8 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
     out = out.replace('.-', '')
 
     def _rew_ep_tabla(match: re.Match) -> str:
-        return _tabla_ep_segura(_extraer_filas_tabla(match.group(0)))
+        rows, row_bgs = _extraer_filas_tabla(match.group(0))
+        return _tabla_ep_segura(rows, row_bgs)
 
     # 1) Tablas con class ep-tabla
     out = re.sub(

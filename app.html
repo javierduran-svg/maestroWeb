@@ -627,16 +627,16 @@
         #modalEstadoPago #epTemplate table.ep-tabla {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin: 6px 0 10px 0;
-            font-size: 8pt !important;
+            margin: 8px 0 12px 0;
+            font-size: 8.5pt !important;
             table-layout: fixed !important;
         }
         #modalEstadoPago #epTemplate table.ep-tabla th,
         #modalEstadoPago #epTemplate table.ep-tabla td {
             border: 1px solid #888 !important;
-            padding: 3px 4px !important;
+            padding: 6px 8px !important;
             vertical-align: middle !important;
-            font-size: 8pt !important;
+            font-size: 8.5pt !important;
             word-wrap: break-word;
             overflow-wrap: anywhere;
         }
@@ -9326,8 +9326,8 @@
 
     function construirTablaEpHtml() {
         const rows = epFilasParaTabla();
-        // Anchos fijos (%): xhtml2pdf falla con table-layout:auto + nowrap en 7 cols.
-        const widths = [34, 10, 10, 12, 14, 12, 8];
+        // Anchos fijos (%): Estado más ancho; PDF reescribe a pt absolutos.
+        const widths = [30, 10, 9, 11, 14, 16, 10];
         const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
@@ -9353,8 +9353,8 @@
             `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#d9d9d9">${h}</th>`
         ).join('');
         const empty = `<tr><td colspan="7" width="100%">Sin hitos</td></tr>`;
-        // HTML mínimo: sin padding/nowrap en style (xhtml2pdf es frágil).
-        return `<table class="ep-tabla" border="1" cellpadding="2" cellspacing="0" width="100%">` +
+        // HTML mínimo: cellpadding HTML (no CSS padding/nowrap) — xhtml2pdf es frágil.
+        return `<table class="ep-tabla" border="1" cellpadding="4" cellspacing="0" width="100%">` +
             `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
 
