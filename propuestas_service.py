@@ -712,8 +712,15 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
   margin: 0 0 12px 0;
 }
 .ep-doc .prop-doc-logo {
-  /* Verde → teal (#008080); scoped a EP para no afectar propuestas */
-  filter: hue-rotate(42deg) saturate(1.05);
+  /* Letterhead: ~44px. xhtml2pdf respeta max-height de forma irregular;
+     el export EP también fija height en el <img>. */
+  max-height: 44px;
+  max-width: 110px;
+  height: 44px;
+  width: auto;
+  /* Verde → teal (#008080); solo preview/navegador — xhtml2pdf ignora filter.
+     El PDF EP usa tint PIL en _logo_data_uri(teal=True). */
+  filter: hue-rotate(78deg) saturate(1.2) brightness(0.92);
 }
 .ep-doc-empresa-block { margin: 0 0 4px 0; }
 .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
@@ -866,13 +873,55 @@ def guardar_plantilla_servicio(empresa_id: int, servicio: str, contenido_html: s
     return row
 
 
-def _logo_data_uri(logo_path: str | None) -> str:
+def _tint_logo_bytes_teal(raw: bytes, hue_deg: float = 78.0) -> bytes | None:
+    """Aproxima el CSS hue-rotate del logo EP hacia teal (#008080) para PDF.
+
+    xhtml2pdf no aplica filter CSS en imágenes; se recolorea en PIL.
+    """
+    try:
+        from PIL import Image
+        import colorsys
+    except ImportError:
+        return None
+    try:
+        img = Image.open(io.BytesIO(raw)).convert('RGBA')
+    except Exception:
+        return None
+    shift = (hue_deg / 360.0) % 1.0
+    px = img.load()
+    w, h = img.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            hf, s, v = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+            if s < 0.08:
+                continue
+            hf = (hf + shift) % 1.0
+            # Ligero oscurecido como brightness(0.92) del CSS
+            v = max(0.0, min(1.0, v * 0.92))
+            s = max(0.0, min(1.0, s * 1.2))
+            r2, g2, b2 = colorsys.hsv_to_rgb(hf, s, v)
+            px[x, y] = (int(r2 * 255), int(g2 * 255), int(b2 * 255), a)
+    out = io.BytesIO()
+    img.save(out, format='PNG')
+    return out.getvalue()
+
+
+def _logo_data_uri(logo_path: str | None, *, teal: bool = False) -> str:
     if not logo_path or not os.path.isfile(logo_path):
         return ''
     path = Path(logo_path)
     mime = 'image/png' if path.suffix.lower() == '.png' else 'image/jpeg'
     try:
-        data = base64.b64encode(path.read_bytes()).decode('ascii')
+        raw = path.read_bytes()
+        if teal:
+            tinted = _tint_logo_bytes_teal(raw)
+            if tinted:
+                raw = tinted
+                mime = 'image/png'
+        data = base64.b64encode(raw).decode('ascii')
         return f'data:{mime};base64,{data}'
     except OSError:
         return ''
@@ -922,29 +971,40 @@ def _normalizar_html_para_pdf(html: str) -> str:
 
 
 def _inyectar_logo_html(html: str, logo_path: str | None) -> str:
-    logo_uri = _logo_data_uri(logo_path)
+    # EP: recolorear logo a teal (PIL) porque xhtml2pdf ignora CSS filter.
+    is_ep = bool(re.search(r'\bep-doc\b', html or '', flags=re.I))
+    logo_uri = _logo_data_uri(logo_path, teal=is_ep)
     if not logo_uri:
         return html
+    # height fijo ayuda a xhtml2pdf cuando max-height CSS falla en celdas anchas.
+    img_attrs = 'class="prop-doc-logo" alt="Logo" height="44"'
+    if is_ep:
+        img_tag = f'<img src="{logo_uri}" {img_attrs}/>'
+    else:
+        img_tag = f'<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>'
     if re.search(r'<img[^>]+class="[^"]*prop-doc-logo', html, flags=re.I):
-        html = re.sub(
-            r'(<img[^>]*class="[^"]*prop-doc-logo[^"]*"[^>]*src=")([^"]*)(")',
-            rf'\1{logo_uri}\3',
-            html,
-            count=1,
-            flags=re.I,
-        )
-        html = re.sub(r'(<img[^>]*src=")([^"]*)("[^>]*class="[^"]*prop-doc-logo)', rf'\1{logo_uri}\3', html, count=1, flags=re.I)
+        def _rew_logo_img(m: re.Match) -> str:
+            tag = m.group(0)
+            tag = re.sub(r'\ssrc="[^"]*"', f' src="{logo_uri}"', tag, count=1, flags=re.I)
+            if is_ep:
+                if re.search(r'\sheight=', tag, flags=re.I):
+                    tag = re.sub(r'\sheight="[^"]*"', ' height="44"', tag, count=1, flags=re.I)
+                else:
+                    tag = re.sub(r'\s*/?>\s*$', ' height="44"/>', tag, count=1)
+            return tag
+
+        html = re.sub(r'<img[^>]+class="[^"]*prop-doc-logo[^"]*"[^>]*/?>', _rew_logo_img, html, count=1, flags=re.I)
         return html
     html = re.sub(
         r'(<td[^>]*class="[^"]*prop-doc-logo-wrap[^"]*"[^>]*>)\s*(</td>)',
-        rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+        rf'\1{img_tag}\2',
         html,
         count=1,
         flags=re.I,
     )
     html = re.sub(
         r'(<div[^>]*class="[^"]*prop-doc-logo-wrap[^"]*"[^>]*>)\s*(</div>)',
-        rf'\1<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>\2',
+        rf'\1{img_tag}\2',
         html,
         count=1,
         flags=re.I,

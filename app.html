@@ -612,7 +612,13 @@
             width: auto !important; text-align: left !important; margin: 0 0 12px 0; display: block;
         }
         #modalEstadoPago #epTemplate .ep-doc .prop-doc-logo {
-            filter: hue-rotate(42deg) saturate(1.05);
+            max-height: 44px !important;
+            max-width: 110px !important;
+            height: 44px;
+            width: auto;
+            object-fit: contain;
+            /* Verde hierba → teal marca (#008080); solo EP / modalEstadoPago */
+            filter: hue-rotate(78deg) saturate(1.2) brightness(0.92);
         }
         #modalEstadoPago #epTemplate .ep-doc-empresa-block { margin: 0 0 4px 0; }
         #modalEstadoPago #epTemplate .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
