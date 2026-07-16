@@ -690,6 +690,9 @@
         #modalEstadoPago #epTemplate table.ep-doc-totales-tabla .ep-doc-total-row td {
             font-size: 14pt !important; font-weight: 700; padding-top: 6px;
         }
+        #modalEstadoPago #epTemplate .ep-doc-monto-palabras {
+            margin: 8px 0 0 0; font-size: 9pt; line-height: 1.35; color: #222; text-align: left;
+        }
 
         .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
         .prop-template-editor { font-family: 'Roboto', sans-serif; }
@@ -3095,7 +3098,7 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Editar plantilla de estado de pago</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-3">
-            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{INTRO}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{LOGO}}</code>.</p>
+            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{INTRO}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{MONTO_PALABRAS}}</code>, <code>{{LOGO}}</code>.</p>
             <div id="plantillaEstadoPagoEditor" class="prop-template-editor" contenteditable="true"></div>
         </div>
         <div class="modal-footer border-0">
@@ -9328,6 +9331,59 @@
         return '$ ' + Math.round(Number(n)).toLocaleString('es-CL');
     }
 
+    function enteroAPalabrasEs(n) {
+        n = Math.round(Number(n) || 0);
+        if (n < 0) n = Math.abs(n);
+        if (n === 0) return 'cero';
+        const unidades = [
+            '', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve',
+            'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete',
+            'dieciocho', 'diecinueve', 'veinte', 'veintiuno', 'veintidós', 'veintitrés',
+            'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve',
+        ];
+        const decenas = ['', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta', 'sesenta', 'setenta', 'ochenta', 'noventa'];
+        const centenas = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+        const bajo100 = (x, apocope) => {
+            if (x < 30) {
+                if (apocope && x === 1) return 'un';
+                if (apocope && x === 21) return 'veintiún';
+                return unidades[x];
+            }
+            const d = Math.floor(x / 10);
+            const u = x % 10;
+            if (!u) return decenas[d];
+            return `${decenas[d]} y ${apocope && u === 1 ? 'ún' : unidades[u]}`;
+        };
+        const bajo1000 = (x, apocope) => {
+            if (x < 100) return bajo100(x, apocope);
+            if (x === 100) return 'cien';
+            const c = Math.floor(x / 100);
+            const r = x % 100;
+            if (!r) return centenas[c];
+            return `${centenas[c]} ${bajo100(r, apocope)}`;
+        };
+        const partes = [];
+        const millones = Math.floor(n / 1_000_000);
+        let resto = n % 1_000_000;
+        if (millones) {
+            partes.push(millones === 1 ? 'un millón' : `${bajo1000(millones, true)} millones`);
+        }
+        const miles = Math.floor(resto / 1000);
+        const unidadesN = resto % 1000;
+        if (miles) {
+            partes.push(miles === 1 ? 'mil' : `${bajo1000(miles, true)} mil`);
+        }
+        // Apócope ante "peso(s)": un / veintiún / treinta y un …
+        if (unidadesN || !partes.length) partes.push(bajo1000(unidadesN, true));
+        return partes.join(' ');
+    }
+
+    function montoClpEnPalabras(n) {
+        const v = Math.round(Number(n) || 0);
+        const palabras = enteroAPalabrasEs(v);
+        return `Son: ${palabras} ${v === 1 ? 'peso' : 'pesos'}`;
+    }
+
     function fmtUfEp(n) {
         if (n == null || n === '' || Number.isNaN(Number(n))) return '-';
         return Number(n).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
@@ -9442,22 +9498,23 @@
         const tot = totalesEpDocumento();
         const fecha = document.getElementById('epFechaPago').value || document.getElementById('epFecha').value;
         return {
-            EMPRESA: emp.nombre || 'B-green Chile Limitada',
-            RUT: emp.rut || '',
-            DIRECCION: emp.direccion || '',
-            INTRO: document.getElementById('epIntro').value || INTRO_EP_DEFAULT,
-            NUMERO_EP: document.getElementById('epNumero').value || '1',
-            FECHA: fmtFechaEpDoc(fecha),
-            ATENCION: document.getElementById('epAtencion').value || '',
-            PROYECTO: document.getElementById('epProyectoNombre').value || '',
-            SERVICIO: document.getElementById('epServicio').value || '',
-            TOTAL_SERVICIO_UF: fmtUfEp(totalServicioUfProyecto()),
-            TABLA_EP: construirTablaEpHtml(),
-            NOTAS: document.getElementById('epNotas').value || '',
-            SUBTOTAL: fmtPesosEp(tot.subtotal),
-            IVA: document.getElementById('epIncluirIva').checked ? fmtPesosEp(tot.iva) : '-',
-            TOTAL: fmtPesosEp(tot.total),
-            LOGO: '',
+            '{{EMPRESA}}': emp.nombre || 'B-green Chile Limitada',
+            '{{RUT}}': emp.rut || '',
+            '{{DIRECCION}}': emp.direccion || '',
+            '{{INTRO}}': document.getElementById('epIntro').value || INTRO_EP_DEFAULT,
+            '{{NUMERO_EP}}': document.getElementById('epNumero').value || '1',
+            '{{FECHA}}': fmtFechaEpDoc(fecha),
+            '{{ATENCION}}': document.getElementById('epAtencion').value || '',
+            '{{PROYECTO}}': document.getElementById('epProyectoNombre').value || '',
+            '{{SERVICIO}}': document.getElementById('epServicio').value || '',
+            '{{TOTAL_SERVICIO_UF}}': fmtUfEp(totalServicioUfProyecto()),
+            '{{TABLA_EP}}': construirTablaEpHtml(),
+            '{{NOTAS}}': document.getElementById('epNotas').value || '',
+            '{{SUBTOTAL}}': fmtPesosEp(tot.subtotal),
+            '{{IVA}}': document.getElementById('epIncluirIva').checked ? fmtPesosEp(tot.iva) : '-',
+            '{{TOTAL}}': fmtPesosEp(tot.total),
+            '{{MONTO_PALABRAS}}': montoClpEnPalabras(tot.total),
+            '{{LOGO}}': '',
         };
     }
 
@@ -9479,20 +9536,21 @@
         if (!editor) return;
         const vars = varsTemplateEstadoPago();
         const map = {
-            empresa_nombre: vars.EMPRESA,
-            empresa_rut: vars.RUT,
-            empresa_direccion: vars.DIRECCION,
-            intro: vars.INTRO,
-            titulo_ep: `Estado de Pago N°${vars.NUMERO_EP}`,
-            fecha: vars.FECHA,
-            atencion: vars.ATENCION,
-            proyecto: vars.PROYECTO,
-            servicio: vars.SERVICIO,
-            total_servicio_uf: `${vars.TOTAL_SERVICIO_UF} UF`,
-            notas: vars.NOTAS,
-            subtotal: vars.SUBTOTAL,
-            iva: vars.IVA,
-            total: vars.TOTAL,
+            empresa_nombre: vars['{{EMPRESA}}'],
+            empresa_rut: vars['{{RUT}}'],
+            empresa_direccion: vars['{{DIRECCION}}'],
+            intro: vars['{{INTRO}}'],
+            titulo_ep: `Estado de Pago N°${vars['{{NUMERO_EP}}']}`,
+            fecha: vars['{{FECHA}}'],
+            atencion: vars['{{ATENCION}}'],
+            proyecto: vars['{{PROYECTO}}'],
+            servicio: vars['{{SERVICIO}}'],
+            total_servicio_uf: `${vars['{{TOTAL_SERVICIO_UF}}']} UF`,
+            notas: vars['{{NOTAS}}'],
+            subtotal: vars['{{SUBTOTAL}}'],
+            iva: vars['{{IVA}}'],
+            total: vars['{{TOTAL}}'],
+            monto_palabras: vars['{{MONTO_PALABRAS}}'],
         };
         Object.entries(map).forEach(([prop, val]) => {
             editor.querySelectorAll(`[data-prop="${prop}"]`).forEach(el => {
@@ -9510,7 +9568,7 @@
                 introEl = document.createElement('p');
                 introEl.className = 'ep-doc-intro';
                 introEl.setAttribute('data-prop', 'intro');
-                introEl.textContent = vars.INTRO;
+                introEl.textContent = vars['{{INTRO}}'];
                 if (titulo.nextSibling) titulo.parentNode.insertBefore(introEl, titulo.nextSibling);
                 else titulo.parentNode.appendChild(introEl);
             }
@@ -9529,8 +9587,34 @@
             || editor.querySelector('.ep-doc-titulo')
             || editor.querySelector('h1');
         if (tituloEl && !tituloEl.getAttribute('data-prop')) {
-            tituloEl.textContent = `Estado de Pago N°${vars.NUMERO_EP}`;
+            tituloEl.textContent = `Estado de Pago N°${vars['{{NUMERO_EP}}']}`;
         }
+        // Asegurar fila Total con etiqueta + párrafo monto en palabras (plantillas antiguas).
+        const totTabla = editor.querySelector('table.ep-doc-totales-tabla');
+        if (totTabla) {
+            const totalRow = totTabla.querySelector('tr.ep-doc-total-row');
+            if (totalRow) {
+                const cells = totalRow.querySelectorAll('td');
+                if (cells.length >= 2 && !(cells[0].textContent || '').trim()) {
+                    cells[0].textContent = 'Total';
+                }
+            }
+        }
+        let mpEl = editor.querySelector('[data-prop="monto_palabras"]')
+            || editor.querySelector('.ep-doc-monto-palabras');
+        if (!mpEl) {
+            mpEl = document.createElement('p');
+            mpEl.className = 'ep-doc-monto-palabras';
+            mpEl.setAttribute('data-prop', 'monto_palabras');
+            const totBlock = editor.querySelector('table.ep-doc-totales');
+            if (totBlock && totBlock.parentNode) {
+                if (totBlock.nextSibling) totBlock.parentNode.insertBefore(mpEl, totBlock.nextSibling);
+                else totBlock.parentNode.appendChild(mpEl);
+            } else {
+                editor.appendChild(mpEl);
+            }
+        }
+        mpEl.textContent = vars['{{MONTO_PALABRAS}}'];
         let bloque = editor.querySelector('#ep-bloque-tabla');
         if (!bloque) {
             // Insertar contenedor de tabla si la plantilla antigua no lo trae.
@@ -9540,7 +9624,7 @@
             if (meta && meta.parentNode) meta.parentNode.insertBefore(bloque, meta.nextSibling);
             else editor.appendChild(bloque);
         }
-        bloque.innerHTML = vars.TABLA_EP;
+        bloque.innerHTML = vars['{{TABLA_EP}}'];
         await sincronizarLogoEpTemplate();
         editor.querySelectorAll('[data-prop]').forEach(el => el.classList.add('prop-campo-auto'));
     }

@@ -703,7 +703,7 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
 .prop-doc-firma-linea { width: 100%; border: 0; border-top: 1px solid #333333; margin: 2px 0 4px 0; height: 1px; font-size: 1px; line-height: 1px; }
 .prop-doc-firma-nombre { margin: 0 0 4px 0; text-align: center; }
 .prop-doc-firma-cargo { text-align: right; margin: 4px 0 0 0; }
-.ep-doc { font-size: 9pt; color: #222222; }
+.ep-doc { font-size: 9pt; color: #222222; line-height: 1.35; }
 .ep-doc-cabecera { width: 100%; margin: 0 0 0 0; }
 .ep-doc .prop-doc-logo-wrap,
 .ep-doc-cabecera .prop-doc-logo-wrap {
@@ -723,10 +723,10 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
   filter: hue-rotate(78deg) saturate(1.2) brightness(0.92);
 }
 .ep-doc-empresa-block { margin: 0 0 4px 0; }
-.ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
-.ep-doc-meta { margin: 0; font-size: 8pt; color: #444444; }
+.ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; line-height: 1.35; }
+.ep-doc-meta { margin: 0 0 8px 0; font-size: 8pt; color: #444444; line-height: 1.35; }
 .ep-doc-intro { margin: 6px 0 10px 0; font-size: 9pt; line-height: 1.4; color: #222222; text-align: justify; }
-.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 18px 0 6px 0; color: #111111; }
+.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 18px 0 6px 0; color: #111111; line-height: 1.35; }
 h1.ep-doc-titulo { font-size: 13pt; }
 table.ep-doc-meta-grid { width: 100%; border-collapse: collapse; margin: 0 0 10px 0; font-size: 9pt; }
 table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: top; }
@@ -791,11 +791,18 @@ table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
 }
 table.ep-doc-totales { width: 100%; border-collapse: collapse; margin-top: 8px; }
 table.ep-doc-totales td { border: none; padding: 0; vertical-align: top; }
-.ep-doc-notas { width: 55%; font-size: 8pt; text-align: left; }
+.ep-doc-notas { width: 55%; font-size: 8pt; text-align: left; line-height: 1.35; }
 .ep-doc-totales-col { width: 45%; }
 table.ep-doc-totales-tabla { width: auto; border-collapse: collapse; font-size: 9pt; margin-left: auto; }
-table.ep-doc-totales-tabla td { border: none; padding: 2px 4px; font-size: 9pt; }
+table.ep-doc-totales-tabla td { border: none; padding: 2px 4px; font-size: 9pt; line-height: 1.35; }
 table.ep-doc-totales-tabla .ep-doc-total-row td { font-size: 14pt; font-weight: bold; padding-top: 6px; }
+.ep-doc-monto-palabras {
+  margin: 8px 0 0 0;
+  font-size: 9pt;
+  line-height: 1.35;
+  color: #222222;
+  text-align: left;
+}
 """
 
 PROP_PDF_CSS = """

@@ -55,12 +55,87 @@ TEMPLATE_ESTADO_PAGO = r"""<div class="prop-doc ep-doc">
       <table class="ep-doc-totales-tabla" cellpadding="0" cellspacing="0" align="right">
         <tr><td align="left">Subtotal</td><td class="text-end" align="right" data-prop="subtotal">{{SUBTOTAL}}</td></tr>
         <tr><td align="left">IVA 19%</td><td class="text-end" align="right" data-prop="iva">{{IVA}}</td></tr>
-        <tr class="ep-doc-total-row"><td></td><td class="text-end fw-bold" align="right" data-prop="total">{{TOTAL}}</td></tr>
+        <tr class="ep-doc-total-row"><td align="left">Total</td><td class="text-end fw-bold" align="right" data-prop="total">{{TOTAL}}</td></tr>
       </table>
     </td>
   </tr>
 </table>
+<p class="ep-doc-monto-palabras" data-prop="monto_palabras">{{MONTO_PALABRAS}}</p>
 </div>"""
+
+
+def monto_clp_en_palabras(monto: int | float | None) -> str:
+    """Convierte un monto entero CLP a frase chilena: 'Son: … pesos'."""
+    try:
+        n = int(round(float(monto or 0)))
+    except (TypeError, ValueError):
+        n = 0
+    if n < 0:
+        n = abs(n)
+    # Apócope final ante "peso(s)": un / veintiún / treinta y un …
+    palabras = _entero_a_palabras_es(n, apocope_final=True)
+    unidad = 'peso' if n == 1 else 'pesos'
+    return f'Son: {palabras} {unidad}'
+
+
+def _entero_a_palabras_es(n: int, apocope_final: bool = False) -> str:
+    if n == 0:
+        return 'cero'
+
+    unidades = (
+        '', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve',
+        'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete',
+        'dieciocho', 'diecinueve', 'veinte', 'veintiuno', 'veintidós', 'veintitrés',
+        'veinticuatro', 'veinticinco', 'veintiséis', 'veintisiete', 'veintiocho', 'veintinueve',
+    )
+    decenas = (
+        '', '', 'veinte', 'treinta', 'cuarenta', 'cincuenta',
+        'sesenta', 'setenta', 'ochenta', 'noventa',
+    )
+    centenas = (
+        '', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos',
+        'seiscientos', 'setecientos', 'ochocientos', 'novecientos',
+    )
+
+    def _bajo_100(x: int, apocope: bool = False) -> str:
+        if x < 30:
+            if apocope and x == 1:
+                return 'un'
+            if apocope and x == 21:
+                return 'veintiún'
+            return unidades[x]
+        d, u = divmod(x, 10)
+        if u == 0:
+            return decenas[d]
+        u_txt = 'ún' if apocope and u == 1 else unidades[u]
+        return f'{decenas[d]} y {u_txt}'
+
+    def _bajo_1000(x: int, apocope: bool = False) -> str:
+        if x < 100:
+            return _bajo_100(x, apocope=apocope)
+        if x == 100:
+            return 'cien'
+        c, r = divmod(x, 100)
+        if r == 0:
+            return centenas[c]
+        return f'{centenas[c]} {_bajo_100(r, apocope=apocope)}'
+
+    partes: list[str] = []
+    millones, resto = divmod(n, 1_000_000)
+    if millones:
+        if millones == 1:
+            partes.append('un millón')
+        else:
+            partes.append(f'{_bajo_1000(millones, apocope=True)} millones')
+    miles, unidades_n = divmod(resto, 1000)
+    if miles:
+        if miles == 1:
+            partes.append('mil')
+        else:
+            partes.append(f'{_bajo_1000(miles, apocope=True)} mil')
+    if unidades_n or not partes:
+        partes.append(_bajo_1000(unidades_n, apocope=apocope_final))
+    return ' '.join(partes)
 
 
 def plantilla_default() -> str:
@@ -287,19 +362,112 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         flags=re.I,
     )
 
-    # 3) Totales: leer data-prop si existen; conservar clases del modal.
+    # 3) Totales: data-prop puede haberse eliminado en el export del front;
+    #    parsear etiquetas visibles del bloque (Subtotal / IVA / Total).
     def _prop(nombre: str) -> str:
         m = re.search(
-            rf'data-prop=["\']{nombre}["\'][^>]*>(.*?)</(?:span|td|th|div|strong)>',
+            rf'data-prop=["\']{nombre}["\'][^>]*>(.*?)</(?:span|td|th|div|p|strong)>',
             out,
             flags=re.I | re.S,
         )
         return _texto_celda_html(m.group(1)) if m else ''
 
-    subtotal = _prop('subtotal') or '-'
-    iva = _prop('iva') or '-'
-    total = _prop('total') or '-'
+    def _valor_fila_totales(bloque: str, etiqueta: str) -> str:
+        m = re.search(
+            rf'<tr[^>]*>\s*<t[dh][^>]*>\s*{etiqueta}\s*</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>',
+            bloque,
+            flags=re.I | re.S,
+        )
+        return _texto_celda_html(m.group(1)) if m else ''
+
+    def _valor_fila_total_row(bloque: str) -> str:
+        m = re.search(
+            r'<tr[^>]*class="[^"]*\bep-doc-total-row\b[^"]*"[^>]*>\s*'
+            r'<t[dh][^>]*>.*?</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>',
+            bloque,
+            flags=re.I | re.S,
+        )
+        return _texto_celda_html(m.group(1)) if m else ''
+
+    def _parse_pesos_cl(txt: str) -> int | None:
+        if not txt or txt.strip() in ('-', '—', ''):
+            return None
+        digits = re.sub(r'[^\d]', '', txt)
+        if not digits:
+            return None
+        try:
+            return int(digits)
+        except ValueError:
+            return None
+
+    bloque_tot = ''
+    m_tot_scan = re.search(
+        r'<table[^>]*class="[^"]*\bep-doc-totales\b[^"]*"[^>]*>',
+        out,
+        flags=re.I,
+    )
+    if m_tot_scan:
+        start_scan = m_tot_scan.start()
+        i_scan = m_tot_scan.end()
+        depth_scan = 1
+        lower_scan = out.lower()
+        while i_scan < len(out) and depth_scan:
+            next_open = lower_scan.find('<table', i_scan)
+            next_close = lower_scan.find('</table>', i_scan)
+            if next_close < 0:
+                break
+            if next_open >= 0 and next_open < next_close:
+                depth_scan += 1
+                i_scan = next_open + 6
+            else:
+                depth_scan -= 1
+                i_scan = next_close + 8
+        if depth_scan == 0:
+            bloque_tot = out[start_scan:i_scan]
+
+    subtotal = _prop('subtotal') or _valor_fila_totales(bloque_tot, r'Subtotal') or '-'
+    iva = _prop('iva') or _valor_fila_totales(bloque_tot, r'IVA(?:\s*19\s*%?)?') or '-'
+    total = (
+        _prop('total')
+        or _valor_fila_totales(bloque_tot, r'Total')
+        or _valor_fila_total_row(bloque_tot)
+        or '-'
+    )
+
     notas = _prop('notas')
+    if not notas and bloque_tot:
+        m_notas = re.search(
+            r'class="[^"]*\bep-doc-notas\b[^"]*"[^>]*>(.*?)</td>',
+            bloque_tot,
+            flags=re.I | re.S,
+        )
+        if m_notas:
+            raw_notas = re.sub(
+                r'<strong>\s*Notas:\s*</strong>',
+                '',
+                m_notas.group(1),
+                flags=re.I,
+            )
+            notas = _texto_celda_html(raw_notas)
+
+    monto_palabras = _prop('monto_palabras')
+    if not monto_palabras:
+        m_mp = re.search(
+            r'class="[^"]*\bep-doc-monto-palabras\b[^"]*"[^>]*>(.*?)</p>',
+            out,
+            flags=re.I | re.S,
+        )
+        if m_mp:
+            monto_palabras = _texto_celda_html(m_mp.group(1))
+    # Preferir recálculo desde el total visible (el export puede traer placeholder o marcador).
+    base_num = _parse_pesos_cl(total)
+    if base_num is None:
+        base_num = _parse_pesos_cl(subtotal)
+    if base_num is not None:
+        monto_palabras = monto_clp_en_palabras(base_num)
+    elif not monto_palabras or monto_palabras.startswith('{{'):
+        monto_palabras = monto_clp_en_palabras(0)
+
     notas_w = int(w * 0.55)
     tot_w = w - notas_w
 
@@ -315,10 +483,11 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         f'<td align="right">{html_mod.escape(subtotal)}</td></tr>'
         f'<tr><td align="left">IVA 19%</td>'
         f'<td align="right">{html_mod.escape(iva)}</td></tr>'
-        '<tr class="ep-doc-total-row"><td align="left"></td>'
+        '<tr class="ep-doc-total-row"><td align="left">Total</td>'
         f'<td align="right"><strong>{html_mod.escape(total)}</strong></td></tr>'
         '</table>'
         '</td></tr></table>'
+        f'<p class="ep-doc-monto-palabras">{html_mod.escape(monto_palabras)}</p>'
     )
 
     # Reemplazar bloque de totales anidado (desde class ep-doc-totales hasta su cierre balanceado).
@@ -340,6 +509,15 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
                 depth -= 1
                 i = next_close + 8
         if depth == 0:
+            # Quitar párrafo monto_palabras previo si venía justo después del bloque.
+            after = out[i:]
+            m_after_mp = re.match(
+                r'\s*<p[^>]*class="[^"]*\bep-doc-monto-palabras\b[^"]*"[^>]*>[\s\S]*?</p>',
+                after,
+                flags=re.I,
+            )
+            if m_after_mp:
+                i += m_after_mp.end()
             out = out[:start] + totales_html + out[i:]
 
     # 4) Cabecera apilada: logo → empresa debajo → línea teal (sin prop-doc-header
