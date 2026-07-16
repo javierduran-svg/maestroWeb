@@ -498,6 +498,7 @@ def duplicar_movimiento(mov_id):
         numero_ep=original.numero_ep,
         atencion_de=original.atencion_de,
         notas_ep=original.notas_ep,
+        intro_ep=original.intro_ep,
         incluir_iva=original.incluir_iva,
         template_html=original.template_html,
     )

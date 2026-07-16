@@ -608,10 +608,13 @@
         #modalEstadoPago #epTemplate .ep-doc { font-size: 9pt; line-height: 1.35; color: #222; }
         #modalEstadoPago #epTemplate .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
         #modalEstadoPago #epTemplate .ep-doc-meta { margin: 0; font-size: 8pt; color: #444; }
+        #modalEstadoPago #epTemplate .ep-doc-intro {
+            margin: 10px 0 4px 0; font-size: 9pt; line-height: 1.4; color: #222; text-align: justify;
+        }
         #modalEstadoPago #epTemplate .ep-doc-titulo,
         #modalEstadoPago #epTemplate h1.ep-doc-titulo,
         #modalEstadoPago #epTemplate h1.prop-doc-titulo {
-            font-size: 13pt !important; font-weight: 700; margin: 10px 0 8px 0; color: #111;
+            font-size: 13pt !important; font-weight: 700; margin: 8px 0 8px 0; color: #111;
             border: none; padding: 0;
         }
         #modalEstadoPago #epTemplate table.ep-doc-meta-grid {
@@ -626,32 +629,26 @@
             border-collapse: collapse !important;
             margin: 6px 0 10px 0;
             font-size: 8pt !important;
-            table-layout: auto !important;
+            table-layout: fixed !important;
         }
         #modalEstadoPago #epTemplate table.ep-tabla th,
         #modalEstadoPago #epTemplate table.ep-tabla td {
             border: 1px solid #888 !important;
-            padding: 3px 5px !important;
+            padding: 3px 4px !important;
             vertical-align: middle !important;
             font-size: 8pt !important;
-            background-clip: padding-box;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
         }
         #modalEstadoPago #epTemplate table.ep-tabla th {
             background: #d9d9d9 !important;
             font-weight: 700 !important;
             color: #111 !important;
-            text-align: left;
         }
-        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-num,
-        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-num { text-align: right !important; white-space: nowrap; }
-        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-fecha,
-        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-fecha { text-align: center !important; white-space: nowrap; }
-        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-estado,
-        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-estado { white-space: nowrap; }
-        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-fact,
-        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-fact { text-align: center !important; white-space: nowrap; }
-        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-alt td { background: #f2f2f2 !important; }
-        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-actual td { background: #cfeee8 !important; }
+        #modalEstadoPago #epTemplate table.ep-tabla td[align="right"],
+        #modalEstadoPago #epTemplate table.ep-tabla th[align="right"] { text-align: right !important; }
+        #modalEstadoPago #epTemplate table.ep-tabla td[align="center"],
+        #modalEstadoPago #epTemplate table.ep-tabla th[align="center"] { text-align: center !important; }
         #modalEstadoPago #epTemplate table.ep-doc-totales { width: 100%; margin-top: 0.5rem; border: none; }
         #modalEstadoPago #epTemplate table.ep-doc-totales > tbody > tr > td { border: none !important; padding: 0; background: transparent !important; }
         #modalEstadoPago #epTemplate .ep-doc-notas { width: 55%; font-size: 8pt; text-align: left; }
@@ -3003,6 +3000,7 @@
                                 </div>
                                 <div class="prop-field span-2"><label>Descripción / hito</label><input type="text" class="form-control" id="epDesc" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>A la atención de</label><input type="text" class="form-control" id="epAtencion" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field span-2"><label>Texto introductorio</label><textarea class="form-control" id="epIntro" rows="3" oninput="onEpCampoTemplate()" placeholder="Por medio de la presente enviamos el Estado de Pago..."></textarea></div>
                                 <div class="prop-field span-2 prop-subheading">Fechas</div>
                                 <div class="prop-field"><label>Movimiento</label><input type="date" class="form-control" id="epFecha" required></div>
                                 <div class="prop-field"><label>Estado de pago</label><input type="date" class="form-control" id="epFechaPago" onchange="onEpFechaPagoChange()"></div>
@@ -3069,7 +3067,7 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Editar plantilla de estado de pago</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-3">
-            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{LOGO}}</code>.</p>
+            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{INTRO}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{LOGO}}</code>.</p>
             <div id="plantillaEstadoPagoEditor" class="prop-template-editor" contenteditable="true"></div>
         </div>
         <div class="modal-footer border-0">
@@ -9298,12 +9296,12 @@
     }
 
     function fmtPesosEp(n) {
-        if (n == null || n === '' || Number.isNaN(Number(n))) return '—';
-        return '$ ' + Math.round(Number(n)).toLocaleString('es-CL') + '.-';
+        if (n == null || n === '' || Number.isNaN(Number(n))) return '-';
+        return '$ ' + Math.round(Number(n)).toLocaleString('es-CL');
     }
 
     function fmtUfEp(n) {
-        if (n == null || n === '' || Number.isNaN(Number(n))) return '—';
+        if (n == null || n === '' || Number.isNaN(Number(n))) return '-';
         return Number(n).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
     }
 
@@ -9328,40 +9326,36 @@
 
     function construirTablaEpHtml() {
         const rows = epFilasParaTabla();
+        // Anchos fijos (%): xhtml2pdf falla con table-layout:auto + nowrap en 7 cols.
+        const widths = [34, 10, 10, 12, 14, 12, 8];
         const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
             let pesos = m.monto;
             if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
-            const classes = [];
-            if (m._actual) classes.push('ep-fila-actual');
-            else if (idx % 2 === 1) classes.push('ep-fila-alt');
-            const cls = classes.length ? ` class="${classes.join(' ')}"` : '';
-            // Bordes inline: xhtml2pdf es poco fiable con CSS de clases.
-            const cell = 'border:0.6pt solid #888;padding:3px 5px;font-size:8pt;';
-            return `<tr${cls}>
-                <td style="${cell}">${esc(m.descripcion || '—')}</td>
-                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtUfEp(uf))}</td>
-                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtUfEp(valor))}</td>
-                <td class="ep-td-fecha" align="center" style="${cell}text-align:center;white-space:nowrap;">${esc(fmtFechaEpDoc(m.fecha_estado_pago || m.fecha_movimiento))}</td>
-                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtPesosEp(pesos))}</td>
-                <td class="ep-td-estado" style="${cell}white-space:nowrap;">${esc(m.status_pago || '—')}</td>
-                <td class="ep-td-fact" align="center" style="${cell}text-align:center;white-space:nowrap;">${esc(m.numero_factura || '')}</td>
-            </tr>`;
+            const bg = m._actual ? '#cfeee8' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
+            const cells = [
+                { html: esc(m.descripcion || '-'), align: 'left' },
+                { html: esc(fmtUfEp(uf)), align: 'right' },
+                { html: esc(fmtUfEp(valor)), align: 'right' },
+                { html: esc(fmtFechaEpDoc(m.fecha_estado_pago || m.fecha_movimiento)), align: 'center' },
+                { html: esc(fmtPesosEp(pesos)), align: 'right' },
+                { html: esc(m.status_pago || '-'), align: 'left' },
+                { html: esc(m.numero_factura || ''), align: 'center' },
+            ];
+            return `<tr>${cells.map((c, i) =>
+                `<td width="${widths[i]}%" align="${c.align}" bgcolor="${bg}">${c.html}</td>`
+            ).join('')}</tr>`;
         }).join('');
-        const th = 'border:0.6pt solid #888;padding:3px 5px;font-size:8pt;background-color:#d9d9d9;font-weight:bold;';
-        return `<table class="ep-tabla" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-collapse:collapse;font-size:8pt;table-layout:auto;">
-            <thead><tr>
-                <th style="${th}text-align:left;">Descripción</th>
-                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">valor UF</th>
-                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">UF</th>
-                <th class="ep-th-fecha" align="center" style="${th}text-align:center;white-space:nowrap;">Fecha</th>
-                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">Precio total</th>
-                <th class="ep-th-estado" style="${th}white-space:nowrap;">Estado</th>
-                <th class="ep-th-fact" align="center" style="${th}text-align:center;white-space:nowrap;">N° Fact.</th>
-            </tr></thead>
-            <tbody>${body || `<tr><td colspan="7" style="border:0.6pt solid #888;padding:3px 5px;font-size:8pt;color:#666;">Sin hitos</td></tr>`}</tbody>
-        </table>`;
+        const headers = ['Descripción', 'valor UF', 'UF', 'Fecha', 'Precio total', 'Estado', 'N° Fact.'];
+        const aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center'];
+        const head = headers.map((h, i) =>
+            `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#d9d9d9">${h}</th>`
+        ).join('');
+        const empty = `<tr><td colspan="7" width="100%">Sin hitos</td></tr>`;
+        // HTML mínimo: sin padding/nowrap en style (xhtml2pdf es frágil).
+        return `<table class="ep-tabla" border="1" cellpadding="2" cellspacing="0" width="100%">` +
+            `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
 
     function correlativoEpDesdeLista(movId, lista) {
@@ -9399,6 +9393,9 @@
         return total;
     }
 
+    const INTRO_EP_DEFAULT =
+        'Por medio de la presente enviamos el Estado de Pago correspondiente a los servicios indicados a continuación:';
+
     function varsTemplateEstadoPago() {
         const emp = (_empresasCache || []).find(e => e.id === _empresaActivaId) || {};
         const tot = totalesEpDocumento();
@@ -9407,6 +9404,7 @@
             EMPRESA: emp.nombre || 'B-green Chile Limitada',
             RUT: emp.rut || '',
             DIRECCION: emp.direccion || '',
+            INTRO: document.getElementById('epIntro').value || INTRO_EP_DEFAULT,
             NUMERO_EP: document.getElementById('epNumero').value || '1',
             FECHA: fmtFechaEpDoc(fecha),
             ATENCION: document.getElementById('epAtencion').value || '',
@@ -9416,7 +9414,7 @@
             TABLA_EP: construirTablaEpHtml(),
             NOTAS: document.getElementById('epNotas').value || '',
             SUBTOTAL: fmtPesosEp(tot.subtotal),
-            IVA: document.getElementById('epIncluirIva').checked ? fmtPesosEp(tot.iva) : '—',
+            IVA: document.getElementById('epIncluirIva').checked ? fmtPesosEp(tot.iva) : '-',
             TOTAL: fmtPesosEp(tot.total),
             LOGO: '',
         };
@@ -9443,6 +9441,7 @@
             empresa_nombre: vars.EMPRESA,
             empresa_rut: vars.RUT,
             empresa_direccion: vars.DIRECCION,
+            intro: vars.INTRO,
             titulo_ep: `Estado de Pago N°${vars.NUMERO_EP}`,
             fecha: vars.FECHA,
             atencion: vars.ATENCION,
@@ -9460,6 +9459,20 @@
                 else el.textContent = val;
             });
         });
+        // Asegurar párrafo intro si la plantilla/HTML guardado es antiguo.
+        let introEl = editor.querySelector('[data-prop="intro"]');
+        if (!introEl) {
+            const titulo = editor.querySelector('[data-prop="titulo_ep"]')
+                || editor.querySelector('.ep-doc-titulo')
+                || editor.querySelector('h1');
+            if (titulo && titulo.parentNode) {
+                introEl = document.createElement('p');
+                introEl.className = 'ep-doc-intro';
+                introEl.setAttribute('data-prop', 'intro');
+                introEl.textContent = vars.INTRO;
+                titulo.parentNode.insertBefore(introEl, titulo);
+            }
+        }
         // Fallback si el título no tiene data-prop (plantilla antigua).
         const tituloEl = editor.querySelector('[data-prop="titulo_ep"]')
             || editor.querySelector('.ep-doc-titulo')
@@ -9704,7 +9717,7 @@
         document.getElementById('epServicio').value = p.servicio || '';
         document.getElementById('epCliente').value = p.cliente || '';
 
-        ['epFecha','epFechaPago','epFechaFact','epMonto','epMontoUf','epValorUf','epNumFact','epDesc','epAtencion','epNotas','epNumero'].forEach(id => {
+        ['epFecha','epFechaPago','epFechaFact','epMonto','epMontoUf','epValorUf','epNumFact','epDesc','epAtencion','epIntro','epNotas','epNumero'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
@@ -9715,6 +9728,7 @@
         document.getElementById('epCondicionPago').value = '30';
         document.getElementById('epIncluirIva').checked = false;
         document.getElementById('epAtencion').value = p.cliente || '';
+        document.getElementById('epIntro').value = INTRO_EP_DEFAULT;
 
         const [plantillaRes, movsRes, numRes] = await Promise.all([
             apiFetch('/api/estados-pago/plantilla'),
@@ -9724,7 +9738,8 @@
         const plantilla = plantillaRes.ok ? await plantillaRes.json() : {};
         _epTemplateBase = plantilla.contenido_html || '';
         // Si la plantilla guardada es antigua (sin estructura nueva), usar default.
-        if (!_epTemplateBase.includes('ep-bloque-tabla') || !_epTemplateBase.includes('ep-doc-titulo')) {
+        if (!_epTemplateBase.includes('ep-bloque-tabla') || !_epTemplateBase.includes('ep-doc-titulo')
+            || !_epTemplateBase.includes('data-prop="intro"')) {
             _epTemplateBase = plantilla.contenido_default || _epTemplateBase;
         }
         const movs = movsRes.ok ? await movsRes.json() : [];
@@ -9746,6 +9761,7 @@
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
             document.getElementById('epNumero').value = correlativoEpDesdeLista(movId, _epListaCache);
             document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
+            document.getElementById('epIntro').value = m.intro_ep || INTRO_EP_DEFAULT;
             document.getElementById('epNotas').value = m.notas_ep || '';
             document.getElementById('epIncluirIva').checked = !!m.incluir_iva;
             // Plantillas/HTML antiguos: regenerar si no traen la estructura nueva.
@@ -9802,6 +9818,7 @@
             descripcion: document.getElementById('epDesc').value,
             numero_ep: parseInt(document.getElementById('epNumero').value, 10) || null,
             atencion_de: document.getElementById('epAtencion').value || null,
+            intro_ep: document.getElementById('epIntro').value || null,
             notas_ep: document.getElementById('epNotas').value || null,
             incluir_iva: document.getElementById('epIncluirIva').checked,
             template_html: leerHtmlEditor(document.getElementById('epTemplate')) || null,

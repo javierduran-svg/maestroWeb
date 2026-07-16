@@ -2058,6 +2058,7 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
         'numero_ep': _numero_ep_efectivo(m),
         'atencion_de': m.atencion_de,
         'notas_ep': m.notas_ep,
+        'intro_ep': m.intro_ep,
         'incluir_iva': bool(m.incluir_iva) if m.incluir_iva is not None else False,
         'template_html': m.template_html,
     }
@@ -2156,6 +2157,8 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
         mov.atencion_de = atencion[:150] or None
     if 'notas_ep' in data:
         mov.notas_ep = data.get('notas_ep') or None
+    if 'intro_ep' in data:
+        mov.intro_ep = data.get('intro_ep') or None
     if 'incluir_iva' in data:
         mov.incluir_iva = bool(data.get('incluir_iva'))
     if 'template_html' in data:
@@ -2235,6 +2238,7 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         numero_ep=int(numero_ep) if numero_ep not in (None, '') else None,
         atencion_de=atencion[:150] or None,
         notas_ep=data.get('notas_ep') or None,
+        intro_ep=data.get('intro_ep') or None,
         incluir_iva=bool(data.get('incluir_iva')) if 'incluir_iva' in data else False,
         template_html=data.get('template_html') or None,
     )

@@ -162,6 +162,7 @@ class Movimiento(db.Model):
     numero_ep = db.Column(db.Integer, nullable=True)
     atencion_de = db.Column(db.String(150), nullable=True)
     notas_ep = db.Column(db.Text, nullable=True)
+    intro_ep = db.Column(db.Text, nullable=True)
     incluir_iva = db.Column(db.Boolean, default=False, nullable=True)
     template_html = db.Column(db.Text, nullable=True)
 

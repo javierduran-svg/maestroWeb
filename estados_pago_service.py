@@ -9,6 +9,11 @@ from propuestas_service import generar_docx_propuesta, generar_pdf_propuesta
 
 IVA_EP = 0.19
 
+INTRO_EP_DEFAULT = (
+    'Por medio de la presente enviamos el Estado de Pago '
+    'correspondiente a los servicios indicados a continuación:'
+)
+
 TEMPLATE_ESTADO_PAGO = r"""<div class="prop-doc ep-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0" width="100%">
 <tr>
@@ -20,6 +25,8 @@ TEMPLATE_ESTADO_PAGO = r"""<div class="prop-doc ep-doc">
   </td>
 </tr>
 </table>
+
+<p class="ep-doc-intro" data-prop="intro">{{INTRO}}</p>
 
 <h1 class="ep-doc-titulo" data-prop="titulo_ep">Estado de Pago N°{{NUMERO_EP}}</h1>
 
@@ -137,9 +144,205 @@ def correlativo_ep_para_movimiento(mov: Movimiento) -> int:
     return siguiente_numero_ep(mov.proyecto_id, mov.empresa_id)
 
 
+def _texto_celda_html(raw: str) -> str:
+    import html as html_mod
+    import re
+
+    txt = re.sub(r'<br\s*/?>', ' ', raw or '', flags=re.I)
+    txt = re.sub(r'<[^>]+>', '', txt)
+    return html_mod.unescape(txt).strip()
+
+
+def _tabla_ep_segura(rows: list[list[str]]) -> str:
+    """Tabla de hitos con anchos absolutos — evita negative availWidth en xhtml2pdf."""
+    import html as html_mod
+
+    if not rows:
+        return '<p></p>'
+
+    ncols = max(len(r) for r in rows)
+    for r in rows:
+        while len(r) < ncols:
+            r.append('')
+
+    # ~480pt útiles en A4 con márgenes 2cm.
+    if ncols == 7:
+        widths = [155, 48, 48, 55, 70, 58, 46]
+        aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center']
+    else:
+        w = max(40, 480 // max(ncols, 1))
+        widths = [w] * ncols
+        aligns = ['left'] * ncols
+
+    parts = [
+        '<table border="1" cellpadding="1" cellspacing="0" width="480">'
+    ]
+    for i, row in enumerate(rows):
+        parts.append('<tr>')
+        for j, cell in enumerate(row):
+            tag = 'th' if i == 0 else 'td'
+            bg = ' bgcolor="#D9D9D9"' if i == 0 else (' bgcolor="#F2F2F2"' if i % 2 == 0 else '')
+            align = aligns[j]
+            w = widths[j]
+            safe = html_mod.escape(cell) if cell else '&nbsp;'
+            parts.append(f'<{tag} width="{w}" align="{align}"{bg}>{safe}</{tag}>')
+        parts.append('</tr>')
+    parts.append('</table>')
+    return ''.join(parts)
+
+
+def _extraer_filas_tabla(table_html: str) -> list[list[str]]:
+    import re
+
+    rows: list[list[str]] = []
+    for tr in re.finditer(r'<tr[^>]*>(.*?)</tr>', table_html, flags=re.I | re.S):
+        cells = re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', tr.group(1), flags=re.I | re.S)
+        cells = [_texto_celda_html(c) for c in cells]
+        if cells:
+            rows.append(cells)
+    return rows
+
+
+def _preparar_html_ep_para_pdf(html: str) -> str:
+    """Reescribe tablas EP a HTML mínimo compatible con xhtml2pdf.
+
+    xhtml2pdf/reportlab falla con *negative availWidth* cuando hay
+    padding CSS + nowrap + columnas auto-dimensionadas.
+    """
+    import html as html_mod
+    import re
+
+    out = str(html or '')
+    out = out.replace('\u2014', '-').replace('\u2013', '-').replace('\u00a0', ' ')
+    out = out.replace('.-', '')
+
+    def _rew_ep_tabla(match: re.Match) -> str:
+        return _tabla_ep_segura(_extraer_filas_tabla(match.group(0)))
+
+    # 1) Tablas con class ep-tabla
+    out = re.sub(
+        r'<table[^>]*class="[^"]*\bep-tabla\b[^"]*"[^>]*>[\s\S]*?</table>',
+        _rew_ep_tabla,
+        out,
+        flags=re.I,
+    )
+
+    # 2) Cualquier tabla dentro de #ep-bloque-tabla (por si perdió la class)
+    def _rew_bloque(match: re.Match) -> str:
+        inner = match.group(1)
+        if re.search(r'<table', inner, flags=re.I):
+            inner = re.sub(
+                r'<table[^>]*>[\s\S]*?</table>',
+                _rew_ep_tabla,
+                inner,
+                count=1,
+                flags=re.I,
+            )
+        return f'<div id="ep-bloque-tabla">{inner}</div>'
+
+    out = re.sub(
+        r'<div[^>]*id=["\']ep-bloque-tabla["\'][^>]*>([\s\S]*?)</div>',
+        _rew_bloque,
+        out,
+        count=1,
+        flags=re.I,
+    )
+
+    # 3) Totales: leer data-prop si existen; si no, parsear la mini-tabla.
+    def _prop(nombre: str) -> str:
+        m = re.search(
+            rf'data-prop=["\']{nombre}["\'][^>]*>(.*?)</(?:span|td|th|div|strong)>',
+            out,
+            flags=re.I | re.S,
+        )
+        return _texto_celda_html(m.group(1)) if m else ''
+
+    subtotal = _prop('subtotal') or '-'
+    iva = _prop('iva') or '-'
+    total = _prop('total') or '-'
+    notas = _prop('notas')
+
+    totales_html = (
+        '<table border="0" cellpadding="2" cellspacing="0" width="480">'
+        '<tr>'
+        f'<td width="240" valign="top"><strong>Notas:</strong> {html_mod.escape(notas)}</td>'
+        '<td width="240" valign="top" align="right">'
+        '<table border="0" cellpadding="1" cellspacing="0" width="220" align="right">'
+        f'<tr><td align="left">Subtotal</td><td align="right">{html_mod.escape(subtotal)}</td></tr>'
+        f'<tr><td align="left">IVA 19%</td><td align="right">{html_mod.escape(iva)}</td></tr>'
+        f'<tr><td align="left"></td><td align="right"><font size="4"><strong>{html_mod.escape(total)}</strong></font></td></tr>'
+        '</table>'
+        '</td></tr></table>'
+    )
+
+    # Reemplazar bloque de totales anidado (desde class ep-doc-totales hasta su cierre balanceado).
+    m_tot = re.search(r'<table[^>]*class="[^"]*\bep-doc-totales\b[^"]*"[^>]*>', out, flags=re.I)
+    if m_tot:
+        start = m_tot.start()
+        i = m_tot.end()
+        depth = 1
+        lower = out.lower()
+        while i < len(out) and depth:
+            next_open = lower.find('<table', i)
+            next_close = lower.find('</table>', i)
+            if next_close < 0:
+                break
+            if next_open >= 0 and next_open < next_close:
+                depth += 1
+                i = next_open + 6
+            else:
+                depth -= 1
+                i = next_close + 8
+        if depth == 0:
+            out = out[:start] + totales_html + out[i:]
+
+    # 4) Cabecera y meta: anchos absolutos (evita % + CSS width en xhtml2pdf).
+    def _rew_header(match: re.Match) -> str:
+        return (
+            '<table border="0" cellpadding="0" cellspacing="0" width="480">'
+            '<tr>'
+            f'<td width="135" valign="top" align="left">{match.group(1)}</td>'
+            f'<td width="345" valign="top" align="left">{match.group(2)}</td>'
+            '</tr></table>'
+        )
+
+    out = re.sub(
+        r'<table[^>]*class="[^"]*\bprop-doc-header\b[^"]*"[^>]*>\s*<tr>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'</tr>\s*</table>',
+        _rew_header,
+        out,
+        count=1,
+        flags=re.I,
+    )
+
+    def _rew_meta(match: re.Match) -> str:
+        return (
+            '<table border="0" cellpadding="2" cellspacing="0" width="480">'
+            '<tr>'
+            f'<td width="240" valign="top">{match.group(1)}</td>'
+            f'<td width="240" valign="top">{match.group(2)}</td>'
+            '</tr></table>'
+        )
+
+    out = re.sub(
+        r'<table[^>]*class="[^"]*\bep-doc-meta-grid\b[^"]*"[^>]*>\s*<tr>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'</tr>\s*</table>',
+        _rew_meta,
+        out,
+        count=1,
+        flags=re.I,
+    )
+
+    return out
+
+
 def generar_pdf_estado_pago(titulo: str, contenido: str, logo_path: str | None = None) -> bytes:
-    return generar_pdf_propuesta(titulo, contenido, logo_path=logo_path)
+    return generar_pdf_propuesta(titulo, _preparar_html_ep_para_pdf(contenido), logo_path=logo_path)
 
 
 def generar_docx_estado_pago(titulo: str, contenido: str, logo_path: str | None = None) -> tuple[bytes, str]:
-    return generar_docx_propuesta(titulo, contenido, logo_path=logo_path)
+    return generar_docx_propuesta(titulo, _preparar_html_ep_para_pdf(contenido), logo_path=logo_path)

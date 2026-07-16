@@ -706,7 +706,8 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
 .ep-doc { font-size: 9pt; color: #222222; }
 .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
 .ep-doc-meta { margin: 0; font-size: 8pt; color: #444444; }
-.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 10px 0 8px 0; color: #111111; }
+.ep-doc-intro { margin: 10px 0 4px 0; font-size: 9pt; line-height: 1.4; color: #222222; text-align: justify; }
+.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 8px 0 8px 0; color: #111111; }
 h1.ep-doc-titulo { font-size: 13pt; }
 table.ep-doc-meta-grid { width: 100%; border-collapse: collapse; margin: 0 0 10px 0; font-size: 9pt; }
 table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: top; }
@@ -716,13 +717,14 @@ table.ep-tabla {
   border-collapse: collapse;
   margin: 6px 0 10px 0;
   font-size: 8pt;
-  table-layout: auto;
+  table-layout: fixed;
 }
 table.ep-tabla th, table.ep-tabla td {
-  border: 0.6pt solid #888888;
-  padding: 3px 5px;
+  border: 1px solid #888888;
+  padding: 1px 2px;
   vertical-align: middle;
   font-size: 8pt;
+  word-wrap: break-word;
 }
 table.ep-tabla th {
   background-color: #d9d9d9;
@@ -730,10 +732,9 @@ table.ep-tabla th {
   text-align: left;
   color: #111111;
 }
-table.ep-tabla th.ep-th-num, table.ep-tabla td.ep-td-num { text-align: right; white-space: nowrap; }
-table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: center; white-space: nowrap; }
-table.ep-tabla th.ep-th-estado, table.ep-tabla td.ep-td-estado { white-space: nowrap; }
-table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; white-space: nowrap; }
+table.ep-tabla th.ep-th-num, table.ep-tabla td.ep-td-num { text-align: right; }
+table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: center; }
+table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; }
 table.ep-tabla tr.ep-fila-alt td { background-color: #f2f2f2; }
 table.ep-tabla tr.ep-fila-actual td { background-color: #cfeee8; }
 table.ep-doc-totales { width: 100%; border-collapse: collapse; margin-top: 8px; }
