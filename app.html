@@ -606,15 +606,32 @@
         }
         #modalEstadoPago #epTemplate.prop-template-editor,
         #modalEstadoPago #epTemplate .ep-doc { font-size: 9pt; line-height: 1.35; color: #222; }
+        #modalEstadoPago #epTemplate .ep-doc-cabecera { width: 100%; }
+        #modalEstadoPago #epTemplate .ep-doc .prop-doc-logo-wrap,
+        #modalEstadoPago #epTemplate .ep-doc-cabecera .prop-doc-logo-wrap {
+            width: auto !important; text-align: left !important; margin: 0 0 12px 0; display: block;
+        }
+        #modalEstadoPago #epTemplate .ep-doc .prop-doc-logo {
+            filter: hue-rotate(42deg) saturate(1.05);
+        }
+        #modalEstadoPago #epTemplate .ep-doc-empresa-block { margin: 0 0 4px 0; }
         #modalEstadoPago #epTemplate .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
         #modalEstadoPago #epTemplate .ep-doc-meta { margin: 0; font-size: 8pt; color: #444; }
+        #modalEstadoPago #epTemplate .ep-doc-header-line {
+            border: 0; border-top: 2px solid var(--teal-green);
+            margin: 0 0 22px 0; height: 1px; font-size: 1px; line-height: 1px;
+        }
+        /* EP: cabecera apilada (no side-by-side prop-doc-header) */
+        #modalEstadoPago #epTemplate .ep-doc table.prop-doc-header {
+            border-bottom: none !important; margin-bottom: 0 !important;
+        }
         #modalEstadoPago #epTemplate .ep-doc-intro {
-            margin: 10px 0 4px 0; font-size: 9pt; line-height: 1.4; color: #222; text-align: justify;
+            margin: 6px 0 10px 0; font-size: 9pt; line-height: 1.4; color: #222; text-align: justify;
         }
         #modalEstadoPago #epTemplate .ep-doc-titulo,
         #modalEstadoPago #epTemplate h1.ep-doc-titulo,
         #modalEstadoPago #epTemplate h1.prop-doc-titulo {
-            font-size: 13pt !important; font-weight: 700; margin: 8px 0 8px 0; color: #111;
+            font-size: 13pt !important; font-weight: 700; margin: 18px 0 6px 0; color: #111;
             border: none; padding: 0;
         }
         #modalEstadoPago #epTemplate table.ep-doc-meta-grid {
@@ -633,7 +650,9 @@
         }
         #modalEstadoPago #epTemplate table.ep-tabla th,
         #modalEstadoPago #epTemplate table.ep-tabla td {
-            border: 1px solid #cccccc !important;
+            border: none !important;
+            border-top: 1px solid #cccccc !important;
+            border-bottom: 1px solid #cccccc !important;
             padding: 5px 8px !important;
             vertical-align: top !important;
             font-size: 8.5pt !important;
@@ -9319,6 +9338,7 @@
             monto: document.getElementById('epMonto').value,
             status_pago: document.getElementById('epStatusPago').value,
             numero_factura: document.getElementById('epNumFact').value || '',
+            numero_ep: document.getElementById('epNumero').value || null,
             _actual: true,
         };
         const others = (_epListaCache || []).filter(m => !movId || Number(m.id) !== Number(movId));
@@ -9327,10 +9347,20 @@
         return rows;
     }
 
+    function numeroEpDeFila(m, idx) {
+        if (m.numero_ep != null && m.numero_ep !== '') return Number(m.numero_ep);
+        if (m._actual) {
+            const n = document.getElementById('epNumero').value;
+            if (n != null && n !== '') return Number(n);
+        }
+        if (m.id != null) return correlativoEpDesdeLista(m.id, _epListaCache);
+        return idx + 1;
+    }
+
     function construirTablaEpHtml() {
         const rows = epFilasParaTabla();
-        // Anchos % alineados al PDF (pt absolutos en _tabla_ep_segura); Estado legible.
-        const widths = [28, 10, 9, 11, 14, 18, 10];
+        // Anchos % alineados al PDF (pt absolutos en _tabla_ep_segura); N° EP primero.
+        const widths = [6, 24, 10, 9, 11, 14, 16, 10];
         const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
@@ -9339,6 +9369,7 @@
             const bg = m._actual ? '#e8f5f2' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
             const rowClass = m._actual ? 'ep-fila-actual' : (idx % 2 === 1 ? 'ep-fila-alt' : '');
             const cells = [
+                { html: esc(String(numeroEpDeFila(m, idx))), align: 'center' },
                 { html: esc(m.descripcion || '-'), align: 'left' },
                 { html: esc(fmtUfEp(uf)), align: 'right' },
                 { html: esc(fmtUfEp(valor)), align: 'right' },
@@ -9351,13 +9382,13 @@
                 `<td width="${widths[i]}%" align="${c.align}" bgcolor="${bg}">${c.html}</td>`
             ).join('')}</tr>`;
         }).join('');
-        const headers = ['Descripción', 'valor UF', 'UF', 'Fecha', 'Precio total', 'Estado', 'N° Fact.'];
-        const aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center'];
+        const headers = ['N°', 'Descripción', 'valor UF', 'UF', 'Fecha', 'Precio total', 'Estado', 'N° Fact.'];
+        const aligns = ['center', 'left', 'right', 'right', 'center', 'right', 'left', 'center'];
         const head = headers.map((h, i) =>
             `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#f1f3f5">${h}</th>`
         ).join('');
-        const empty = `<tr><td colspan="7" width="100%">Sin hitos</td></tr>`;
-        // border=0 + CSS #ccc (igual prop-tabla); cellpadding=5 ≈ padding 5px 8px.
+        const empty = `<tr><td colspan="8" width="100%">Sin hitos</td></tr>`;
+        // border=0 + CSS horizontal #ccc; cellpadding=5 ≈ padding 5px 8px.
         return `<table class="ep-tabla" border="0" cellpadding="5" cellspacing="0" width="100%">` +
             `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
@@ -9463,7 +9494,7 @@
                 else el.textContent = val;
             });
         });
-        // Asegurar párrafo intro si la plantilla/HTML guardado es antiguo.
+        // Asegurar párrafo intro debajo del título si la plantilla/HTML guardado es antiguo.
         let introEl = editor.querySelector('[data-prop="intro"]');
         if (!introEl) {
             const titulo = editor.querySelector('[data-prop="titulo_ep"]')
@@ -9474,7 +9505,17 @@
                 introEl.className = 'ep-doc-intro';
                 introEl.setAttribute('data-prop', 'intro');
                 introEl.textContent = vars.INTRO;
-                titulo.parentNode.insertBefore(introEl, titulo);
+                if (titulo.nextSibling) titulo.parentNode.insertBefore(introEl, titulo.nextSibling);
+                else titulo.parentNode.appendChild(introEl);
+            }
+        } else {
+            // Si el intro quedó encima del título (plantilla antigua), moverlo debajo.
+            const titulo = editor.querySelector('[data-prop="titulo_ep"]')
+                || editor.querySelector('.ep-doc-titulo')
+                || editor.querySelector('h1');
+            if (titulo && introEl.compareDocumentPosition(titulo) & Node.DOCUMENT_POSITION_FOLLOWING) {
+                if (titulo.nextSibling) titulo.parentNode.insertBefore(introEl, titulo.nextSibling);
+                else titulo.parentNode.appendChild(introEl);
             }
         }
         // Fallback si el título no tiene data-prop (plantilla antigua).
@@ -9743,7 +9784,9 @@
         _epTemplateBase = plantilla.contenido_html || '';
         // Si la plantilla guardada es antigua (sin estructura nueva), usar default.
         if (!_epTemplateBase.includes('ep-bloque-tabla') || !_epTemplateBase.includes('ep-doc-titulo')
-            || !_epTemplateBase.includes('data-prop="intro"')) {
+            || !_epTemplateBase.includes('data-prop="intro"')
+            || !_epTemplateBase.includes('ep-doc-cabecera')
+            || !_epTemplateBase.includes('ep-doc-header-line')) {
             _epTemplateBase = plantilla.contenido_default || _epTemplateBase;
         }
         const movs = movsRes.ok ? await movsRes.json() : [];
@@ -9770,7 +9813,10 @@
             document.getElementById('epIncluirIva').checked = !!m.incluir_iva;
             // Plantillas/HTML antiguos: regenerar si no traen la estructura nueva.
             const htmlGuardado = m.template_html || '';
-            const estructuraOk = htmlGuardado.includes('ep-bloque-tabla') && htmlGuardado.includes('ep-doc-titulo');
+            const estructuraOk = htmlGuardado.includes('ep-bloque-tabla')
+                && htmlGuardado.includes('ep-doc-titulo')
+                && htmlGuardado.includes('ep-doc-cabecera')
+                && htmlGuardado.includes('ep-doc-header-line');
             if (htmlGuardado && estructuraOk) {
                 asignarHtmlEditor(editor, htmlGuardado);
                 editor.dataset.editado = '1';

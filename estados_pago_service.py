@@ -15,20 +15,19 @@ INTRO_EP_DEFAULT = (
 )
 
 TEMPLATE_ESTADO_PAGO = r"""<div class="prop-doc ep-doc">
-<table class="prop-doc-header" cellpadding="0" cellspacing="0" width="100%">
-<tr>
-  <td class="prop-doc-logo-wrap" valign="top" align="left" data-prop="logo" width="28%">{{LOGO}}</td>
-  <td class="prop-doc-header-text" valign="top" align="left" width="72%">
+<div class="ep-doc-cabecera">
+  <div class="prop-doc-logo-wrap" data-prop="logo" align="left">{{LOGO}}</div>
+  <div class="ep-doc-empresa-block">
     <p class="ep-doc-empresa" data-prop="empresa_nombre"><strong>{{EMPRESA}}</strong></p>
     <p class="ep-doc-meta" data-prop="empresa_rut">{{RUT}}</p>
     <p class="ep-doc-meta" data-prop="empresa_direccion">{{DIRECCION}}</p>
-  </td>
-</tr>
-</table>
-
-<p class="ep-doc-intro" data-prop="intro">{{INTRO}}</p>
+  </div>
+</div>
+<div class="ep-doc-header-line">&nbsp;</div>
 
 <h1 class="ep-doc-titulo" data-prop="titulo_ep">Estado de Pago N°{{NUMERO_EP}}</h1>
+
+<p class="ep-doc-intro" data-prop="intro">{{INTRO}}</p>
 
 <table class="ep-doc-meta-grid" cellpadding="0" cellspacing="0" width="100%">
   <tr>
@@ -153,11 +152,16 @@ def _texto_celda_html(raw: str) -> str:
     return html_mod.unescape(txt).strip()
 
 
+# Ancho útil A4 con márgenes 2cm ≈ 482pt; usamos 480 para cabezal/meta/totales/tabla.
+EP_PDF_CONTENT_W = 480
+
+
 def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = None) -> str:
     """Tabla de hitos con anchos absolutos — evita negative availWidth en xhtml2pdf.
 
-    Anchos en pt que suman <480. cellpadding HTML (~6) replica el padding del modal;
-    class ep-tabla-pdf aporta borde/fuente sin width:100% ni table-layout:fixed
+    Anchos en pt que suman EP_PDF_CONTENT_W (ancho completo del contenido).
+    cellpadding HTML (~5) replica el padding del modal; class ep-tabla-pdf aporta
+    bordes horizontales/fuente sin width:100% ni table-layout:fixed
     (esa combinación con padding CSS disparaba el crash).
     """
     import html as html_mod
@@ -171,16 +175,21 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
         while len(r) < ncols:
             r.append('')
 
-    # ~430pt < 480pt útiles; Estado/Descripción anchos para leer sin clip.
-    if ncols == 7:
-        widths = [120, 42, 40, 48, 62, 78, 40]
+    # Ancho completo del contenido (~480pt). Columna N° EP primero cuando hay 8 cols.
+    if ncols == 8:
+        widths = [28, 118, 42, 40, 48, 70, 94, 40]
+        aligns = ['center', 'left', 'right', 'right', 'center', 'right', 'left', 'center']
+    elif ncols == 7:
+        widths = [140, 42, 40, 48, 70, 100, 40]
         aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center']
     else:
-        w = max(40, 430 // max(ncols, 1))
+        w = max(36, EP_PDF_CONTENT_W // max(ncols, 1))
         widths = [w] * ncols
+        # Ajustar último para no superar el ancho útil.
+        widths[-1] = max(36, EP_PDF_CONTENT_W - sum(widths[:-1]))
         aligns = ['left'] * ncols
 
-    table_w = sum(widths)
+    table_w = min(sum(widths), EP_PDF_CONTENT_W)
     # border=0: xhtml2pdf pinta border="1" en negro; el borde #ccc viene de CSS ep-tabla-pdf.
     # cellpadding=5 ≈ padding 5px 8px de prop-tabla / modal.
     parts = [
@@ -197,8 +206,8 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
                 bg = f' bgcolor="{src_bg.strip()}"'
             else:
                 bg = ' bgcolor="#F2F2F2"' if i % 2 == 0 else ''
-            align = aligns[j]
-            w = widths[j]
+            align = aligns[j] if j < len(aligns) else 'left'
+            w = widths[j] if j < len(widths) else 40
             safe = html_mod.escape(cell) if cell else '&nbsp;'
             parts.append(
                 f'<{tag} width="{w}" align="{align}" valign="top"{bg}>{safe}</{tag}>'
@@ -232,9 +241,10 @@ def _extraer_filas_tabla(table_html: str) -> tuple[list[list[str]], list[str | N
 def _preparar_html_ep_para_pdf(html: str) -> str:
     """Reescribe el documento EP a HTML WYSIWYG-compatible con xhtml2pdf.
 
-    Conserva la estructura visual del modal (header + línea teal, intro, meta,
-    tabla con padding, totales) usando anchos absolutos. Evita width:100% +
-    table-layout:fixed + padding CSS en la tabla de hitos (negative availWidth).
+    Conserva la estructura visual del modal (logo + empresa debajo, línea teal,
+    título, intro, meta, tabla a ancho completo, totales) usando anchos absolutos.
+    Evita width:100% + table-layout:fixed + padding CSS en la tabla de hitos
+    (negative availWidth).
     """
     import html as html_mod
     import re
@@ -242,6 +252,7 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
     out = str(html or '')
     out = out.replace('\u2014', '-').replace('\u2013', '-').replace('\u00a0', ' ')
     out = out.replace('.-', '')
+    w = EP_PDF_CONTENT_W
 
     def _rew_ep_tabla(match: re.Match) -> str:
         rows, row_bgs = _extraer_filas_tabla(match.group(0))
@@ -289,13 +300,15 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
     iva = _prop('iva') or '-'
     total = _prop('total') or '-'
     notas = _prop('notas')
+    notas_w = int(w * 0.55)
+    tot_w = w - notas_w
 
     totales_html = (
-        '<table class="ep-doc-totales" border="0" cellpadding="0" cellspacing="0" width="480">'
+        f'<table class="ep-doc-totales" border="0" cellpadding="0" cellspacing="0" width="{w}">'
         '<tr>'
-        f'<td class="ep-doc-notas" width="264" valign="top">'
+        f'<td class="ep-doc-notas" width="{notas_w}" valign="top">'
         f'<strong>Notas:</strong> {html_mod.escape(notas)}</td>'
-        '<td class="ep-doc-totales-col" width="216" valign="top" align="right">'
+        f'<td class="ep-doc-totales-col" width="{tot_w}" valign="top" align="right">'
         '<table class="ep-doc-totales-tabla" border="0" cellpadding="2" cellspacing="0" '
         'width="200" align="right">'
         f'<tr><td align="left">Subtotal</td>'
@@ -329,39 +342,69 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         if depth == 0:
             out = out[:start] + totales_html + out[i:]
 
-    # 4) Cabecera: anchos absolutos + línea teal explícita (sin class prop-doc-header:
-    #    su border-bottom + la línea daban doble raya en xhtml2pdf).
-    def _rew_header(match: re.Match) -> str:
+    # 4) Cabecera apilada: logo → empresa debajo → línea teal (sin prop-doc-header
+    #    side-by-side; su border-bottom + la línea daban doble raya en xhtml2pdf).
+    def _cabecera_apilada(logo_html: str, empresa_html: str) -> str:
         return (
-            '<table class="ep-pdf-header" border="0" cellpadding="0" '
-            'cellspacing="0" width="480">'
+            f'<table class="ep-pdf-header" border="0" cellpadding="0" '
+            f'cellspacing="0" width="{w}">'
             '<tr>'
-            f'<td class="prop-doc-logo-wrap" width="135" valign="top" align="left">'
-            f'{match.group(1)}</td>'
-            f'<td class="prop-doc-header-text" width="345" valign="top" align="left">'
-            f'{match.group(2)}</td>'
+            f'<td class="prop-doc-logo-wrap" width="{w}" valign="top" align="left">'
+            f'{logo_html}</td>'
+            '</tr>'
+            '<tr>'
+            f'<td class="ep-doc-empresa-block" width="{w}" valign="top" align="left" '
+            f'style="padding-top:14px;">'
+            f'{empresa_html}</td>'
             '</tr></table>'
             '<div class="ep-doc-header-line">&nbsp;</div>'
         )
 
+    # Nuevo: .ep-doc-cabecera con logo + bloque empresa (+ línea teal opcional)
+    def _rew_cabecera_div(match: re.Match) -> str:
+        logo_html = (match.group(1) or '').strip() or '&nbsp;'
+        empresa_html = (match.group(2) or '').strip() or '&nbsp;'
+        return _cabecera_apilada(logo_html, empresa_html)
+
     out = re.sub(
-        r'<table[^>]*class="[^"]*\bprop-doc-header\b[^"]*"[^>]*>\s*<tr>\s*'
-        r'<td[^>]*>([\s\S]*?)</td>\s*'
-        r'<td[^>]*>([\s\S]*?)</td>\s*'
-        r'</tr>\s*</table>',
-        _rew_header,
+        r'<div[^>]*class="[^"]*\bep-doc-cabecera\b[^"]*"[^>]*>\s*'
+        r'<div[^>]*(?:class="[^"]*\bprop-doc-logo-wrap\b[^"]*"|data-prop=["\']logo["\'])[^>]*>'
+        r'([\s\S]*?)</div>\s*'
+        r'<div[^>]*class="[^"]*\bep-doc-empresa-block\b[^"]*"[^>]*>'
+        r'([\s\S]*?)</div>\s*'
+        r'</div>'
+        r'(?:\s*<div[^>]*class="[^"]*\bep-doc-header-line\b[^"]*"[^>]*>[\s\S]*?</div>)?',
+        _rew_cabecera_div,
         out,
         count=1,
         flags=re.I,
     )
 
+    # Legacy: tabla prop-doc-header logo | texto (plantillas antiguas)
+    def _rew_header_legacy(match: re.Match) -> str:
+        return _cabecera_apilada(match.group(1), match.group(2))
+
+    out = re.sub(
+        r'<table[^>]*class="[^"]*\bprop-doc-header\b[^"]*"[^>]*>\s*<tr>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'</tr>\s*</table>'
+        r'(?:\s*<div[^>]*class="[^"]*\bep-doc-header-line\b[^"]*"[^>]*>[\s\S]*?</div>)?',
+        _rew_header_legacy,
+        out,
+        count=1,
+        flags=re.I,
+    )
+
+    half = w // 2
+
     def _rew_meta(match: re.Match) -> str:
         return (
-            '<table class="ep-doc-meta-grid" border="0" cellpadding="2" cellspacing="0" '
-            'width="480">'
+            f'<table class="ep-doc-meta-grid" border="0" cellpadding="2" cellspacing="0" '
+            f'width="{w}">'
             '<tr>'
-            f'<td class="ep-meta-left" width="240" valign="top">{match.group(1)}</td>'
-            f'<td class="ep-meta-right" width="240" valign="top">{match.group(2)}</td>'
+            f'<td class="ep-meta-left" width="{half}" valign="top">{match.group(1)}</td>'
+            f'<td class="ep-meta-right" width="{w - half}" valign="top">{match.group(2)}</td>'
             '</tr></table>'
         )
 

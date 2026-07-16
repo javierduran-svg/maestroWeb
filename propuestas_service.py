@@ -704,10 +704,22 @@ td.prop-doc-firma-bloque { width: 250px; text-align: center; vertical-align: top
 .prop-doc-firma-nombre { margin: 0 0 4px 0; text-align: center; }
 .prop-doc-firma-cargo { text-align: right; margin: 4px 0 0 0; }
 .ep-doc { font-size: 9pt; color: #222222; }
+.ep-doc-cabecera { width: 100%; margin: 0 0 0 0; }
+.ep-doc .prop-doc-logo-wrap,
+.ep-doc-cabecera .prop-doc-logo-wrap {
+  width: auto;
+  text-align: left;
+  margin: 0 0 12px 0;
+}
+.ep-doc .prop-doc-logo {
+  /* Verde → teal (#008080); scoped a EP para no afectar propuestas */
+  filter: hue-rotate(42deg) saturate(1.05);
+}
+.ep-doc-empresa-block { margin: 0 0 4px 0; }
 .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
 .ep-doc-meta { margin: 0; font-size: 8pt; color: #444444; }
-.ep-doc-intro { margin: 10px 0 4px 0; font-size: 9pt; line-height: 1.4; color: #222222; text-align: justify; }
-.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 8px 0 8px 0; color: #111111; }
+.ep-doc-intro { margin: 6px 0 10px 0; font-size: 9pt; line-height: 1.4; color: #222222; text-align: justify; }
+.ep-doc-titulo { font-size: 13pt; font-weight: bold; margin: 18px 0 6px 0; color: #111111; }
 h1.ep-doc-titulo { font-size: 13pt; }
 table.ep-doc-meta-grid { width: 100%; border-collapse: collapse; margin: 0 0 10px 0; font-size: 9pt; }
 table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: top; }
@@ -720,7 +732,9 @@ table.ep-tabla {
   table-layout: fixed;
 }
 table.ep-tabla th, table.ep-tabla td {
-  border: 1px solid #cccccc;
+  border: none;
+  border-top: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
   padding: 5px 8px;
   vertical-align: top;
   font-size: 8.5pt;
@@ -733,6 +747,7 @@ table.ep-tabla th {
   color: #111111;
 }
 table.ep-tabla th.ep-th-num, table.ep-tabla td.ep-td-num { text-align: right; }
+table.ep-tabla th.ep-th-ep, table.ep-tabla td.ep-td-ep { text-align: center; }
 table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: center; }
 table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; }
 table.ep-tabla tr.ep-fila-alt td { background-color: #f2f2f2; }
@@ -745,7 +760,9 @@ table.ep-tabla-pdf {
   font-size: 8.5pt;
 }
 table.ep-tabla-pdf th, table.ep-tabla-pdf td {
-  border: 1px solid #cccccc;
+  border: none;
+  border-top: 1px solid #cccccc;
+  border-bottom: 1px solid #cccccc;
   padding: 0;
   vertical-align: top;
   font-size: 8.5pt;
@@ -760,7 +777,7 @@ table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
 .ep-doc-header-line {
   border: 0;
   border-top: 2px solid #008080;
-  margin: 0 0 12px 0;
+  margin: 0 0 22px 0;
   height: 1px;
   font-size: 1px;
   line-height: 1px;
