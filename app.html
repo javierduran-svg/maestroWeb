@@ -604,25 +604,67 @@
             width: auto; min-width: 4.75rem; font-size: 0.72rem;
             padding: 0.15rem 1.5rem 0.15rem 0.4rem;
         }
-        .prop-template-editor .ep-doc-empresa { margin: 0; font-size: 0.95rem; }
-        .prop-template-editor .ep-doc-meta { margin: 0; font-size: 0.78rem; color: #444; }
-        .prop-template-editor .ep-doc-fecha { margin: 0 0 0.75rem 0; font-size: 0.85rem; }
-        .prop-template-editor table.ep-tabla {
-            width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.78rem;
+        #modalEstadoPago #epTemplate.prop-template-editor,
+        #modalEstadoPago #epTemplate .ep-doc { font-size: 9pt; line-height: 1.35; color: #222; }
+        #modalEstadoPago #epTemplate .ep-doc-empresa { margin: 0 0 1px 0; font-size: 9pt; }
+        #modalEstadoPago #epTemplate .ep-doc-meta { margin: 0; font-size: 8pt; color: #444; }
+        #modalEstadoPago #epTemplate .ep-doc-titulo,
+        #modalEstadoPago #epTemplate h1.ep-doc-titulo,
+        #modalEstadoPago #epTemplate h1.prop-doc-titulo {
+            font-size: 13pt !important; font-weight: 700; margin: 10px 0 8px 0; color: #111;
+            border: none; padding: 0;
         }
-        .prop-template-editor table.ep-tabla th,
-        .prop-template-editor table.ep-tabla td {
-            border: 1px solid #ccc; padding: 0.3rem 0.4rem; vertical-align: top;
+        #modalEstadoPago #epTemplate table.ep-doc-meta-grid {
+            width: 100%; border-collapse: collapse; margin: 0 0 10px 0; font-size: 9pt;
         }
-        .prop-template-editor table.ep-tabla th { background: #f1f3f5; font-weight: 700; }
-        .prop-template-editor table.ep-tabla tr.ep-fila-actual td { background: #e8f6f3; }
-        .prop-template-editor table.ep-doc-totales { width: 100%; margin-top: 0.75rem; border: none; }
-        .prop-template-editor table.ep-doc-totales > tbody > tr > td { border: none; padding: 0; }
-        .prop-template-editor .ep-doc-notas { width: 55%; font-size: 0.78rem; text-align: left; }
-        .prop-template-editor .ep-doc-totales-col { width: 45%; }
-        .prop-template-editor table.ep-doc-totales-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        .prop-template-editor table.ep-doc-totales-tabla td { border: none; padding: 0.15rem 0.25rem; }
-        .prop-template-editor table.ep-doc-totales-tabla .ep-doc-total-row td { font-size: 1.05rem; padding-top: 0.35rem; }
+        #modalEstadoPago #epTemplate table.ep-doc-meta-grid td {
+            border: none !important; padding: 0 8px 0 0; vertical-align: top; background: transparent;
+        }
+        #modalEstadoPago #epTemplate .ep-meta-line { margin: 0 0 6px 0; font-size: 9pt; line-height: 1.35; }
+        #modalEstadoPago #epTemplate table.ep-tabla {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 6px 0 10px 0;
+            font-size: 8pt !important;
+            table-layout: auto !important;
+        }
+        #modalEstadoPago #epTemplate table.ep-tabla th,
+        #modalEstadoPago #epTemplate table.ep-tabla td {
+            border: 1px solid #888 !important;
+            padding: 3px 5px !important;
+            vertical-align: middle !important;
+            font-size: 8pt !important;
+            background-clip: padding-box;
+        }
+        #modalEstadoPago #epTemplate table.ep-tabla th {
+            background: #d9d9d9 !important;
+            font-weight: 700 !important;
+            color: #111 !important;
+            text-align: left;
+        }
+        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-num,
+        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-num { text-align: right !important; white-space: nowrap; }
+        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-fecha,
+        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-fecha { text-align: center !important; white-space: nowrap; }
+        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-estado,
+        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-estado { white-space: nowrap; }
+        #modalEstadoPago #epTemplate table.ep-tabla th.ep-th-fact,
+        #modalEstadoPago #epTemplate table.ep-tabla td.ep-td-fact { text-align: center !important; white-space: nowrap; }
+        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-alt td { background: #f2f2f2 !important; }
+        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-actual td { background: #cfeee8 !important; }
+        #modalEstadoPago #epTemplate table.ep-doc-totales { width: 100%; margin-top: 0.5rem; border: none; }
+        #modalEstadoPago #epTemplate table.ep-doc-totales > tbody > tr > td { border: none !important; padding: 0; background: transparent !important; }
+        #modalEstadoPago #epTemplate .ep-doc-notas { width: 55%; font-size: 8pt; text-align: left; }
+        #modalEstadoPago #epTemplate .ep-doc-totales-col { width: 45%; }
+        #modalEstadoPago #epTemplate table.ep-doc-totales-tabla {
+            width: auto; border-collapse: collapse; font-size: 9pt; margin-left: auto;
+        }
+        #modalEstadoPago #epTemplate table.ep-doc-totales-tabla td {
+            border: none !important; padding: 2px 4px; background: transparent !important; font-size: 9pt;
+        }
+        #modalEstadoPago #epTemplate table.ep-doc-totales-tabla .ep-doc-total-row td {
+            font-size: 14pt !important; font-weight: 700; padding-top: 6px;
+        }
 
         .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
         .prop-template-editor { font-family: 'Roboto', sans-serif; }
@@ -2948,7 +2990,7 @@
                         <div class="prop-side-body">
                             <p class="small text-muted mb-2" style="font-size:0.68rem"><i class="fa-solid fa-arrow-right"></i> Clientes → banco (automático)</p>
                             <div class="prop-compact-grid">
-                                <div class="prop-field"><label>N° EP</label><input type="number" class="form-control" id="epNumero" min="1" oninput="onEpCampoTemplate()"></div>
+                                <div class="prop-field"><label>N° EP</label><input type="number" class="form-control bg-light" id="epNumero" min="1" readonly title="Correlativo automático del proyecto"></div>
                                 <div class="prop-field"><label>Status</label>
                                     <select class="form-select" id="epStatusPago" onchange="onEpStatusChange()">
                                         <option value="Por enviar">Por enviar</option>
@@ -9286,29 +9328,57 @@
 
     function construirTablaEpHtml() {
         const rows = epFilasParaTabla();
-        const body = rows.map(m => {
+        const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
             let pesos = m.monto;
             if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
-            const cls = m._actual ? ' class="ep-fila-actual"' : '';
+            const classes = [];
+            if (m._actual) classes.push('ep-fila-actual');
+            else if (idx % 2 === 1) classes.push('ep-fila-alt');
+            const cls = classes.length ? ` class="${classes.join(' ')}"` : '';
+            // Bordes inline: xhtml2pdf es poco fiable con CSS de clases.
+            const cell = 'border:0.6pt solid #888;padding:3px 5px;font-size:8pt;';
             return `<tr${cls}>
-                <td>${esc(m.descripcion || '—')}</td>
-                <td class="text-end">${esc(fmtUfEp(uf))}</td>
-                <td class="text-end">${esc(fmtUfEp(valor))}</td>
-                <td class="text-nowrap">${esc(fmtFechaEpDoc(m.fecha_estado_pago || m.fecha_movimiento))}</td>
-                <td class="text-end text-nowrap">${esc(fmtPesosEp(pesos))}</td>
-                <td>${esc(m.status_pago || '—')}</td>
-                <td>${esc(m.numero_factura || '')}</td>
+                <td style="${cell}">${esc(m.descripcion || '—')}</td>
+                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtUfEp(uf))}</td>
+                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtUfEp(valor))}</td>
+                <td class="ep-td-fecha" align="center" style="${cell}text-align:center;white-space:nowrap;">${esc(fmtFechaEpDoc(m.fecha_estado_pago || m.fecha_movimiento))}</td>
+                <td class="ep-td-num" align="right" style="${cell}text-align:right;white-space:nowrap;">${esc(fmtPesosEp(pesos))}</td>
+                <td class="ep-td-estado" style="${cell}white-space:nowrap;">${esc(m.status_pago || '—')}</td>
+                <td class="ep-td-fact" align="center" style="${cell}text-align:center;white-space:nowrap;">${esc(m.numero_factura || '')}</td>
             </tr>`;
         }).join('');
-        return `<table class="prop-tabla ep-tabla" cellpadding="0" cellspacing="0">
+        const th = 'border:0.6pt solid #888;padding:3px 5px;font-size:8pt;background-color:#d9d9d9;font-weight:bold;';
+        return `<table class="ep-tabla" cellpadding="0" cellspacing="0" width="100%" style="width:100%;border-collapse:collapse;font-size:8pt;table-layout:auto;">
             <thead><tr>
-                <th>Descripción</th><th class="text-end">valor UF</th><th class="text-end">UF</th>
-                <th>Fecha</th><th class="text-end">Precio total</th><th>Estado</th><th>N° Fact.</th>
+                <th style="${th}text-align:left;">Descripción</th>
+                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">valor UF</th>
+                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">UF</th>
+                <th class="ep-th-fecha" align="center" style="${th}text-align:center;white-space:nowrap;">Fecha</th>
+                <th class="ep-th-num" align="right" style="${th}text-align:right;white-space:nowrap;">Precio total</th>
+                <th class="ep-th-estado" style="${th}white-space:nowrap;">Estado</th>
+                <th class="ep-th-fact" align="center" style="${th}text-align:center;white-space:nowrap;">N° Fact.</th>
             </tr></thead>
-            <tbody>${body || '<tr><td colspan="7" class="text-muted">Sin hitos</td></tr>'}</tbody>
+            <tbody>${body || `<tr><td colspan="7" style="border:0.6pt solid #888;padding:3px 5px;font-size:8pt;color:#666;">Sin hitos</td></tr>`}</tbody>
         </table>`;
+    }
+
+    function correlativoEpDesdeLista(movId, lista) {
+        const eps = [...(lista || [])].sort((a, b) => {
+            const fa = String(a.fecha_movimiento || a.fecha_estado_pago || '');
+            const fb = String(b.fecha_movimiento || b.fecha_estado_pago || '');
+            if (fa !== fb) return fa.localeCompare(fb);
+            return (Number(a.id) || 0) - (Number(b.id) || 0);
+        });
+        if (!movId) return eps.length + 1;
+        const idx = eps.findIndex(m => Number(m.id) === Number(movId));
+        if (idx >= 0) {
+            const n = eps[idx].numero_ep;
+            if (n != null && n !== '') return Number(n);
+            return idx + 1;
+        }
+        return eps.length + 1;
     }
 
     function totalesEpDocumento() {
@@ -9390,8 +9460,23 @@
                 else el.textContent = val;
             });
         });
-        const bloque = editor.querySelector('#ep-bloque-tabla');
-        if (bloque) bloque.innerHTML = vars.TABLA_EP;
+        // Fallback si el título no tiene data-prop (plantilla antigua).
+        const tituloEl = editor.querySelector('[data-prop="titulo_ep"]')
+            || editor.querySelector('.ep-doc-titulo')
+            || editor.querySelector('h1');
+        if (tituloEl && !tituloEl.getAttribute('data-prop')) {
+            tituloEl.textContent = `Estado de Pago N°${vars.NUMERO_EP}`;
+        }
+        let bloque = editor.querySelector('#ep-bloque-tabla');
+        if (!bloque) {
+            // Insertar contenedor de tabla si la plantilla antigua no lo trae.
+            bloque = document.createElement('div');
+            bloque.id = 'ep-bloque-tabla';
+            const meta = editor.querySelector('table.ep-doc-meta-grid') || editor.querySelector('table.prop-doc-meta');
+            if (meta && meta.parentNode) meta.parentNode.insertBefore(bloque, meta.nextSibling);
+            else editor.appendChild(bloque);
+        }
+        bloque.innerHTML = vars.TABLA_EP;
         await sincronizarLogoEpTemplate();
         editor.querySelectorAll('[data-prop]').forEach(el => el.classList.add('prop-campo-auto'));
     }
@@ -9638,14 +9723,14 @@
         ]);
         const plantilla = plantillaRes.ok ? await plantillaRes.json() : {};
         _epTemplateBase = plantilla.contenido_html || '';
+        // Si la plantilla guardada es antigua (sin estructura nueva), usar default.
+        if (!_epTemplateBase.includes('ep-bloque-tabla') || !_epTemplateBase.includes('ep-doc-titulo')) {
+            _epTemplateBase = plantilla.contenido_default || _epTemplateBase;
+        }
         const movs = movsRes.ok ? await movsRes.json() : [];
         _epListaCache = (movs || []).filter(m => m.clase === 'estado_pago');
 
-        if (numRes && numRes.ok) {
-            const numData = await numRes.json();
-            document.getElementById('epNumero').value = numData.numero_ep || 1;
-        }
-
+        let guardarTemplateViejo = false;
         if (movId) {
             const m = await (await apiFetch(`/api/movimientos/${movId}`)).json();
             document.getElementById('epFecha').value = m.fecha_movimiento || '';
@@ -9659,15 +9744,23 @@
             document.getElementById('epStatusPago').value = m.status_pago || 'Por enviar';
             _epStatusPrev = document.getElementById('epStatusPago').value;
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
-            document.getElementById('epNumero').value = m.numero_ep || '';
+            document.getElementById('epNumero').value = correlativoEpDesdeLista(movId, _epListaCache);
             document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
             document.getElementById('epNotas').value = m.notas_ep || '';
             document.getElementById('epIncluirIva').checked = !!m.incluir_iva;
-            if (m.template_html) {
-                asignarHtmlEditor(editor, m.template_html);
+            // Plantillas/HTML antiguos: regenerar si no traen la estructura nueva.
+            const htmlGuardado = m.template_html || '';
+            const estructuraOk = htmlGuardado.includes('ep-bloque-tabla') && htmlGuardado.includes('ep-doc-titulo');
+            if (htmlGuardado && estructuraOk) {
+                asignarHtmlEditor(editor, htmlGuardado);
                 editor.dataset.editado = '1';
-                await sincronizarDatosEnTemplateEp();
+                guardarTemplateViejo = true;
             }
+        } else if (numRes && numRes.ok) {
+            const numData = await numRes.json();
+            document.getElementById('epNumero').value = numData.numero_ep || correlativoEpDesdeLista(null, _epListaCache);
+        } else {
+            document.getElementById('epNumero').value = correlativoEpDesdeLista(null, _epListaCache);
         }
 
         if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
@@ -9676,12 +9769,10 @@
             aplicarBloqueoPesosEp();
         }
 
-        if (!movId || !document.getElementById('epTemplate').innerHTML.trim()) {
-            await actualizarTemplateEstadoPago(true);
-        } else if (editor?.dataset.editado !== '1') {
-            await actualizarTemplateEstadoPago(true);
-        } else {
+        if (guardarTemplateViejo) {
             await sincronizarDatosEnTemplateEp();
+        } else {
+            await actualizarTemplateEstadoPago(true);
         }
 
         poblarFontSizeSelect(document.getElementById('epFontSizeSelect'));

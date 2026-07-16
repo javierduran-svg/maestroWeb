@@ -2055,12 +2055,25 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
         'proyecto_id': m.proyecto_id,
         'proyecto': m.proyecto_rel.nombre if m.proyecto_rel else None,
         'transaccion': m.transaccion,
-        'numero_ep': m.numero_ep,
+        'numero_ep': _numero_ep_efectivo(m),
         'atencion_de': m.atencion_de,
         'notas_ep': m.notas_ep,
         'incluir_iva': bool(m.incluir_iva) if m.incluir_iva is not None else False,
         'template_html': m.template_html,
     }
+
+
+def _numero_ep_efectivo(m: Movimiento) -> int | None:
+    """Correlativo visible del EP (asigna orden si falta numero_ep)."""
+    if m.clase != 'estado_pago':
+        return m.numero_ep
+    if m.numero_ep:
+        return int(m.numero_ep)
+    try:
+        from estados_pago_service import correlativo_ep_para_movimiento
+        return correlativo_ep_para_movimiento(m)
+    except Exception:
+        return m.numero_ep
 
 
 def _ep_pesos_flotantes(status: str | None) -> bool:
