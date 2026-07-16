@@ -737,8 +737,8 @@ table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: cente
 table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; }
 table.ep-tabla tr.ep-fila-alt td { background-color: #f2f2f2; }
 table.ep-tabla tr.ep-fila-actual td { background-color: #cfeee8; }
-/* PDF rewrite: anchos absolutos en HTML; sin width:100% ni table-layout:fixed
-   (esas + padding CSS reintroducían negative availWidth). */
+/* PDF rewrite: anchos absolutos + cellpadding HTML (WYSIWYG con el modal).
+   Sin width:100%/table-layout:fixed ni padding CSS en celdas (negative availWidth). */
 table.ep-tabla-pdf {
   border-collapse: collapse;
   margin: 8px 0 12px 0;
@@ -746,9 +746,24 @@ table.ep-tabla-pdf {
 }
 table.ep-tabla-pdf th, table.ep-tabla-pdf td {
   border: 1px solid #888888;
-  padding: 6px 8px;
+  padding: 0;
   vertical-align: middle;
   font-size: 8.5pt;
+}
+table.ep-tabla-pdf th {
+  background-color: #d9d9d9;
+  font-weight: bold;
+  color: #111111;
+}
+/* Línea teal bajo cabecera EP: xhtml2pdf a veces omite border-bottom de tablas. */
+table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
+.ep-doc-header-line {
+  border: 0;
+  border-top: 2px solid #008080;
+  margin: 0 0 12px 0;
+  height: 1px;
+  font-size: 1px;
+  line-height: 1px;
 }
 table.ep-doc-totales { width: 100%; border-collapse: collapse; margin-top: 8px; }
 table.ep-doc-totales td { border: none; padding: 0; vertical-align: top; }
@@ -777,7 +792,12 @@ PROP_PDF_CSS = """
   color: #666666;
   text-align: right;
 }
-""" + PROP_DOC_CSS
+""" + PROP_DOC_CSS + """
+/* EP PDF: anchos absolutos del rewrite ganan sobre width:100% del preview. */
+table.ep-doc-meta-grid { width: auto; }
+table.ep-doc-totales { width: auto; }
+table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
+"""
 
 _FONTS_DIR = Path(__file__).parent / 'fonts'
 
@@ -858,6 +878,13 @@ def _normalizar_html_para_pdf(html: str) -> str:
     out = re.sub(r'\sdata-(?:prop|resize-key|editado|servicio)="[^"]*"', '', out, flags=re.I)
     # El resaltado de campos automáticos nunca debe aparecer en el PDF/Word.
     out = re.sub(r'\s*\bprop-campo-auto\b\s*', ' ', out)
+    # Línea teal EP: xhtml2pdf descarta divs vacíos; asegurar &nbsp;.
+    out = re.sub(
+        r'(<div[^>]*class="[^"]*ep-doc-header-line[^"]*"[^>]*>)\s*(</div>)',
+        r'\1&nbsp;\2',
+        out,
+        flags=re.I,
+    )
     out = re.sub(r'\sclass="\s*"', '', out, flags=re.I)
     out = re.sub(r'<(br)([^>]*)>', r'<\1\2/>', out, flags=re.I)
     out = re.sub(r'<img([^>]*?)(?<!/)>', r'<img\1/>', out, flags=re.I)

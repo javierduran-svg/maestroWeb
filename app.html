@@ -9326,14 +9326,15 @@
 
     function construirTablaEpHtml() {
         const rows = epFilasParaTabla();
-        // Anchos fijos (%): Estado más ancho; PDF reescribe a pt absolutos.
-        const widths = [30, 10, 9, 11, 14, 16, 10];
+        // Anchos % alineados al PDF (pt absolutos en _tabla_ep_segura); Estado legible.
+        const widths = [28, 10, 9, 11, 14, 18, 10];
         const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
             let pesos = m.monto;
             if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
             const bg = m._actual ? '#cfeee8' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
+            const rowClass = m._actual ? 'ep-fila-actual' : (idx % 2 === 1 ? 'ep-fila-alt' : '');
             const cells = [
                 { html: esc(m.descripcion || '-'), align: 'left' },
                 { html: esc(fmtUfEp(uf)), align: 'right' },
@@ -9343,7 +9344,7 @@
                 { html: esc(m.status_pago || '-'), align: 'left' },
                 { html: esc(m.numero_factura || ''), align: 'center' },
             ];
-            return `<tr>${cells.map((c, i) =>
+            return `<tr class="${rowClass}">${cells.map((c, i) =>
                 `<td width="${widths[i]}%" align="${c.align}" bgcolor="${bg}">${c.html}</td>`
             ).join('')}</tr>`;
         }).join('');
@@ -9353,8 +9354,8 @@
             `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#d9d9d9">${h}</th>`
         ).join('');
         const empty = `<tr><td colspan="7" width="100%">Sin hitos</td></tr>`;
-        // HTML mínimo: cellpadding HTML (no CSS padding/nowrap) — xhtml2pdf es frágil.
-        return `<table class="ep-tabla" border="1" cellpadding="4" cellspacing="0" width="100%">` +
+        // cellpadding=6 + CSS #epTemplate table.ep-tabla (padding 6–8px) = preview WYSIWYG.
+        return `<table class="ep-tabla" border="1" cellpadding="6" cellspacing="0" width="100%">` +
             `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
 

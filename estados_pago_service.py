@@ -156,9 +156,9 @@ def _texto_celda_html(raw: str) -> str:
 def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = None) -> str:
     """Tabla de hitos con anchos absolutos — evita negative availWidth en xhtml2pdf.
 
-    Anchos en pt que suman <480; class ep-tabla-pdf aporta padding CSS (5px 6px)
-    sin width:100% ni table-layout:fixed. cellpadding=0 evita doble conteo con CSS.
-    Sin white-space:nowrap ni width % — esa combinación disparaba el crash.
+    Anchos en pt que suman <480. cellpadding HTML (~6) replica el padding del modal;
+    class ep-tabla-pdf aporta borde/fuente sin width:100% ni table-layout:fixed
+    (esa combinación con padding CSS disparaba el crash).
     """
     import html as html_mod
     import re
@@ -171,9 +171,9 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
         while len(r) < ncols:
             r.append('')
 
-    # ~432pt < 480pt útiles; Estado/Precio más anchos para evitar wrap/clip.
+    # ~430pt < 480pt útiles; Estado/Descripción anchos para leer sin clip.
     if ncols == 7:
-        widths = [128, 42, 40, 48, 62, 72, 40]
+        widths = [120, 42, 40, 48, 62, 78, 40]
         aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center']
     else:
         w = max(40, 430 // max(ncols, 1))
@@ -181,9 +181,9 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
         aligns = ['left'] * ncols
 
     table_w = sum(widths)
-    # ep-tabla-pdf: padding CSS sin width:100%/fixed; cellpadding=0 evita doble conteo.
+    # cellpadding=6 ≈ padding vertical del modal; CSS de ep-tabla-pdf no añade padding.
     parts = [
-        f'<table class="ep-tabla-pdf" border="1" cellpadding="0" cellspacing="0" width="{table_w}">'
+        f'<table class="ep-tabla-pdf" border="1" cellpadding="6" cellspacing="0" width="{table_w}">'
     ]
     for i, row in enumerate(rows):
         parts.append('<tr>')
@@ -229,10 +229,11 @@ def _extraer_filas_tabla(table_html: str) -> tuple[list[list[str]], list[str | N
 
 
 def _preparar_html_ep_para_pdf(html: str) -> str:
-    """Reescribe tablas EP a HTML mínimo compatible con xhtml2pdf.
+    """Reescribe el documento EP a HTML WYSIWYG-compatible con xhtml2pdf.
 
-    xhtml2pdf/reportlab falla con *negative availWidth* cuando hay
-    padding CSS + nowrap + columnas auto-dimensionadas.
+    Conserva la estructura visual del modal (header + línea teal, intro, meta,
+    tabla con padding, totales) usando anchos absolutos. Evita width:100% +
+    table-layout:fixed + padding CSS en la tabla de hitos (negative availWidth).
     """
     import html as html_mod
     import re
@@ -274,7 +275,7 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         flags=re.I,
     )
 
-    # 3) Totales: leer data-prop si existen; si no, parsear la mini-tabla.
+    # 3) Totales: leer data-prop si existen; conservar clases del modal.
     def _prop(nombre: str) -> str:
         m = re.search(
             rf'data-prop=["\']{nombre}["\'][^>]*>(.*?)</(?:span|td|th|div|strong)>',
@@ -289,14 +290,19 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
     notas = _prop('notas')
 
     totales_html = (
-        '<table border="0" cellpadding="2" cellspacing="0" width="480">'
+        '<table class="ep-doc-totales" border="0" cellpadding="0" cellspacing="0" width="480">'
         '<tr>'
-        f'<td width="240" valign="top"><strong>Notas:</strong> {html_mod.escape(notas)}</td>'
-        '<td width="240" valign="top" align="right">'
-        '<table border="0" cellpadding="1" cellspacing="0" width="220" align="right">'
-        f'<tr><td align="left">Subtotal</td><td align="right">{html_mod.escape(subtotal)}</td></tr>'
-        f'<tr><td align="left">IVA 19%</td><td align="right">{html_mod.escape(iva)}</td></tr>'
-        f'<tr><td align="left"></td><td align="right"><font size="4"><strong>{html_mod.escape(total)}</strong></font></td></tr>'
+        f'<td class="ep-doc-notas" width="264" valign="top">'
+        f'<strong>Notas:</strong> {html_mod.escape(notas)}</td>'
+        '<td class="ep-doc-totales-col" width="216" valign="top" align="right">'
+        '<table class="ep-doc-totales-tabla" border="0" cellpadding="2" cellspacing="0" '
+        'width="200" align="right">'
+        f'<tr><td align="left">Subtotal</td>'
+        f'<td align="right">{html_mod.escape(subtotal)}</td></tr>'
+        f'<tr><td align="left">IVA 19%</td>'
+        f'<td align="right">{html_mod.escape(iva)}</td></tr>'
+        '<tr class="ep-doc-total-row"><td align="left"></td>'
+        f'<td align="right"><strong>{html_mod.escape(total)}</strong></td></tr>'
         '</table>'
         '</td></tr></table>'
     )
@@ -322,14 +328,19 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         if depth == 0:
             out = out[:start] + totales_html + out[i:]
 
-    # 4) Cabecera y meta: anchos absolutos (evita % + CSS width en xhtml2pdf).
+    # 4) Cabecera: anchos absolutos + línea teal explícita (sin class prop-doc-header:
+    #    su border-bottom + la línea daban doble raya en xhtml2pdf).
     def _rew_header(match: re.Match) -> str:
         return (
-            '<table border="0" cellpadding="0" cellspacing="0" width="480">'
+            '<table class="ep-pdf-header" border="0" cellpadding="0" '
+            'cellspacing="0" width="480">'
             '<tr>'
-            f'<td width="135" valign="top" align="left">{match.group(1)}</td>'
-            f'<td width="345" valign="top" align="left">{match.group(2)}</td>'
+            f'<td class="prop-doc-logo-wrap" width="135" valign="top" align="left">'
+            f'{match.group(1)}</td>'
+            f'<td class="prop-doc-header-text" width="345" valign="top" align="left">'
+            f'{match.group(2)}</td>'
             '</tr></table>'
+            '<div class="ep-doc-header-line">&nbsp;</div>'
         )
 
     out = re.sub(
@@ -345,10 +356,11 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
 
     def _rew_meta(match: re.Match) -> str:
         return (
-            '<table border="0" cellpadding="2" cellspacing="0" width="480">'
+            '<table class="ep-doc-meta-grid" border="0" cellpadding="2" cellspacing="0" '
+            'width="480">'
             '<tr>'
-            f'<td width="240" valign="top">{match.group(1)}</td>'
-            f'<td width="240" valign="top">{match.group(2)}</td>'
+            f'<td class="ep-meta-left" width="240" valign="top">{match.group(1)}</td>'
+            f'<td class="ep-meta-right" width="240" valign="top">{match.group(2)}</td>'
             '</tr></table>'
         )
 
