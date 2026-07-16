@@ -720,14 +720,14 @@ table.ep-tabla {
   table-layout: fixed;
 }
 table.ep-tabla th, table.ep-tabla td {
-  border: 1px solid #888888;
-  padding: 6px 8px;
-  vertical-align: middle;
+  border: 1px solid #cccccc;
+  padding: 5px 8px;
+  vertical-align: top;
   font-size: 8.5pt;
   word-wrap: break-word;
 }
 table.ep-tabla th {
-  background-color: #d9d9d9;
+  background-color: #f1f3f5;
   font-weight: bold;
   text-align: left;
   color: #111111;
@@ -736,7 +736,7 @@ table.ep-tabla th.ep-th-num, table.ep-tabla td.ep-td-num { text-align: right; }
 table.ep-tabla th.ep-th-fecha, table.ep-tabla td.ep-td-fecha { text-align: center; }
 table.ep-tabla th.ep-th-fact, table.ep-tabla td.ep-td-fact { text-align: center; }
 table.ep-tabla tr.ep-fila-alt td { background-color: #f2f2f2; }
-table.ep-tabla tr.ep-fila-actual td { background-color: #cfeee8; }
+table.ep-tabla tr.ep-fila-actual td { background-color: #e8f5f2; }
 /* PDF rewrite: anchos absolutos + cellpadding HTML (WYSIWYG con el modal).
    Sin width:100%/table-layout:fixed ni padding CSS en celdas (negative availWidth). */
 table.ep-tabla-pdf {
@@ -745,13 +745,13 @@ table.ep-tabla-pdf {
   font-size: 8.5pt;
 }
 table.ep-tabla-pdf th, table.ep-tabla-pdf td {
-  border: 1px solid #888888;
+  border: 1px solid #cccccc;
   padding: 0;
-  vertical-align: middle;
+  vertical-align: top;
   font-size: 8.5pt;
 }
 table.ep-tabla-pdf th {
-  background-color: #d9d9d9;
+  background-color: #f1f3f5;
   font-weight: bold;
   color: #111111;
 }

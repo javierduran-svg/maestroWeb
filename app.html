@@ -633,17 +633,20 @@
         }
         #modalEstadoPago #epTemplate table.ep-tabla th,
         #modalEstadoPago #epTemplate table.ep-tabla td {
-            border: 1px solid #888 !important;
-            padding: 6px 8px !important;
-            vertical-align: middle !important;
+            border: 1px solid #cccccc !important;
+            padding: 5px 8px !important;
+            vertical-align: top !important;
             font-size: 8.5pt !important;
             word-wrap: break-word;
             overflow-wrap: anywhere;
         }
         #modalEstadoPago #epTemplate table.ep-tabla th {
-            background: #d9d9d9 !important;
+            background: #f1f3f5 !important;
             font-weight: 700 !important;
             color: #111 !important;
+        }
+        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-actual td {
+            background: #e8f5f2 !important;
         }
         #modalEstadoPago #epTemplate table.ep-tabla td[align="right"],
         #modalEstadoPago #epTemplate table.ep-tabla th[align="right"] { text-align: right !important; }
@@ -9333,7 +9336,7 @@
             const valor = m.valor_uf;
             let pesos = m.monto;
             if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
-            const bg = m._actual ? '#cfeee8' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
+            const bg = m._actual ? '#e8f5f2' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
             const rowClass = m._actual ? 'ep-fila-actual' : (idx % 2 === 1 ? 'ep-fila-alt' : '');
             const cells = [
                 { html: esc(m.descripcion || '-'), align: 'left' },
@@ -9351,11 +9354,11 @@
         const headers = ['Descripción', 'valor UF', 'UF', 'Fecha', 'Precio total', 'Estado', 'N° Fact.'];
         const aligns = ['left', 'right', 'right', 'center', 'right', 'left', 'center'];
         const head = headers.map((h, i) =>
-            `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#d9d9d9">${h}</th>`
+            `<th width="${widths[i]}%" align="${aligns[i]}" bgcolor="#f1f3f5">${h}</th>`
         ).join('');
         const empty = `<tr><td colspan="7" width="100%">Sin hitos</td></tr>`;
-        // cellpadding=6 + CSS #epTemplate table.ep-tabla (padding 6–8px) = preview WYSIWYG.
-        return `<table class="ep-tabla" border="1" cellpadding="6" cellspacing="0" width="100%">` +
+        // border=0 + CSS #ccc (igual prop-tabla); cellpadding=5 ≈ padding 5px 8px.
+        return `<table class="ep-tabla" border="0" cellpadding="5" cellspacing="0" width="100%">` +
             `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
 

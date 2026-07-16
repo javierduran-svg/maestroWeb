@@ -181,9 +181,10 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
         aligns = ['left'] * ncols
 
     table_w = sum(widths)
-    # cellpadding=6 ≈ padding vertical del modal; CSS de ep-tabla-pdf no añade padding.
+    # border=0: xhtml2pdf pinta border="1" en negro; el borde #ccc viene de CSS ep-tabla-pdf.
+    # cellpadding=5 ≈ padding 5px 8px de prop-tabla / modal.
     parts = [
-        f'<table class="ep-tabla-pdf" border="1" cellpadding="6" cellspacing="0" width="{table_w}">'
+        f'<table class="ep-tabla-pdf" border="0" cellpadding="5" cellspacing="0" width="{table_w}">'
     ]
     for i, row in enumerate(rows):
         parts.append('<tr>')
@@ -191,7 +192,7 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
         for j, cell in enumerate(row):
             tag = 'th' if i == 0 else 'td'
             if i == 0:
-                bg = ' bgcolor="#D9D9D9"'
+                bg = ' bgcolor="#f1f3f5"'
             elif src_bg and re.fullmatch(r'#[0-9A-Fa-f]{3,8}', src_bg.strip()):
                 bg = f' bgcolor="{src_bg.strip()}"'
             else:
@@ -200,7 +201,7 @@ def _tabla_ep_segura(rows: list[list[str]], row_bgs: list[str | None] | None = N
             w = widths[j]
             safe = html_mod.escape(cell) if cell else '&nbsp;'
             parts.append(
-                f'<{tag} width="{w}" align="{align}" valign="middle"{bg}>{safe}</{tag}>'
+                f'<{tag} width="{w}" align="{align}" valign="top"{bg}>{safe}</{tag}>'
             )
         parts.append('</tr>')
     parts.append('</table>')
