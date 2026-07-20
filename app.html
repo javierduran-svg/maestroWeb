@@ -1147,6 +1147,8 @@
         td.status-pago-otro,
         .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
         td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
+        #tabla-dashboard-ep-grid tbody tr.ep-tracking-nuevo-proyecto td { border-top: 2px solid #dee2e6; }
+        #tabla-dashboard-ep-grid tbody tr td:first-child { font-weight: 600; color: var(--teal-green); }
         .mov-sel-hint { font-size: 0.75rem; color: #868e96; }
         .table-proyectos tbody tr.proyecto-row { cursor: pointer; }
         .table-proyectos tbody tr.proyecto-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
@@ -1943,7 +1945,7 @@
                                 <input class="form-check-input" type="checkbox" id="dashboardProyeccion" onchange="cargarDashboardChart()">
                                 <label class="form-check-label" for="dashboardProyeccion">Incluir proyección</label>
                             </div>
-                            <select class="form-select form-select-sm" id="dashboardAnio" style="width:auto;min-width:88px" onchange="cargarDashboardChart()"></select>
+                            <select class="form-select form-select-sm" id="dashboardAnio" style="width:auto;min-width:88px" onchange="cargarDashboardChart(); cargarSeguimientoEstadosPago()"></select>
                             <div class="btn-group btn-group-sm dashboard-periodo" role="group" id="dashboardPeriodo">
                                 <button type="button" class="btn btn-outline-secondary" data-periodo="diario" onclick="setDashboardPeriodo('diario', this)">Diario</button>
                                 <button type="button" class="btn btn-outline-secondary active" data-periodo="mensual" onclick="setDashboardPeriodo('mensual', this)">Mensual</button>
@@ -1991,6 +1993,28 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div class="panel-card mt-4">
+                    <div class="panel-header flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">Seguimiento de Estados de Pago</h5>
+                            <small class="text-muted">EP ya enviados por proyecto — facturado, cedido, pagado…</small>
+                        </div>
+                    </div>
+                    <div class="table-responsive tabla-scroll-wrap p-0">
+                        <table id="tabla-dashboard-ep-grid" class="table table-hover table-panel table-compact mb-0">
+                            <thead><tr>
+                                <th>Proyecto</th>
+                                <th>N° EP</th>
+                                <th>Estado</th>
+                                <th class="text-end">Monto</th>
+                                <th>Fecha envío</th>
+                                <th>Facturación</th>
+                                <th>Pago / cesión</th>
+                            </tr></thead>
+                            <tbody id="tabla-dashboard-ep-body"><tr><td colspan="7" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="panel-card mt-4">
@@ -4893,7 +4917,40 @@
         }
         initDashboardAnioSelect();
         await cargarDashboardChart();
+        await cargarSeguimientoEstadosPago();
         await cargarCalendarioContable();
+    }
+
+    async function cargarSeguimientoEstadosPago() {
+        const tbody = document.getElementById('tabla-dashboard-ep-body');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Cargando…</td></tr>';
+        const anio = document.getElementById('dashboardAnio')?.value || '';
+        const url = anio ? `/api/dashboard/estados-pago?anio=${encodeURIComponent(anio)}` : '/api/dashboard/estados-pago';
+        let filas = [];
+        try {
+            const res = await apiFetch(url);
+            if (res.ok) filas = await res.json();
+        } catch (e) { /* deja tabla vacía */ }
+        if (!Array.isArray(filas) || !filas.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin estados de pago enviados en el periodo</td></tr>';
+            return;
+        }
+        let proyectoAnterior = null;
+        tbody.innerHTML = filas.map(f => {
+            const proyecto = f.proyecto || 'Sin proyecto';
+            const nuevoGrupo = proyecto !== proyectoAnterior;
+            proyectoAnterior = proyecto;
+            return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
+                <td>${esc(proyecto)}</td>
+                <td>${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
+                <td>${badgeStatusPago(f.status_pago)}</td>
+                <td class="text-end text-nowrap">${fmtMontoMov(f.monto)}</td>
+                <td class="text-nowrap">${fmtFechaMov(f.fecha_movimiento) || '—'}</td>
+                <td class="text-nowrap">${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
+                <td class="text-nowrap">${fmtFechaMov(f.fecha_estado_pago) || '—'}</td>
+            </tr>`;
+        }).join('');
     }
 
     function iconoStatusGestion(status) {
@@ -7633,6 +7690,13 @@
         return _propCalcConfig?.servicio === 'RT';
     }
 
+    // PGSEE — Programa de Gestión Sustentable y Eficiencia Energética. El
+    // honorario no sigue una fórmula fija por m²/unidad (a diferencia de
+    // CEV/RT/CES): se ingresa en modo "tabla UF" libre (ver esModoTablaUf).
+    function esServicioPgsee() {
+        return _propCalcConfig?.servicio === 'PGSEE';
+    }
+
     function poblarRtControles() {
         const sel = document.getElementById('propRtTipoProyecto');
         if (!sel) return;
@@ -7644,10 +7708,11 @@
         sincronizarDatosEnTemplate();
     }
 
-    // Modo de tabla con UF editable por fila (label + UF), usado tanto por CES
-    // (entregables prorrateados) como por CES Evaluadora (honorarios por etapa).
+    // Modo de tabla con UF editable por fila (label + UF), usado por CES
+    // (entregables prorrateados), CES Evaluadora (honorarios por etapa) y
+    // PGSEE (honorarios libres por edificación/ítem, sin fórmula asociada).
     function esModoTablaUf() {
-        return esServicioCes() || esServicioCesEvaluadora();
+        return esServicioCes() || esServicioCesEvaluadora() || esServicioPgsee();
     }
 
     // Coeficientes de la fórmula de honorarios CES (potencia sobre superficie).
@@ -7819,6 +7884,20 @@
                 factor,
             };
         });
+    }
+
+    // Filas por defecto para PGSEE: sin fórmula asociada, el usuario define
+    // libremente el honorario (o el desglose por edificación) en UF.
+    function crearFilasPgseeDefault() {
+        const filas = _propCalcConfig?.filas || [];
+        const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+        _propCalcFilas = (filas.length ? filas : [{ label: 'Honorarios PGSEE', uf_unidad: 0 }]).map(f => ({
+            label: f.label || 'Honorarios PGSEE',
+            m2,
+            cantidad: 1,
+            uf_unidad: parseFloat(f.uf_unidad) || 0,
+            share: 0,
+        }));
     }
 
     function onCesParamChange() {
@@ -8068,6 +8147,10 @@
         if (esServicioCesEvaluadora()) {
             const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
             return m2 ? `una superficie de ${fmtUfNum(m2)} m²` : 'el proyecto';
+        }
+        if (esServicioPgsee()) {
+            const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
+            return m2 ? `una superficie total de ${fmtUfNum(m2)} m²` : 'las edificaciones del proyecto';
         }
         const filas = _propCalcFilas.filter(f => f.cantidad > 0);
         if (!filas.length) return 'las unidades del proyecto';
@@ -8814,6 +8897,12 @@
             crearFilasEvaluadoraDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
+        } else if (esServicioPgsee()) {
+            cesControls?.classList.add('d-none');
+            rtControls?.classList.add('d-none');
+            crearFilasPgseeDefault();
+            renderCalcPropuesta();
+            recalcularPropuesta();
         } else {
             cesControls?.classList.add('d-none');
             // RT reutiliza el cálculo por unidad de CEV+RT, más un selector de
@@ -8858,6 +8947,16 @@
                     f.uf_unidad = m2 > 0 ? _ufRound2(arancelCesEE(m2) * factor) : 0;
                 }
             });
+            renderCalcPropuesta();
+            recalcularPropuesta();
+            sincronizarDatosEnTemplate();
+            return;
+        }
+        if (esServicioPgsee()) {
+            // Sin fórmula asociada: solo se actualiza el m² informativo de
+            // cada fila. Los montos UF los define el usuario manualmente.
+            const m2 = parseFloat(document.getElementById('propM2').value) || 0;
+            _propCalcFilas.forEach(f => { f.m2 = m2; });
             renderCalcPropuesta();
             recalcularPropuesta();
             sincronizarDatosEnTemplate();

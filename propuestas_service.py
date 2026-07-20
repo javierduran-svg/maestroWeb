@@ -213,6 +213,27 @@ FILAS_CES_EVALUADORA = [
     {'label': 'Visita de obra', 'uf_unidad': 50, 'tipo': 'manual'},
 ]
 
+# ---------------------------------------------------------------------------
+# PGSEE — Programa de Gestión Sustentable y Eficiencia Energética
+# ---------------------------------------------------------------------------
+# A diferencia de CEV/RT/CES, el honorario PGSEE no se deriva de una fórmula
+# fija por m² o por unidad: en la práctica cada propuesta define un honorario
+# a medida (a veces por edificación, a veces un monto único). Por eso el
+# honorario se ingresa en modo "tabla UF" (mismo modo editable de CES
+# Evaluadora): filas libres de tipo {label, uf_unidad}, sin fórmula asociada.
+# Fila por defecto: una sola línea con el honorario total del PGSEE.
+FILAS_PGSEE_DEFAULT = [
+    {'label': 'Honorarios PGSEE', 'uf_unidad': 0},
+]
+
+# Etapas de pago por defecto, ancladas al hito típico observado en propuestas
+# PGSEE recientes: anticipo + entrega de informes + aprobación del mandante.
+ETAPAS_PAGO_PGSEE = [
+    {'codigo': '1', 'nombre': 'Anticipo', 'porcentaje': 20.0},
+    {'codigo': '2', 'nombre': 'Entrega de informes PGSEE', 'porcentaje': 40.0},
+    {'codigo': '3', 'nombre': 'Aprobación del mandante', 'porcentaje': 40.0},
+]
+
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -651,12 +672,114 @@ TEMPLATE_CES_EVALUADORA = r"""<div class="prop-doc">
 </div>
 </div>"""
 
+TEMPLATE_PGSEE = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Programa de Gestión Sustentable y Eficiencia Energética (PGSEE)</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Introducción</h3>
+<p>La presente Propuesta Técnica se desarrolla para el proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong>, y tiene por objetivo la consultoría en la elaboración de un Programa de Gestión Sustentable y Eficiencia Energética (PGSEE) para las edificaciones del proyecto, correspondiente a <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong>.</p>
+<p>El Plan considera el desarrollo de los aspectos de eficiencia energética, calidad ambiental interior y sustentabilidad en general para las etapas de construcción y explotación del proyecto, en conformidad con lo dispuesto en la normativa y bases de licitación aplicables (Artículo 2.7.3 de las BALI, cuando corresponda).</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>El Plan considera el desarrollo de los aspectos de eficiencia energética, calidad ambiental interior y sustentabilidad en general para etapas de construcción y explotación, en conformidad con lo dispuesto a continuación:</p>
+
+<h4>PGSEE — Etapa Construcción</h4>
+<p><strong>a. Consumo de recursos</strong><br>
+- Bioclimatización (orientación, termicidad y minimización de la isla de calor)<br>
+- Consumo de agua (eficiencia en el consumo de agua)<br>
+- Materiales<br>
+- Emplazamiento (orientación, asoleamiento)</p>
+<p><strong>b. Calidad Ambiental Interior</strong><br>
+- Confort respiratorio. Aire interior y ventilación (sistema de aire; calidad del aire; limpieza del aire; renovación de aire; configuración de flujos de aire y aspectos constructivos)<br>
+- Confort térmico<br>
+- Confort lumínico</p>
+<p><strong>c. Impactos ambientales</strong><br>
+- Ecología del sitio<br>
+- Impactos físicos en el sitio<br>
+- Gases efecto invernadero<br>
+- Sustancias agotadoras de ozono<br>
+- Residuos sólidos (Reducción, reciclado y reuso de los residuos sólidos y control y/o limitación de los contaminantes químicos)</p>
+<p><strong>d. Funcionalidad</strong><br>
+- Adaptabilidad y flexibilidad<br>
+- Control de Sistemas<br>
+- Operación y rendimientos</p>
+<p><strong>e. Gestión y Planificación</strong><br>
+- Proceso constructivo<br>
+- Puesta en marcha<br>
+- Operación del edificio</p>
+<p><strong>f. Comportamiento económico</strong><br>
+- Costos<br>
+- Equidad y acceso universal</p>
+
+<h4>PGSEE — Etapa Explotación</h4>
+<p>Adicionalmente el PGSEE para etapa explotación considera trabajos en la definición y descripción de metodologías para lograr:</p>
+<p>
+- Eficiencia en el consumo de energía (ciclos de aire fresco, operación, almacenamiento de calor/frío y distribución del aire; reducción, reutilización o recuperación; usos de luminaria apropiada en superficies de trabajo, uso de ampolletas de bajo consumo eléctrico e instalación de paneles transparentes para el aprovechamiento de la luz, equipos de aire y calefacción de bajo impacto ambiental).<br>
+- Selección de equipos y productos de atenuación de ruido.<br>
+- Adopción de medidas de control interior de contaminantes de pestes y microbios.<br>
+- Control de contaminantes en pinturas, métodos de limpieza, pesticidas, entre otros de impacto ambiental bajo.<br>
+- Retroalimentación de los resultados del manejo y las expectativas en orden a obtener un concepto óptimo de manejo.<br>
+- Mantención, ajuste y balanceo de equipos.<br>
+- Planificación de las operaciones del edificio, entrenamiento del personal de operación y mantención; mecanismos e incentivos para cambios de conducta de los usuarios.<br>
+- Aplicación de materiales sustentables en remodelaciones y/o ampliaciones.
+</p>
+<p>Los PGSEE incluirán una descripción del equipo profesional que tendrá como función ejecutar el Plan, señalando su organización, metodología de trabajo y el procedimiento que utilizará para la adopción de las medidas.</p>
+
+<h4>Notas</h4>
+<p>- No se ejecutan proyectos de especialidades. Se considera la revisión y verificación de los proyectos de especialidades (Arquitectura, HVAC, Iluminación, Instalaciones Sanitarias, Acústica y Paisajismo, si aplica) que deberán desarrollarse según los parámetros establecidos en el PGSEE.<br>
+- Los PGSEE a entregar aplican para las edificaciones citadas en esta propuesta; la reproducción de su contenido de manera total o parcial deberá contar con previa autorización.</p>
+
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Los honorarios propuestos para el desarrollo del PGSEE descrito en la presente propuesta son (Exento de IVA):</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+
+<h4>Forma de pago</h4>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+
+<div class="prop-doc-firma">
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES | Calificador Energético CEV.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Giro: Desarrollo de Consultorías y Arquitectura<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
 TEMPLATES_POR_SERVICIO = {
     'CEV+RT': TEMPLATE_CEV_RT,
     'CEV': TEMPLATE_CEV,
     'RT': TEMPLATE_RT,
     'CES': TEMPLATE_CES,
     'CES Evaluadora': TEMPLATE_CES_EVALUADORA,
+    'PGSEE': TEMPLATE_PGSEE,
 }
 
 PROP_DOC_CSS = """
@@ -1116,6 +1239,14 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'filas': FILAS_CES_EVALUADORA,
             'arancel_ee': ARANCEL_CES_EE,
             'etapas': [],
+            'template': None,
+            'format': 'html',
+        }
+    if servicio == 'PGSEE':
+        return {
+            'servicio': 'PGSEE',
+            'filas': FILAS_PGSEE_DEFAULT,
+            'etapas': ETAPAS_PAGO_PGSEE,
             'template': None,
             'format': 'html',
         }

@@ -124,6 +124,30 @@ def get_dashboard_series():
         return jsonify({'error': f'Error al calcular series: {e}'}), 500
 
 
+@bp.route('/api/dashboard/estados-pago', methods=['GET'])
+def get_dashboard_estados_pago():
+    """Seguimiento de EP ya enviados por proyecto (facturado, cedido, pagado, etc.)."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        query = Movimiento.query.filter_by(
+            empresa_id=eid, clase='estado_pago', estado='Activo',
+        ).filter(Movimiento.proyecto_id.isnot(None))
+        anio_param = request.args.get('anio')
+        if anio_param:
+            anio = int(anio_param)
+            query = query.filter(func.extract('year', Movimiento.fecha_movimiento) == anio)
+        movs = query.order_by(Movimiento.fecha_movimiento.desc(), Movimiento.id.desc()).all()
+        filas = [_movimiento_a_dict(m) for m in movs]
+        filas.sort(key=lambda f: ((f.get('proyecto') or '').lower(), -(f.get('numero_ep') or 0)))
+        return jsonify(filas)
+    except ValueError:
+        return jsonify({'error': 'Parámetro anio inválido'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/flujo', methods=['GET'])
 def get_flujo():
     eid, err = _requiere_empresa()
