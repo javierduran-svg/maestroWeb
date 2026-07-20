@@ -1166,6 +1166,13 @@
         .dashboard-switch .form-check-input:checked { background-color: var(--teal-green); border-color: var(--teal-green); }
         .dashboard-switch .form-check-label { font-size: 0.8rem; color: #495057; cursor: pointer; user-select: none; }
         #chartDashboard { max-height: 320px; }
+        .dashboard-chart-split { align-items: stretch; }
+        .dashboard-chart-col { padding: 1rem 1.25rem; min-width: 0; }
+        .dashboard-chart-table-col { padding: 1rem 1.25rem; border-left: 1px solid var(--border-color); min-width: 0; }
+        .dashboard-chart-table-col .tabla-scroll-wrap { --tabla-scroll-max: min(340px, 42vh); }
+        @media (max-width: 991.98px) {
+            .dashboard-chart-table-col { border-left: none; border-top: 1px solid var(--border-color); }
+        }
         #chartDashboardWaterfall { max-height: 280px; }
         .sidebar-link.sub { padding-left: 2.35rem; font-size: 0.9rem; }
         .sidebar-link.sub i { font-size: 0.85rem; }
@@ -1946,8 +1953,21 @@
                             </div>
                         </div>
                     </div>
-                    <div class="chart-box border-0">
-                        <canvas id="chartDashboard"></canvas>
+                    <div class="chart-box border-0 p-0">
+                        <div class="row g-0 dashboard-chart-split">
+                            <div class="col-lg-7 dashboard-chart-col">
+                                <canvas id="chartDashboard"></canvas>
+                            </div>
+                            <div class="col-lg-5 dashboard-chart-table-col">
+                                <div class="table-responsive tabla-scroll-wrap tabla-scroll-nested p-0">
+                                    <table id="tabla-dashboard-chart-grid" class="table table-hover table-panel table-compact mb-0">
+                                        <thead><tr id="tabla-dashboard-chart-head"></tr></thead>
+                                        <tbody id="tabla-dashboard-chart-body"></tbody>
+                                        <tfoot id="tabla-dashboard-chart-foot"></tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="panel-card mt-4">
@@ -1957,8 +1977,20 @@
                             <small class="text-muted">Ingresos menos gastos por periodo; barra final = resultado del año</small>
                         </div>
                     </div>
-                    <div class="chart-box chart-box-waterfall border-0">
-                        <canvas id="chartDashboardWaterfall"></canvas>
+                    <div class="chart-box border-0 p-0">
+                        <div class="row g-0 dashboard-chart-split">
+                            <div class="col-lg-7 dashboard-chart-col chart-box-waterfall">
+                                <canvas id="chartDashboardWaterfall"></canvas>
+                            </div>
+                            <div class="col-lg-5 dashboard-chart-table-col">
+                                <div class="table-responsive tabla-scroll-wrap tabla-scroll-nested p-0">
+                                    <table id="tabla-dashboard-waterfall-grid" class="table table-hover table-panel table-compact mb-0">
+                                        <thead><tr><th>Periodo</th><th class="text-end">Neto</th><th class="text-end">Acumulado</th></tr></thead>
+                                        <tbody id="tabla-dashboard-waterfall-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="panel-card mt-4">
@@ -5291,8 +5323,31 @@
         return { labels: wfLabels, floatingData, colors, borderColors, nets, total };
     }
 
+    function _renderDashboardWaterfallTable(wf) {
+        const tbody = document.getElementById('tabla-dashboard-waterfall-body');
+        if (!tbody) return;
+        if (!wf.labels.length) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Sin datos</td></tr>';
+            return;
+        }
+        let acumulado = 0;
+        tbody.innerHTML = wf.labels.map((lbl, i) => {
+            const esTotal = i === wf.labels.length - 1;
+            const neto = esTotal ? wf.total : wf.nets[i];
+            if (!esTotal) acumulado += neto;
+            const acumMostrado = esTotal ? wf.total : acumulado;
+            const signo = neto >= 0 ? '+' : '';
+            return `<tr class="${esTotal ? 'fw-bold' : ''}">
+                <td>${esc(lbl)}</td>
+                <td class="text-end ${neto >= 0 ? 'saldo-positivo' : 'saldo-negativo'}">${signo}${fmt(neto)}</td>
+                <td class="text-end">${fmt(acumMostrado)}</td>
+            </tr>`;
+        }).join('');
+    }
+
     function _renderDashboardWaterfall(data, proyeccion) {
         const wf = _buildWaterfallFromSeries(data, proyeccion);
+        _renderDashboardWaterfallTable(wf);
         if (_chartDashboardWaterfall) _chartDashboardWaterfall.destroy();
 
         const canvas = document.getElementById('chartDashboardWaterfall');
@@ -5403,6 +5458,44 @@
         return datasets;
     }
 
+    function _renderDashboardChartTable(chartData, acumulado, proyeccion) {
+        const thead = document.getElementById('tabla-dashboard-chart-head');
+        const tbody = document.getElementById('tabla-dashboard-chart-body');
+        const tfoot = document.getElementById('tabla-dashboard-chart-foot');
+        if (!thead || !tbody || !tfoot) return;
+
+        const labels = Array.isArray(chartData.labels) ? chartData.labels : [];
+        const cols = [
+            { key: 'facturado', label: 'Facturado' },
+            { key: 'ingresos', label: 'Ingresos' },
+            { key: 'gastos', label: 'Gastos' },
+        ];
+        if (proyeccion && chartData.ingresos_proyectados) cols.push({ key: 'ingresos_proyectados', label: 'Proy. ingresos' });
+        if (proyeccion && chartData.gastos_proyectados) cols.push({ key: 'gastos_proyectados', label: 'Gastos prog.' });
+
+        thead.innerHTML = `<th>Periodo</th>${cols.map(c => `<th class="text-end">${esc(c.label)}</th>`).join('')}`;
+
+        if (!labels.length) {
+            tbody.innerHTML = `<tr><td colspan="${cols.length + 1}" class="text-center text-muted py-3">Sin datos</td></tr>`;
+            tfoot.innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = labels.map((lbl, i) => `<tr>
+            <td>${esc(lbl)}</td>
+            ${cols.map(c => `<td class="text-end">${fmt((chartData[c.key] || [])[i] || 0)}</td>`).join('')}
+        </tr>`).join('');
+
+        const totalLabel = acumulado ? 'Total acumulado' : 'Total';
+        const totales = cols.map(c => {
+            const serie = chartData[c.key] || [];
+            return acumulado
+                ? (serie[serie.length - 1] || 0)
+                : serie.reduce((a, v) => a + (Number(v) || 0), 0);
+        });
+        tfoot.innerHTML = `<tr class="fw-bold"><td>${esc(totalLabel)}</td>${totales.map(v => `<td class="text-end">${fmt(v)}</td>`).join('')}</tr>`;
+    }
+
     async function cargarDashboardChart() {
         const anio = document.getElementById('dashboardAnio').value;
         const proyeccion = document.getElementById('dashboardProyeccion').checked;
@@ -5424,6 +5517,7 @@
             return;
         }
         const chartData = _dashboardSeriesParaGrafico(data, acumulado);
+        _renderDashboardChartTable(chartData, acumulado, proyeccion);
         if (_chartDashboard) _chartDashboard.destroy();
         const chartType = acumulado ? 'line' : 'bar';
         _chartDashboard = new Chart(document.getElementById('chartDashboard'), {
