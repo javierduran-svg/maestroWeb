@@ -134,6 +134,13 @@ def get_dashboard_estados_pago():
         query = Movimiento.query.filter_by(
             empresa_id=eid, clase='estado_pago', estado='Activo',
         ).filter(Movimiento.proyecto_id.isnot(None))
+        # "Por enviar" (incluye status_pago vacío/null, que la UI trata como "Por enviar")
+        # es el estado previo al envío/cobro: no corresponde a este seguimiento de cobranza.
+        query = query.filter(
+            Movimiento.status_pago.isnot(None),
+            Movimiento.status_pago != '',
+            Movimiento.status_pago != 'Por enviar',
+        )
         anio_param = request.args.get('anio')
         if anio_param:
             anio = int(anio_param)

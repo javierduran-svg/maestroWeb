@@ -2008,12 +2008,14 @@
                                 <th>Proyecto</th>
                                 <th>N° EP</th>
                                 <th>Estado</th>
+                                <th class="text-end">UF</th>
+                                <th class="text-end">Valor UF</th>
                                 <th class="text-end">Monto</th>
                                 <th>Fecha envío</th>
                                 <th>Facturación</th>
                                 <th>Pago / cesión</th>
                             </tr></thead>
-                            <tbody id="tabla-dashboard-ep-body"><tr><td colspan="7" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
+                            <tbody id="tabla-dashboard-ep-body"><tr><td colspan="9" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -2302,7 +2304,7 @@
                             <h6 class="mb-2 text-warning"><i class="fa-solid fa-square"></i> Cobros / estados de pago</h6>
                             <div class="table-responsive">
                                 <table class="table table-hover table-panel table-compact mb-0">
-                                    <thead><tr><th>Fecha est.</th><th>Descripción</th><th class="text-end">Monto</th><th>Estado</th></tr></thead>
+                                    <thead><tr><th>Fecha est.</th><th>Descripción</th><th class="text-end">UF</th><th class="text-end">Valor UF</th><th class="text-end">Monto</th><th>Estado</th></tr></thead>
                                     <tbody id="ganttProyectoCobros"></tbody>
                                 </table>
                             </div>
@@ -4924,7 +4926,7 @@
     async function cargarSeguimientoEstadosPago() {
         const tbody = document.getElementById('tabla-dashboard-ep-body');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Cargando…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Cargando…</td></tr>';
         const anio = document.getElementById('dashboardAnio')?.value || '';
         const url = anio ? `/api/dashboard/estados-pago?anio=${encodeURIComponent(anio)}` : '/api/dashboard/estados-pago';
         let filas = [];
@@ -4933,7 +4935,7 @@
             if (res.ok) filas = await res.json();
         } catch (e) { /* deja tabla vacía */ }
         if (!Array.isArray(filas) || !filas.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Sin estados de pago enviados en el periodo</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin estados de pago enviados en el periodo</td></tr>';
             return;
         }
         let proyectoAnterior = null;
@@ -4941,10 +4943,18 @@
             const proyecto = f.proyecto || 'Sin proyecto';
             const nuevoGrupo = proyecto !== proyectoAnterior;
             proyectoAnterior = proyecto;
+            const ufTxt = f.monto_uf != null && f.monto_uf !== ''
+                ? Number(f.monto_uf).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 })
+                : '—';
+            const valorUfTxt = f.valor_uf != null && f.valor_uf !== ''
+                ? Number(f.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '—';
             return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
                 <td>${esc(proyecto)}</td>
                 <td>${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
                 <td>${badgeStatusPago(f.status_pago)}</td>
+                <td class="text-end text-nowrap">${esc(ufTxt)}</td>
+                <td class="text-end text-nowrap">${esc(valorUfTxt)}</td>
                 <td class="text-end text-nowrap">${fmtMontoMov(f.monto)}</td>
                 <td class="text-nowrap">${fmtFechaMov(f.fecha_movimiento) || '—'}</td>
                 <td class="text-nowrap">${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
@@ -5782,7 +5792,7 @@
 
     function getterEpDetalle(m, col) {
         if (col === 'condicion_pago_dias') return Number(m.condicion_pago_dias) || 0;
-        if (col === 'monto') return Number(m.monto) || 0;
+        if (col === 'monto' || col === 'monto_uf' || col === 'valor_uf') return Number(m[col]) || 0;
         return m[col];
     }
 
@@ -5909,13 +5919,16 @@
     }
 
     function filasMovimientos(items, proyectoId, clase, vacio) {
-        const epCols = 10;
+        const epCols = 11;
         const gCols = 6;
         if (!items.length) return `<tr><td colspan="${clase === 'estado_pago' ? epCols : gCols}" class="text-center text-muted py-3">${vacio}</td></tr>`;
         if (clase === 'estado_pago') {
             return items.map(m => {
                 const gc = `guardarFilaProyectoMovimiento(${m.id}, ${proyectoId})`;
                 const ufVal = m.monto_uf != null && m.monto_uf !== '' ? Number(m.monto_uf) : '';
+                const valorUfTxt = m.valor_uf != null && m.valor_uf !== ''
+                    ? Number(m.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '—';
                 return `<tr class="proy-mov-row" data-id="${m.id}" data-clase="estado_pago">
                 <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
                 <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
@@ -5925,6 +5938,7 @@
                 <td data-field="status_pago" class="${claseStatusPagoSelect(m.status_pago || 'Por enviar')}">${selectStatusPagoHtml(m.status_pago || 'Por enviar', gc)}</td>
                 <td data-field="condicion_pago_dias"><select class="form-select cell-edit cell-edit-sm" onchange="${gc}">${optsCondicionPago(m.condicion_pago_dias || 30)}</select></td>
                 <td data-field="monto_uf"><input type="number" step="any" class="form-control cell-edit cell-edit-sm text-end" value="${ufVal === '' ? '' : esc(String(ufVal))}" onchange="${gc}"></td>
+                <td data-field="valor_uf" class="text-end text-nowrap text-muted small">${esc(valorUfTxt)}</td>
                 <td data-field="monto"><input type="text" class="form-control cell-edit cell-edit-sm mov-monto-ingreso" value="${esc(fmtMontoMov(m.monto))}" onchange="${gc}"></td>
                 <td class="text-end">${botonesAccion(proyectoId, clase, m.id)}</td>
             </tr>`;
@@ -6934,9 +6948,10 @@
                         ${thSortDetalle('status_pago', 'Status', `ordenarDetalleEp('status_pago')`)}
                         ${thSortDetalle('condicion_pago_dias', 'Cond. pago', `ordenarDetalleEp('condicion_pago_dias')`)}
                         ${thSortDetalle('monto_uf', 'UF', `ordenarDetalleEp('monto_uf')`, 'text-end')}
+                        ${thSortDetalle('valor_uf', 'Valor UF', `ordenarDetalleEp('valor_uf')`, 'text-end')}
                         ${thSortDetalle('monto', 'Pesos', `ordenarDetalleEp('monto')`, 'text-end')}
                         <th></th>
-                    </tr></thead><tbody id="ep-body-${id}"><tr><td colspan="10" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
+                    </tr></thead><tbody id="ep-body-${id}"><tr><td colspan="11" class="text-center text-muted py-3">Cargando…</td></tr></tbody></table>
                 </div>
                 <div class="subseccion-proyecto p-3 border-top">
                     <div class="d-flex justify-content-between mb-2"><h6 class="mb-0"><i class="fa-solid fa-receipt"></i> Gastos</h6><button class="btn btn-sm btn-dark" onclick="abrirGasto(${id})">+ GASTO</button></div>
@@ -7326,13 +7341,23 @@
 
         const cobBody = document.getElementById('ganttProyectoCobros');
         cobBody.innerHTML = cobros.length
-            ? cobros.map(ep => `<tr class="gantt-cobro-row" data-id="${ep.id}" style="cursor:pointer" title="Clic para editar">
+            ? cobros.map(ep => {
+                const ufTxt = ep.monto_uf != null && ep.monto_uf !== ''
+                    ? Number(ep.monto_uf).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 })
+                    : '—';
+                const valorUfTxt = ep.valor_uf != null && ep.valor_uf !== ''
+                    ? Number(ep.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '—';
+                return `<tr class="gantt-cobro-row" data-id="${ep.id}" style="cursor:pointer" title="Clic para editar">
                 <td class="text-nowrap">${esc(fmtFechaMov(ep.fecha_estimada))}</td>
                 <td>${esc(ep.descripcion || '—')}</td>
+                <td class="text-end text-nowrap">${esc(ufTxt)}</td>
+                <td class="text-end text-nowrap">${esc(valorUfTxt)}</td>
                 <td class="text-end text-nowrap">${fmt(ep.monto || 0)}</td>
                 <td>${ganttBadgeCobro(ep.estado)}</td>
-            </tr>`).join('')
-            : '<tr><td colspan="4" class="text-center text-muted py-3">Sin cobros programados</td></tr>';
+            </tr>`;
+            }).join('')
+            : '<tr><td colspan="6" class="text-center text-muted py-3">Sin cobros programados</td></tr>';
 
         cobBody.querySelectorAll('.gantt-cobro-row').forEach(row => {
             row.addEventListener('click', () => abrirEstadoPago(proyectoId, Number(row.dataset.id)));
