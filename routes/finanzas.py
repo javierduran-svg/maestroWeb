@@ -146,6 +146,12 @@ def get_dashboard_estados_pago():
             anio = int(anio_param)
             query = query.filter(func.extract('year', Movimiento.fecha_movimiento) == anio)
         movs = query.order_by(Movimiento.fecha_movimiento.desc(), Movimiento.id.desc()).all()
+        cambiado = False
+        for m in movs:
+            if _sincronizar_pesos_estado_pago(m):
+                cambiado = True
+        if cambiado:
+            db.session.commit()
         filas = [_movimiento_a_dict(m) for m in movs]
         filas.sort(key=lambda f: ((f.get('proyecto') or '').lower(), -(f.get('numero_ep') or 0)))
         return jsonify(filas)

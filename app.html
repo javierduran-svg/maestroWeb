@@ -3091,7 +3091,7 @@
                                 <div class="prop-field span-2"><label>A la atención de</label><input type="text" class="form-control" id="epAtencion" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field span-2"><label>Texto introductorio</label><textarea class="form-control" id="epIntro" rows="3" oninput="onEpCampoTemplate()" placeholder="Por medio de la presente enviamos el Estado de Pago..."></textarea></div>
                                 <div class="prop-field span-2 prop-subheading">Fechas</div>
-                                <div class="prop-field"><label>Movimiento</label><input type="date" class="form-control" id="epFecha" required></div>
+                                <div class="prop-field"><label>Movimiento</label><input type="date" class="form-control" id="epFecha" required onchange="onEpFechaPagoChange()"></div>
                                 <div class="prop-field"><label>Estado de pago</label><input type="date" class="form-control" id="epFechaPago" onchange="onEpFechaPagoChange()"></div>
                                 <div class="prop-field"><label>Facturación</label><input type="date" class="form-control" id="epFechaFact"></div>
                                 <div class="prop-field"><label>Cond. pago</label>
@@ -3103,7 +3103,7 @@
                                 </div>
                                 <div class="prop-field span-2 prop-subheading">Montos</div>
                                 <div class="prop-field"><label>Monto UF</label><input type="number" step="any" class="form-control" id="epMontoUf" oninput="onEpMontoUfChange()"></div>
-                                <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="UF actual mientras Por enviar/Programado; se fija al enviar"></div>
+                                <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="UF de la fecha del estado de pago; se fija al enviar"></div>
                                 <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate()" title="Sigue la UF actual hasta Enviado; luego queda fijo"></div>
                                 <div class="prop-field"><label>N° Factura</label><input type="text" class="form-control" id="epNumFact" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field span-2">
@@ -9868,14 +9868,27 @@
     }
 
     function epPesosFlotantes(status) {
-        // Por enviar / Programado: pesos siguen UF actual. Desde Enviado quedan fijos.
+        // Por enviar / Programado: pesos siguen UF del día del EP. Desde Enviado quedan fijos.
         return status === 'Por enviar' || status === 'Programado';
     }
 
-    async function consultarValorUfActual() {
+    function fechaReferenciaUfEp() {
+        return document.getElementById('epFechaPago')?.value
+            || document.getElementById('epFecha')?.value
+            || new Date().toISOString().slice(0, 10);
+    }
+
+    async function consultarValorUfActual(fecha = null) {
+        const f = fecha || fechaReferenciaUfEp();
         try {
-            const res = await apiFetch('/api/uf/hoy');
-            if (!res.ok) return null;
+            const res = await apiFetch(`/api/uf?fecha=${encodeURIComponent(f)}`);
+            if (!res.ok) {
+                // Fallback a UF de hoy si no hay valor para esa fecha.
+                const resHoy = await apiFetch('/api/uf/hoy');
+                if (!resHoy.ok) return null;
+                const dataHoy = await resHoy.json();
+                return dataHoy.valor != null ? Number(dataHoy.valor) : null;
+            }
             const data = await res.json();
             return data.valor != null ? Number(data.valor) : null;
         } catch (_) {
@@ -9891,12 +9904,12 @@
             montoEl.readOnly = flotante;
             montoEl.classList.toggle('bg-light', flotante);
             montoEl.title = flotante
-                ? 'Se actualiza con la UF del día mientras el status es Por enviar o Programado'
+                ? 'Se actualiza con la UF del día del EP mientras el status es Por enviar o Programado'
                 : 'Fijado al pasar a Enviado (y status posteriores)';
         }
         if (valorEl) {
             valorEl.title = flotante
-                ? 'UF actual (se actualiza mientras Por enviar / Programado)'
+                ? 'UF del día del estado de pago (fecha EP / movimiento)'
                 : 'UF fijada al enviar el estado de pago';
         }
     }
@@ -9904,15 +9917,12 @@
     async function sincronizarPesosEpSegunEstado(forzarFijacion = false) {
         const status = document.getElementById('epStatusPago').value;
         const flotante = epPesosFlotantes(status);
-        const montoUf = Number(document.getElementById('epMontoUf').value);
-        if (!montoUf) {
-            aplicarBloqueoPesosEp();
-            return;
-        }
-        if (flotante || forzarFijacion) {
-            const valor = await consultarValorUfActual();
-            if (valor != null) {
-                document.getElementById('epValorUf').value = valor;
+        const montoUfRaw = document.getElementById('epMontoUf').value;
+        const montoUf = montoUfRaw === '' || montoUfRaw == null ? null : Number(montoUfRaw);
+        const valor = await consultarValorUfActual();
+        if (valor != null) {
+            document.getElementById('epValorUf').value = valor;
+            if ((flotante || forzarFijacion) && montoUf != null && !Number.isNaN(montoUf)) {
                 document.getElementById('epMonto').value = Math.round(montoUf * valor);
             }
         }
@@ -9926,7 +9936,7 @@
         if (flotante) {
             await sincronizarPesosEpSegunEstado();
         } else if (eraFlotante) {
-            // Acaba de pasar a Enviado (u otro status posterior): fijar con UF actual.
+            // Acaba de pasar a Enviado (u otro status posterior): fijar con UF del día del EP.
             await sincronizarPesosEpSegunEstado(true);
         } else {
             aplicarBloqueoPesosEp();
@@ -9936,7 +9946,7 @@
     }
 
     async function onEpFechaPagoChange() {
-        // La fecha del EP no mueve el tipo de cambio: solo status flotante usa UF actual.
+        // Al cambiar la fecha del EP, recargar la UF de ese día (si sigue flotante).
         if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
             await sincronizarPesosEpSegunEstado();
         }
@@ -10140,6 +10150,12 @@
         if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
             await sincronizarPesosEpSegunEstado();
         } else {
+            // Si no hay valor_uf guardado, cargar la UF del día del EP para mostrarla.
+            const valorEl = document.getElementById('epValorUf');
+            if (!valorEl.value) {
+                const valor = await consultarValorUfActual();
+                if (valor != null) valorEl.value = valor;
+            }
             aplicarBloqueoPesosEp();
         }
 

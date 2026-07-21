@@ -119,8 +119,8 @@ SERVICIOS = [
     'CEV CALIFICACION', 'CALIFICACION',
 ]
 STATUS_PAGO = ['Por enviar', 'Programado', 'Enviado', 'Facturado', 'Pagado', 'Cedida']
-# Mientras el EP está en estos status, monto_pesos sigue la UF del día.
-# Al pasar a Enviado (u otro status posterior) el monto en pesos queda fijo.
+# Mientras el EP está en estos status, monto_pesos sigue la UF de la fecha del EP
+# (fecha_estado_pago o fecha_movimiento). Al pasar a Enviado+ el monto en pesos queda fijo.
 STATUS_EP_PESOS_FLOTANTES = frozenset({'Por enviar', 'Programado'})
 STATUS_GASTO = ['', STATUS_GASTO_PROGRAMADO]
 ESTADOS_EP_GANTT = ['Pendiente', 'Facturado', 'Pagado']
@@ -2082,29 +2082,41 @@ def _ep_pesos_flotantes(status: str | None) -> bool:
     return (status or '') in STATUS_EP_PESOS_FLOTANTES
 
 
-def _resolver_uf_actual() -> float | None:
-    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(date.today(), auto_fetch=True)
+def _fecha_referencia_uf_ep(mov: Movimiento) -> date:
+    """Fecha cuya UF aplica al EP: estado de pago, o movimiento, o hoy."""
+    return mov.fecha_estado_pago or mov.fecha_movimiento or date.today()
+
+
+def _resolver_uf_actual(fecha: date | None = None) -> float | None:
+    """UF para una fecha (por defecto hoy). Auto-fetch si no está en BD."""
+    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(fecha or date.today(), auto_fetch=True)
     if valor is None:
         return None
     return float(valor)
 
 
 def _sincronizar_pesos_estado_pago(mov: Movimiento, *, forzar_fijacion: bool = False) -> bool:
-    """Actualiza valor_uf y monto_pesos desde monto_uf × UF del día.
+    """Actualiza valor_uf y monto_pesos desde monto_uf × UF del día del EP.
 
-    - Status flotante (Por enviar / Programado): siempre recalcula.
-    - forzar_fijacion: al pasar a Enviado+, congela con la UF actual una vez.
+    - Status flotante (Por enviar / Programado): siempre recalcula con la UF
+      de fecha_estado_pago (o fecha_movimiento).
+    - forzar_fijacion: al pasar a Enviado+, congela con esa UF una vez.
+    - Si el EP ya está fijado pero no tiene valor_uf, lo rellena sin tocar pesos.
     Devuelve True si modificó el movimiento.
     """
     if not _es_movimiento_estado_pago(mov):
         return False
     if mov.monto_uf is None:
         return False
+    uf = _resolver_uf_actual(_fecha_referencia_uf_ep(mov))
+    if uf is None:
+        return False
     flotante = _ep_pesos_flotantes(mov.status_pago)
     if not flotante and not forzar_fijacion:
-        return False
-    uf = _resolver_uf_actual()
-    if uf is None:
+        # Backfill solo del valor UF (pesos ya fijados).
+        if mov.valor_uf is None:
+            mov.valor_uf = uf
+            return True
         return False
     pesos = round(float(mov.monto_uf) * uf)
     if mov.valor_uf == uf and mov.monto_pesos == pesos:

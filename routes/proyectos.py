@@ -496,6 +496,8 @@ def gantt_datos():
     estados_pago = Movimiento.query.filter_by(
         empresa_id=eid, clase='estado_pago', estado='Activo',
     ).filter(Movimiento.proyecto_id.isnot(None)).order_by(Movimiento.fecha_movimiento).all()
+    for m in estados_pago:
+        _sincronizar_pesos_estado_pago(m)
 
     proyecto_ids = {p.id for p in proyectos}
     entregas = EntregaProgramada.query.filter_by(empresa_id=eid).filter(
