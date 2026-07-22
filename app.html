@@ -2546,7 +2546,7 @@
                 <div id="bancoSyncMsg" class="px-3 pt-2 small"></div>
                 <div class="p-3 pt-2">
                     <div id="listaBancosConexiones" class="row g-3 mb-4"></div>
-                    <h6 class="text-muted small mb-2">Últimos movimientos (todas las cuentas)</h6>
+                    <h6 class="text-muted small mb-2">Extracto Fintoc (últimos movimientos)</h6>
                     <div class="table-responsive tabla-scroll-wrap">
                         <table id="tabla-banco-grid" class="table table-hover table-panel table-compact mb-0">
                             <thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th class="text-end">Monto</th></tr></thead>
@@ -7923,6 +7923,18 @@
         return _propCalcConfig?.servicio === 'PGSEE';
     }
 
+    // Eficiencia energética — Proyecto / Estudio de EE. Mismo modo "tabla UF"
+    // libre que PGSEE (honorario a medida, sin fórmula por m²/unidad).
+    function esServicioEficienciaEnergetica() {
+        return _propCalcConfig?.servicio === 'Eficiencia energética';
+    }
+
+    // Servicios cuyo honorario se ingresa como filas UF editables sin fórmula
+    // asociada (PGSEE, Eficiencia energética).
+    function esModoTablaUfLibre() {
+        return esServicioPgsee() || esServicioEficienciaEnergetica();
+    }
+
     function poblarRtControles() {
         const sel = document.getElementById('propRtTipoProyecto');
         if (!sel) return;
@@ -7936,9 +7948,9 @@
 
     // Modo de tabla con UF editable por fila (label + UF), usado por CES
     // (entregables prorrateados), CES Evaluadora (honorarios por etapa) y
-    // PGSEE (honorarios libres por edificación/ítem, sin fórmula asociada).
+    // PGSEE / Eficiencia energética (honorarios libres por ítem, sin fórmula).
     function esModoTablaUf() {
-        return esServicioCes() || esServicioCesEvaluadora() || esServicioPgsee();
+        return esServicioCes() || esServicioCesEvaluadora() || esModoTablaUfLibre();
     }
 
     // Coeficientes de la fórmula de honorarios CES (potencia sobre superficie).
@@ -8112,18 +8124,26 @@
         });
     }
 
-    // Filas por defecto para PGSEE: sin fórmula asociada, el usuario define
-    // libremente el honorario (o el desglose por edificación) en UF.
-    function crearFilasPgseeDefault() {
+    // Filas por defecto para PGSEE / Eficiencia energética: sin fórmula
+    // asociada, el usuario define libremente el honorario (o el desglose) en UF.
+    function crearFilasTablaUfLibreDefault() {
         const filas = _propCalcConfig?.filas || [];
         const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
-        _propCalcFilas = (filas.length ? filas : [{ label: 'Honorarios PGSEE', uf_unidad: 0 }]).map(f => ({
-            label: f.label || 'Honorarios PGSEE',
+        const defaultLabel = esServicioEficienciaEnergetica()
+            ? 'Honorarios Proyecto de Eficiencia Energética'
+            : 'Honorarios PGSEE';
+        _propCalcFilas = (filas.length ? filas : [{ label: defaultLabel, uf_unidad: 0 }]).map(f => ({
+            label: f.label || defaultLabel,
             m2,
             cantidad: 1,
             uf_unidad: parseFloat(f.uf_unidad) || 0,
             share: 0,
         }));
+    }
+
+    // Alias retrocompatible (mismo comportamiento).
+    function crearFilasPgseeDefault() {
+        crearFilasTablaUfLibreDefault();
     }
 
     function onCesParamChange() {
@@ -8374,7 +8394,7 @@
             const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
             return m2 ? `una superficie de ${fmtUfNum(m2)} m²` : 'el proyecto';
         }
-        if (esServicioPgsee()) {
+        if (esModoTablaUfLibre()) {
             const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
             return m2 ? `una superficie total de ${fmtUfNum(m2)} m²` : 'las edificaciones del proyecto';
         }
@@ -9123,10 +9143,10 @@
             crearFilasEvaluadoraDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
-        } else if (esServicioPgsee()) {
+        } else if (esModoTablaUfLibre()) {
             cesControls?.classList.add('d-none');
             rtControls?.classList.add('d-none');
-            crearFilasPgseeDefault();
+            crearFilasTablaUfLibreDefault();
             renderCalcPropuesta();
             recalcularPropuesta();
         } else {
@@ -9178,7 +9198,7 @@
             sincronizarDatosEnTemplate();
             return;
         }
-        if (esServicioPgsee()) {
+        if (esModoTablaUfLibre()) {
             // Sin fórmula asociada: solo se actualiza el m² informativo de
             // cada fila. Los montos UF los define el usuario manualmente.
             const m2 = parseFloat(document.getElementById('propM2').value) || 0;
@@ -11095,7 +11115,11 @@
                 cont.innerHTML = '<div class="col-12"><p class="text-muted small mb-0">Sin bancos conectados. Use «Conectar banco» para agregar uno.</p></div>';
                 return;
             }
-            cont.innerHTML = bancos.map(b => `
+            cont.innerHTML = bancos.map(b => {
+                const saldo = b.saldo_disponible != null ? b.saldo_disponible
+                    : (b.saldo_contable != null ? b.saldo_contable : null);
+                const saldoTxt = saldo != null ? fmtMontoMov(saldo) : 'Sin saldo sync';
+                return `
                 <div class="col-md-6 col-xl-4">
                     <div class="card h-100 border">
                         <div class="card-body p-3">
@@ -11104,8 +11128,11 @@
                                 <span class="badge ${b.activa ? 'bg-success' : 'bg-secondary'}">${b.activa ? 'Activa' : 'Inactiva'}</span>
                             </div>
                             <p class="small text-muted mb-1">${esc(b.cuenta_contable_nombre || 'Sin cuenta contable')}</p>
-                            <p class="small text-muted mb-2">${b.fintoc_account_id ? esc(b.fintoc_account_id) : 'Sin account id'}</p>
-                            ${b.ultima_sincronizacion ? `<p class="small text-muted mb-2">Última sync: ${esc(fmtFecha(b.ultima_sincronizacion.slice(0, 10)))}</p>` : ''}
+                            <p class="small text-muted mb-1">${b.fintoc_account_id ? esc(b.fintoc_account_id) : 'Account id automático'}</p>
+                            <p class="fw-semibold mb-1">${esc(saldoTxt)}</p>
+                            ${b.saldo_contable != null && b.saldo_disponible != null && b.saldo_contable !== b.saldo_disponible
+                                ? `<p class="small text-muted mb-1">Contable: ${esc(fmtMontoMov(b.saldo_contable))}</p>` : ''}
+                            ${b.ultima_sincronizacion ? `<p class="small text-muted mb-2">Última sync: ${esc(fmtFecha(b.ultima_sincronizacion.slice(0, 10)))}</p>` : '<p class="small text-muted mb-2">Sin sincronizar</p>'}
                             <div class="d-flex flex-wrap gap-1">
                                 <button class="btn btn-sm btn-outline-dark" onclick="sincronizarBancoId(${b.id})"><i class="fa-solid fa-arrows-rotate"></i> Sincronizar</button>
                                 <button class="btn btn-sm btn-outline-secondary" onclick="abrirModalBanco(${b.id})"><i class="fa-solid fa-pen"></i></button>
@@ -11113,7 +11140,8 @@
                             </div>
                         </div>
                     </div>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         } catch (e) {
             cont.innerHTML = '<div class="col-12 text-danger small">Error al cargar conexiones bancarias</div>';
         }
@@ -11206,7 +11234,7 @@
                 msg.className = 'px-3 pt-2 small text-danger';
                 return;
             }
-            msg.textContent = `${data.banco_nombre || 'Banco'}: ${data.insertados} insertados, ${data.omitidos} omitidos${data.mock ? ' (simulación)' : ''}`;
+            msg.textContent = `${data.banco_nombre || 'Banco'}: ${data.insertados} insertados, ${data.actualizados || 0} actualizados, ${data.omitidos} omitidos${data.mock ? ' (simulación)' : ''}`;
             msg.className = 'px-3 pt-2 small text-success';
             await cargarConexionesBanco();
             await listarMovimientosBanco();

@@ -72,6 +72,7 @@ from models import (
     Liquidacion,
     EmpresaSIIConfig,
     EmpresaBancoConexion,
+    BancoMovimiento,
     CentroCosto,
     CuentaContable,
     Comprobante,
@@ -503,8 +504,32 @@ def _banco_conexion_a_dict(conn: EmpresaBancoConexion, masked: bool = True) -> d
         'cuenta_contable_nombre': cuenta_nombre,
         'activa': conn.activa,
         'ultima_sincronizacion': conn.ultima_sincronizacion.isoformat() if conn.ultima_sincronizacion else None,
+        'saldo_disponible': conn.saldo_disponible,
+        'saldo_contable': conn.saldo_contable,
+        'saldo_limite': conn.saldo_limite,
+        'saldo_actualizado_at': conn.saldo_actualizado_at.isoformat() if conn.saldo_actualizado_at else None,
         'tiene_api_key': bool(conn.fintoc_api_key),
         'tiene_link_token': bool(conn.fintoc_link_token),
+    }
+
+
+def _banco_movimiento_a_dict(mov: BancoMovimiento) -> dict:
+    return {
+        'id': mov.id,
+        'empresa_id': mov.empresa_id,
+        'conexion_id': mov.conexion_id,
+        'fintoc_id': mov.fintoc_id,
+        'fecha': mov.fecha.isoformat() if mov.fecha else None,
+        'fecha_movimiento': mov.fecha.isoformat() if mov.fecha else None,
+        'descripcion': mov.descripcion,
+        'monto': mov.monto,
+        'tipo': 'Ingreso' if mov.tipo == 'ingreso' else 'Egreso',
+        'tipo_raw': mov.tipo,
+        'moneda': mov.moneda,
+        'estado_conciliacion': mov.estado_conciliacion,
+        'movimiento_id': mov.movimiento_id,
+        'synced_at': mov.synced_at.isoformat() if mov.synced_at else None,
+        'transaccion': 'Ingreso' if mov.tipo == 'ingreso' else 'Egreso',
     }
 
 
@@ -628,51 +653,127 @@ def _obtener_cuentas_banco_empresa(empresa_id: int) -> list[Cuenta]:
 
 
 def _sincronizar_conexion_banco(conn: EmpresaBancoConexion, empresa_id: int) -> dict:
+    """Importa extracto y saldos Fintoc a banco_movimientos (no toca el libro contable)."""
     if not conn.activa:
-        return {'insertados': 0, 'omitidos': 0, 'errores': ['Conexión inactiva'], 'mock': False, 'mensaje': 'Inactiva'}
-    cuenta_banco = conn.cuenta_contable
-    if not cuenta_banco or cuenta_banco.empresa_id != empresa_id:
+        return {
+            'insertados': 0,
+            'omitidos': 0,
+            'actualizados': 0,
+            'errores': ['Conexión inactiva'],
+            'mock': False,
+            'mensaje': 'Inactiva',
+            'banco_id': conn.id,
+            'banco_nombre': conn.nombre,
+        }
+
+    # Asegurar cuenta contable asociada (para conciliación futura), sin crear asientos.
+    if not conn.cuenta_contable or conn.cuenta_contable.empresa_id != empresa_id:
         cuenta_banco = _obtener_cuenta_banco_santander(empresa_id)
         conn.cuenta_contable_id = cuenta_banco.id
+
     cliente = _fintoc_client_for_conexion(conn)
-    # Ventana: desde última sync (con margen) o últimos 90 días en la primera sync.
     if conn.ultima_sincronizacion:
         since = (conn.ultima_sincronizacion.date() - timedelta(days=3)).isoformat()
     else:
         since = (date.today() - timedelta(days=90)).isoformat()
+
     movimientos_ext, es_mock, mensaje = cliente.obtener_movimientos(since=since)
-    # Persistir account_id resuelto (p. ej. tras cambiar de Link en Fintoc).
     if cliente.account_id and cliente.account_id != (conn.fintoc_account_id or ''):
         conn.fintoc_account_id = cliente.account_id
+
+    saldo = cliente.obtener_saldo(conn.fintoc_account_id)
+    ahora = datetime.utcnow()
+    conn.saldo_disponible = saldo.get('disponible')
+    conn.saldo_contable = saldo.get('contable')
+    conn.saldo_limite = saldo.get('limite')
+    conn.saldo_actualizado_at = ahora
+    if saldo.get('account_id') and saldo['account_id'] != (conn.fintoc_account_id or ''):
+        conn.fintoc_account_id = saldo['account_id']
+
     insertados = 0
     omitidos = 0
+    actualizados = 0
     errores = []
     for mov_ext in movimientos_ext:
         try:
+            fintoc_id = (mov_ext.get('id') or '').strip()
+            if not fintoc_id:
+                omitidos += 1
+                continue
             fecha = _parse_fecha(mov_ext.get('fecha')) or date.today()
             monto = abs(float(mov_ext.get('monto', 0)))
             if monto <= 0:
                 omitidos += 1
                 continue
-            descripcion = _descripcion_movimiento_banco(mov_ext)
-            if _movimiento_banco_duplicado(mov_ext, descripcion, fecha, monto, empresa_id):
-                omitidos += 1
+            tipo = (mov_ext.get('tipo') or 'ingreso').lower()
+            if tipo not in ('ingreso', 'egreso'):
+                tipo = 'ingreso'
+            descripcion = (
+                mov_ext.get('descripción')
+                or mov_ext.get('descripcion')
+                or 'Movimiento bancario'
+            )[:255]
+
+            existente = BancoMovimiento.query.filter_by(
+                empresa_id=empresa_id, fintoc_id=fintoc_id,
+            ).first()
+            if existente:
+                cambiado = False
+                if existente.fecha != fecha:
+                    existente.fecha = fecha
+                    cambiado = True
+                if existente.descripcion != descripcion:
+                    existente.descripcion = descripcion
+                    cambiado = True
+                if existente.monto != monto:
+                    existente.monto = monto
+                    cambiado = True
+                if existente.tipo != tipo:
+                    existente.tipo = tipo
+                    cambiado = True
+                if existente.conexion_id != conn.id:
+                    existente.conexion_id = conn.id
+                    cambiado = True
+                existente.synced_at = ahora
+                if cambiado:
+                    actualizados += 1
+                else:
+                    omitidos += 1
                 continue
-            mov = _crear_movimiento_desde_banco(mov_ext, cuenta_banco, empresa_id)
-            db.session.add(mov)
+
+            db.session.add(BancoMovimiento(
+                empresa_id=empresa_id,
+                conexion_id=conn.id,
+                fintoc_id=fintoc_id,
+                fecha=fecha,
+                descripcion=descripcion,
+                monto=monto,
+                tipo=tipo,
+                moneda='CLP',
+                estado_conciliacion='pendiente',
+                synced_at=ahora,
+            ))
             insertados += 1
         except Exception as e:
             errores.append(str(e))
-    conn.ultima_sincronizacion = datetime.utcnow()
+
+    conn.ultima_sincronizacion = ahora
     return {
         'mensaje': mensaje,
         'mock': es_mock,
         'insertados': insertados,
         'omitidos': omitidos,
+        'actualizados': actualizados,
         'errores': errores,
         'total_recibidos': len(movimientos_ext),
         'banco_id': conn.id,
         'banco_nombre': conn.nombre,
+        'saldo': {
+            'disponible': conn.saldo_disponible,
+            'contable': conn.saldo_contable,
+            'limite': conn.saldo_limite,
+        },
+        'fintoc_account_id': conn.fintoc_account_id,
     }
 
 
@@ -943,6 +1044,7 @@ def _eliminar_empresa(empresa_id: int) -> dict:
         EntregaProgramada.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
         Comprobante.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
         Liquidacion.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
+        BancoMovimiento.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
         Movimiento.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
         EmpresaBancoConexion.query.filter_by(empresa_id=empresa_id).delete(synchronize_session=False)
         for t in Trabajador.query.filter_by(empresa_id=empresa_id).all():
@@ -2608,6 +2710,7 @@ __all__ = [
     '_asegurar_firmas_dir',
     'admin_required',
     '_banco_conexion_a_dict',
+    '_banco_movimiento_a_dict',
     '_calcular_montos_liquidacion',
     '_cargar_env_local',
     '_crear_estado_pago',

@@ -234,6 +234,24 @@ ETAPAS_PAGO_PGSEE = [
     {'codigo': '3', 'nombre': 'Aprobación del mandante', 'porcentaje': 40.0},
 ]
 
+# ---------------------------------------------------------------------------
+# Eficiencia energética — Estudio / Proyecto de Eficiencia Energética
+# ---------------------------------------------------------------------------
+# Honorario a medida por proyecto (sin fórmula fija por m² ni por unidad), en
+# el mismo modo "tabla UF" editable de PGSEE / CES Evaluadora. El valor UF lo
+# define el usuario según la complejidad y superficie del encargo.
+# Etapas de pago ancladas a la propuesta de referencia EE (hitos de diseño):
+# Anticipo 20% / Entrega Preliminar Informe EE 40% / Entrega Final Informe EE 40%.
+FILAS_EE_DEFAULT = [
+    {'label': 'Honorarios Proyecto de Eficiencia Energética', 'uf_unidad': 0},
+]
+
+ETAPAS_PAGO_EE = [
+    {'codigo': '1', 'nombre': 'Proyecto Eficiencia Energética. Anticipo', 'porcentaje': 20.0},
+    {'codigo': '2', 'nombre': 'Proyecto Eficiencia Energética. Entrega Preliminar Informe EE', 'porcentaje': 40.0},
+    {'codigo': '3', 'nombre': 'Proyecto Eficiencia Energética. Entrega Final Informe EE', 'porcentaje': 40.0},
+]
+
 TEMPLATE_CEV_RT = r"""<div class="prop-doc">
 <table class="prop-doc-header" cellpadding="0" cellspacing="0">
 <tr>
@@ -773,6 +791,115 @@ TEMPLATE_PGSEE = r"""<div class="prop-doc">
 </div>
 </div>"""
 
+TEMPLATE_EFICIENCIA_ENERGETICA = r"""<div class="prop-doc">
+<table class="prop-doc-header" cellpadding="0" cellspacing="0">
+<tr>
+  <td class="prop-doc-header-text" valign="top">
+    <h1 class="prop-doc-titulo">Proyecto de Eficiencia Energética</h1>
+    <h2 class="prop-doc-subtitulo" data-prop="proyecto">{{PROYECTO}}</h2>
+    <p class="prop-doc-detalle" data-prop="detalle">{{DETALLE}}</p>
+  </td>
+  <td class="prop-doc-logo-wrap" valign="top" align="right" data-prop="logo">{{LOGO}}</td>
+</tr>
+</table>
+<table class="prop-doc-meta">
+  <tr><th>Cliente:</th><td data-prop="cliente">{{CLIENTE}}</td></tr>
+  <tr><th>Presentada por:</th><td data-prop="presentado_por">{{PRESENTADO_POR}}</td></tr>
+  <tr><th>Fecha:</th><td data-prop="fecha">{{FECHA}}</td></tr>
+  <tr><th>ID Propuesta:</th><td data-prop="numero">P{{NUMERO}}</td></tr>
+</table>
+
+<h3 class="prop-doc-seccion">Resumen</h3>
+<p>La presente propuesta tiene por objetivo el desarrollo del <strong>Proyecto de Eficiencia Energética</strong> del proyecto <strong data-prop="proyecto">{{PROYECTO}}</strong>, correspondiente a <strong data-prop="unidades">{{UNIDADES_DESCRIPCION}}</strong>.</p>
+<p>El servicio contempla la elaboración del Informe de Estudio de Eficiencia Energética y el modelamiento termodinámico de las edificaciones, al margen del producido por la especialidad de clima, con un análisis y evaluación de las condiciones del proyecto elaborado de acuerdo a la normativa vigente.</p>
+<p><strong>Descripción de la propuesta</strong></p>
+<p>
+&#9679; <strong>Servicio:</strong> Proyecto de Eficiencia Energética.<br>
+&#9679; <strong>Alcance:</strong> Estudio de eficiencia energética y modelamiento termodinámico conforme al capítulo 2.7.4.3 del Proyecto de Arquitectura de las BALI.<br>
+&#9679; <strong>Entregables:</strong> Informe Preliminar y Informe Final de Eficiencia Energética.
+</p>
+
+<h3 class="prop-doc-seccion">Propuesta Técnica</h3>
+<p>La presente propuesta técnica está orientada a elaborar el Estudio de Eficiencia Energética del proyecto en etapa de diseño, incluyendo el modelamiento termodinámico de las edificaciones y la evaluación de las condiciones del proyecto, con el fin de orientar decisiones de diseño que mejoren el desempeño energético de la envolvente, las divisiones interiores y los sistemas de iluminación, entre otros aspectos definidos por la normativa aplicable.</p>
+
+<h4>1. Elaboración del Informe de Estudio de Eficiencia Energética</h4>
+<p>Se elaborará el Informe de Estudio de Eficiencia Energética de acuerdo a lo indicado en el capítulo <strong>2.7.4.3 Proyecto de Arquitectura</strong> de las BALI:</p>
+<p><em>&ldquo;[...] como parte del Proyecto de Arquitectura, el Concesionario deberá entregar un estudio de eficiencia energética y modelamiento termodinámico de las edificaciones, al margen del producido por la especialidad de clima, con un análisis y evaluación de condiciones del proyecto elaborado, al menos, con los siguientes contenidos de acuerdo a la normativa vigente:&rdquo;</em></p>
+<p>
+&#9679; Transmitancia y resistencia térmica de materiales o paquetes constructivos;<br>
+&#9679; Pérdidas y ganancias térmicas;<br>
+&#9679; Estudio de asoleamiento;<br>
+&#9679; Comportamientos de sombra y obstrucciones solares en terreno;<br>
+&#9679; Niveles internos de contribución de luz natural;<br>
+&#9679; Compensación de luz natural y artificial interior;<br>
+&#9679; Contaminación Lumínica del cielo (DS N&deg; 43 de 2021 de MMA);<br>
+&#9679; Criterios y soluciones;<br>
+&#9679; Detalle y fichas técnicas de equipos y materiales utilizados garantizando eficiencia energética;<br>
+&#9679; Niveles de luz artificial en plataforma y Air Side; y<br>
+&#9679; Niveles de luz artificial en espacios públicos.
+</p>
+<p>Las mejoras en el desempeño de los paquetes constructivos propuestos para la envolvente y divisiones interiores de cada edificación proyectada serán vinculantes en el diseño en tanto el Concesionario (o el mandante) decida optar por estas mejoras, lo cual deberá ser declarado al momento de la entrega de dicho informe.</p>
+
+<h4>2. Contenidos del estudio y modelamiento</h4>
+<p>El estudio se desarrollará sobre la base de los antecedentes de arquitectura y especialidades disponibles, e incluirá, como mínimo, el análisis de los contenidos exigidos por las BALI y la normativa vigente:</p>
+<p><strong>2.1 Envolvente y comportamiento térmico</strong><br>
+Se evaluará la transmitancia y resistencia térmica de los materiales o paquetes constructivos de la envolvente y divisiones interiores relevantes, junto con el análisis de pérdidas y ganancias térmicas de las edificaciones. El modelamiento termodinámico se realizará de manera independiente al proyecto de la especialidad de clima, permitiendo contrastar el desempeño energético de las soluciones proyectadas y proponer mejoras cuando corresponda.</p>
+<p><strong>2.2 Asoleamiento, sombras y obstrucciones</strong><br>
+Se desarrollará el estudio de asoleamiento del proyecto y el análisis del comportamiento de sombras y obstrucciones solares en el terreno, considerando la orientación, volumetría y entorno edificatorio que incidan en la demanda energética y en el confort de los espacios interiores.</p>
+<p><strong>2.3 Luz natural y compensación con iluminación artificial</strong><br>
+Se analizarán los niveles internos de contribución de luz natural y la compensación entre luz natural y artificial interior, con el objeto de orientar criterios de diseño que reduzcan el consumo asociado a iluminación artificial sin comprometer los requerimientos funcionales de los recintos.</p>
+<p><strong>2.4 Contaminación lumínica y niveles de iluminación artificial</strong><br>
+Se considerará la Contaminación Lumínica del cielo conforme al DS N&deg; 43 de 2021 del MMA, así como la evaluación de los niveles de luz artificial en plataforma y Air Side, y en espacios públicos, según corresponda a la tipología y alcance del proyecto.</p>
+<p><strong>2.5 Criterios, soluciones y fichas técnicas</strong><br>
+El informe incorporará los criterios y soluciones de eficiencia energética propuestos, junto con el detalle y las fichas técnicas de equipos y materiales utilizados que garanticen el desempeño energético declarado.</p>
+
+<h4>3. Etapas de trabajo y entregables</h4>
+<p>El servicio se estructura en la etapa de diseño del Proyecto de Eficiencia Energética, con los siguientes hitos de entrega:</p>
+<p>
+&#9679; <strong>Hito 1 — Anticipo / inicio de servicio:</strong> formalización del encargo, recopilación de antecedentes de arquitectura y especialidades, y definición del alcance de modelamiento y contenidos del informe.<br>
+&#9679; <strong>Hito 2 — Entrega Preliminar del Informe de Eficiencia Energética:</strong> avance del estudio y modelamiento termodinámico, con resultados preliminares y propuestas de mejora para revisión del mandante y del equipo de proyecto.<br>
+&#9679; <strong>Hito 3 — Entrega Final del Informe de Eficiencia Energética:</strong> consolidación del informe con los contenidos exigidos, criterios y soluciones, fichas técnicas y declaración de mejoras adoptadas cuando corresponda.
+</p>
+
+<h4>Notas</h4>
+<p>
+- El presente servicio corresponde al Proyecto de Eficiencia Energética y al Informe de Estudio asociado; no incluye la ejecución de proyectos de especialidades (clima, iluminación u otros), sino su análisis y evaluación en el marco del estudio.<br>
+- Los antecedentes de arquitectura y especialidades deberán ser entregados por el mandante o su equipo de proyecto en formatos y plazos que permitan desarrollar el modelamiento y el informe dentro del cronograma acordado.<br>
+- El cronograma de pagos está abierto a ser modificado según las etapas que determine el mandante final del proyecto.
+</p>
+
+<h3 class="prop-doc-seccion">Honorarios Profesionales</h3>
+<p>Los honorarios profesionales para el Proyecto de Eficiencia Energética descrito en la presente propuesta y su forma de pago se muestran a continuación (Exento de IVA):</p>
+<div id="prop-bloque-honorarios">{{HONORARIOS_TABLA}}</div>
+
+<h4>Forma de pago</h4>
+<p><strong>Etapa de Diseño. Proyecto Eficiencia Energética</strong></p>
+<div id="prop-bloque-pago">{{PAGO_TABLA}}</div>
+<p class="text-muted">*El cronograma de pagos está abierto a ser modificado según las etapas que determine el mandante final del proyecto.</p>
+<p class="prop-doc-total" data-prop="total_uf"><strong>TOTAL: UF {{TOTAL_UF}}</strong></p>
+
+<div class="prop-doc-firma">
+  <table class="prop-doc-firma-tabla" cellpadding="0" cellspacing="0" width="100%"><tr>
+    <td class="prop-doc-firma-espaciador"></td>
+    <td class="prop-doc-firma-bloque" width="250" align="center" valign="top">
+      <div class="prop-doc-firma-space" data-prop="firma_img"></div>
+      <div class="prop-doc-firma-linea">&nbsp;</div>
+      <p class="prop-doc-firma-nombre"><strong data-prop="presentado_por">{{PRESENTADO_POR}}</strong></p>
+    </td>
+  </tr></table>
+  <p class="prop-doc-firma-cargo">Arquitecto PUC | Master en Medio Ambiente y Arquitectura Bioclimática U. Politécnica de Madrid |<br>
+  LEED AP | Asesor CES | Calificador Energético CEV.<br>
+  B-green Chile</p>
+</div>
+<div class="prop-doc-empresa">
+  <p><strong>Información de la Empresa</strong></p>
+  <p>Nombre: B-green Chile Ltda.<br>
+  Giro: Desarrollo de Consultorías y Arquitectura<br>
+  Rut.: 77.748.415-k<br>
+  Dirección: Obispo Donoso 5 Oficina 62. Providencia.</p>
+</div>
+</div>"""
+
 TEMPLATES_POR_SERVICIO = {
     'CEV+RT': TEMPLATE_CEV_RT,
     'CEV': TEMPLATE_CEV,
@@ -780,6 +907,7 @@ TEMPLATES_POR_SERVICIO = {
     'CES': TEMPLATE_CES,
     'CES Evaluadora': TEMPLATE_CES_EVALUADORA,
     'PGSEE': TEMPLATE_PGSEE,
+    'Eficiencia energética': TEMPLATE_EFICIENCIA_ENERGETICA,
 }
 
 PROP_DOC_CSS = """
@@ -1247,6 +1375,14 @@ def get_config_calculadora(servicio: str) -> dict | None:
             'servicio': 'PGSEE',
             'filas': FILAS_PGSEE_DEFAULT,
             'etapas': ETAPAS_PAGO_PGSEE,
+            'template': None,
+            'format': 'html',
+        }
+    if servicio == 'Eficiencia energética':
+        return {
+            'servicio': 'Eficiencia energética',
+            'filas': FILAS_EE_DEFAULT,
+            'etapas': ETAPAS_PAGO_EE,
             'template': None,
             'format': 'html',
         }

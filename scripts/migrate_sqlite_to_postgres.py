@@ -57,6 +57,7 @@ MIGRATION_TABLES: list[str] = [
     "tareas_entrega",
     "empresa_sii_config",
     "empresa_banco_conexiones",
+    "banco_movimientos",
     "comprobantes",
     "lineas_comprobante",
 ]

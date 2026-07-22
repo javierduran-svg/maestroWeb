@@ -87,6 +87,12 @@ MOCK_MOVIMIENTOS = [
     },
 ]
 
+MOCK_SALDO = {
+    'disponible': 12_450_000.0,
+    'contable': 12_450_000.0,
+    'limite': 15_000_000.0,
+}
+
 
 _FINTOC_ERROR_HINTS: dict[str, str] = {
     'invalid_api_key': (
@@ -198,6 +204,75 @@ class FintocClient:
             raise BancoIntegrationError('Fintoc devolvió cuentas sin id válido.')
         self.account_id = account_id
         return account_id
+
+    @staticmethod
+    def _balance_from_account(raw: dict | None) -> dict:
+        raw = raw or {}
+        balance = raw.get('balance') if isinstance(raw.get('balance'), dict) else {}
+        def _num(val):
+            if val is None or val == '':
+                return None
+            try:
+                return float(val)
+            except (TypeError, ValueError):
+                return None
+        return {
+            'id': str(raw.get('id') or ''),
+            'name': raw.get('name') or raw.get('official_name') or '',
+            'number': raw.get('number') or '',
+            'type': raw.get('type') or '',
+            'currency': (raw.get('currency') or 'CLP').upper(),
+            'disponible': _num(balance.get('available')),
+            'contable': _num(balance.get('current')),
+            'limite': _num(balance.get('limit')),
+            'refreshed_at': raw.get('refreshed_at'),
+        }
+
+    def obtener_cuenta(self, account_id: str | None = None) -> dict:
+        """Obtiene una cuenta del Link con saldos (available/current/limit)."""
+        if not self.tiene_credenciales():
+            return {**MOCK_SALDO, 'id': account_id or 'acc_mock', 'name': 'Mock', 'currency': 'CLP'}
+
+        target = (account_id or self.account_id or '').strip()
+        if not target:
+            target = self.resolver_account_id()
+
+        cuentas = self.listar_cuentas()
+        for c in cuentas:
+            if str(c.get('id') or '') == target:
+                info = self._balance_from_account(c)
+                self.account_id = info['id'] or self.account_id
+                return info
+
+        # Fallback: GET /accounts/{id}
+        try:
+            resp = requests.get(
+                f'{self.base_url}/accounts/{target}',
+                headers=self._headers(),
+                params={'link_token': self.link_token},
+                timeout=self.timeout,
+            )
+        except requests.RequestException as e:
+            msg = mensaje_error_red_fintoc(e)
+            raise BancoIntegrationError(msg or 'Error de red al consultar cuenta Fintoc.') from e
+        if not resp.ok:
+            raise BancoIntegrationError(self._format_fintoc_error(resp))
+        payload = resp.json()
+        info = self._balance_from_account(payload if isinstance(payload, dict) else {})
+        if info['id']:
+            self.account_id = info['id']
+        return info
+
+    def obtener_saldo(self, account_id: str | None = None) -> dict:
+        """Saldos de la cuenta: disponible, contable, limite."""
+        info = self.obtener_cuenta(account_id)
+        return {
+            'disponible': info.get('disponible'),
+            'contable': info.get('contable'),
+            'limite': info.get('limite'),
+            'currency': info.get('currency') or 'CLP',
+            'account_id': info.get('id') or self.account_id,
+        }
 
     @classmethod
     def _format_fintoc_error(cls, resp: requests.Response) -> str:

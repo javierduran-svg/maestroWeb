@@ -291,9 +291,45 @@ class EmpresaBancoConexion(db.Model):
     cuenta_contable_id = db.Column(db.Integer, db.ForeignKey('cuentas.id'), nullable=True)
     activa = db.Column(db.Boolean, default=True, nullable=False)
     ultima_sincronizacion = db.Column(db.DateTime, nullable=True)
+    saldo_disponible = db.Column(db.Float, nullable=True)
+    saldo_contable = db.Column(db.Float, nullable=True)
+    saldo_limite = db.Column(db.Float, nullable=True)
+    saldo_actualizado_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     cuenta_contable = db.relationship('Cuenta', foreign_keys=[cuenta_contable_id])
+    extracto = db.relationship(
+        'BancoMovimiento',
+        back_populates='conexion',
+        lazy=True,
+        cascade='all, delete-orphan',
+    )
+
+
+class BancoMovimiento(db.Model):
+    """Extracto bancario importado desde Fintoc (no es asiento contable)."""
+    __tablename__ = 'banco_movimientos'
+    id = db.Column(db.Integer, primary_key=True)
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
+    conexion_id = db.Column(
+        db.Integer, db.ForeignKey('empresa_banco_conexiones.id'), nullable=False,
+    )
+    fintoc_id = db.Column(db.String(100), nullable=False)
+    fecha = db.Column(db.Date, nullable=False)
+    descripcion = db.Column(db.String(255), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)  # ingreso | egreso
+    moneda = db.Column(db.String(3), default='CLP', nullable=False)
+    estado_conciliacion = db.Column(db.String(20), default='pendiente', nullable=False)
+    movimiento_id = db.Column(db.Integer, db.ForeignKey('movimientos.id'), nullable=True)
+    synced_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    conexion = db.relationship('EmpresaBancoConexion', back_populates='extracto')
+    movimiento = db.relationship('Movimiento', foreign_keys=[movimiento_id])
+
+    __table_args__ = (
+        db.UniqueConstraint('empresa_id', 'fintoc_id', name='uq_banco_movimiento_empresa_fintoc'),
+    )
 
 
 class CentroCosto(db.Model):

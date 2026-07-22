@@ -22,7 +22,7 @@ TABLES = [
     "empresas", "valores_uf", "clientes", "cuentas", "cuentas_contables",
     "centros_costo", "proyectos", "propuestas", "trabajadores", "movimientos",
     "liquidaciones", "entregas_programadas", "tareas_entrega",
-    "empresa_sii_config", "empresa_banco_conexiones", "comprobantes", "lineas_comprobante",
+    "empresa_sii_config", "empresa_banco_conexiones", "banco_movimientos", "comprobantes", "lineas_comprobante",
 ]
 
 

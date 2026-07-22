@@ -17,7 +17,7 @@ from contabilidad import (
     PERIODOS_DASHBOARD,
 )
 from extensions import db
-from models import Cuenta, EmpresaBancoConexion, Movimiento, Proyecto, ValorUF
+from models import Cuenta, EmpresaBancoConexion, BancoMovimiento, Movimiento, Proyecto, ValorUF
 from sii_integration import SIIIntegrationError
 from banco_integration import BancoIntegrationError, mensaje_error_red_fintoc
 
@@ -249,20 +249,53 @@ def get_finanzas_resumen():
             recalcular_proyecto(p, movimientos)
         db.session.commit()
         kpis = calcular_kpis(cuentas, proyectos, movimientos)
-        cuentas_banco = _obtener_cuentas_banco_empresa(eid)
+        conexiones = EmpresaBancoConexion.query.filter_by(empresa_id=eid, activa=True).order_by(
+            EmpresaBancoConexion.id,
+        ).all()
         saldos_banco = []
         saldo_total = 0.0
-        for cuenta_banco in cuentas_banco:
-            saldo = calcular_balance_cuenta(
-                cuenta_banco.id, movimientos, cuenta_banco.saldo_inicial or 0.0,
-            )
-            saldos_banco.append({'cuenta_id': cuenta_banco.id, 'nombre': cuenta_banco.nombre, 'saldo': saldo})
+        for conn in conexiones:
+            saldo = conn.saldo_disponible
+            if saldo is None:
+                saldo = conn.saldo_contable
+            if saldo is None and conn.cuenta_contable_id:
+                cuenta_banco = next((c for c in cuentas if c.id == conn.cuenta_contable_id), None)
+                if cuenta_banco:
+                    saldo = calcular_balance_cuenta(
+                        cuenta_banco.id, movimientos, cuenta_banco.saldo_inicial or 0.0,
+                    )
+            saldo = float(saldo or 0.0)
+            saldos_banco.append({
+                'cuenta_id': conn.cuenta_contable_id,
+                'banco_id': conn.id,
+                'nombre': conn.nombre,
+                'saldo': saldo,
+                'saldo_disponible': conn.saldo_disponible,
+                'saldo_contable': conn.saldo_contable,
+                'saldo_limite': conn.saldo_limite,
+                'fuente': 'fintoc' if conn.saldo_actualizado_at else 'contable',
+            })
             saldo_total += saldo
+        if not saldos_banco:
+            cuentas_banco = _obtener_cuentas_banco_empresa(eid)
+            for cuenta_banco in cuentas_banco:
+                saldo = calcular_balance_cuenta(
+                    cuenta_banco.id, movimientos, cuenta_banco.saldo_inicial or 0.0,
+                )
+                saldos_banco.append({
+                    'cuenta_id': cuenta_banco.id,
+                    'nombre': cuenta_banco.nombre,
+                    'saldo': saldo,
+                    'fuente': 'contable',
+                })
+                saldo_total += saldo
         return jsonify({
             **kpis,
             'saldo_banco_santander': saldo_total,
             'saldo_bancos_total': saldo_total,
-            'cuenta_banco': cuentas_banco[0].nombre if cuentas_banco else '',
+            'cuenta_banco': conexiones[0].nombre if conexiones else (
+                saldos_banco[0]['nombre'] if saldos_banco else ''
+            ),
             'saldos_bancos': saldos_banco,
         })
     except Exception as e:
@@ -298,7 +331,6 @@ def sincronizar_banco():
                 return jsonify({'error': 'No hay conexiones bancarias activas. Agregue una en Bancos.'}), 400
         resultado = _sincronizar_conexion_banco(conn, eid)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
         return jsonify(resultado)
     except BancoIntegrationError as e:
         db.session.rollback()
@@ -338,7 +370,6 @@ def sincronizar_todos_bancos():
                     'insertados': 0,
                 })
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
         return jsonify({
             'mensaje': f'Sincronización completada ({len(conexiones)} cuenta(s))',
             'insertados_total': total_insertados,
@@ -362,7 +393,6 @@ def sincronizar_banco_id(banco_id):
         conn = EmpresaBancoConexion.query.filter_by(id=banco_id, empresa_id=eid).first_or_404()
         resultado = _sincronizar_conexion_banco(conn, eid)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
         return jsonify(resultado)
     except BancoIntegrationError as e:
         db.session.rollback()
@@ -377,29 +407,21 @@ def sincronizar_banco_id(banco_id):
 
 @bp.route('/api/banco/movimientos', methods=['GET'])
 def listar_movimientos_banco():
-    """Últimos movimientos de todas las cuentas bancarias vinculadas."""
+    """Últimos movimientos del extracto Fintoc (banco_movimientos)."""
     try:
         eid, err = _requiere_empresa()
         if err:
             return err
-        cuentas_banco = _obtener_cuentas_banco_empresa(eid)
-        cuenta_ids = [c.id for c in cuentas_banco]
         limite = request.args.get('limite', 50, type=int)
         banco_id = request.args.get('banco_id', type=int)
+        query = BancoMovimiento.query.filter_by(empresa_id=eid)
         if banco_id:
             conn = EmpresaBancoConexion.query.filter_by(id=banco_id, empresa_id=eid).first_or_404()
-            if conn.cuenta_contable_id:
-                cuenta_ids = [conn.cuenta_contable_id]
-        query = Movimiento.query.filter(
-            Movimiento.empresa_id == eid,
-            db.or_(
-                Movimiento.cta_origen_id.in_(cuenta_ids),
-                Movimiento.cta_destino_id.in_(cuenta_ids),
-            ),
-        ).order_by(Movimiento.fecha_movimiento.desc(), Movimiento.id.desc())
+            query = query.filter_by(conexion_id=conn.id)
+        query = query.order_by(BancoMovimiento.fecha.desc(), BancoMovimiento.id.desc())
         if limite > 0:
             query = query.limit(limite)
-        return jsonify([_movimiento_a_dict(m) for m in query.all()])
+        return jsonify([_banco_movimiento_a_dict(m) for m in query.all()])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
