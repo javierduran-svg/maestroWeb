@@ -1147,8 +1147,41 @@
         td.status-pago-otro,
         .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
         td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
+        #tabla-dashboard-ep-grid {
+            width: max-content;
+            max-width: 100%;
+            table-layout: auto;
+        }
+        #tabla-dashboard-ep-grid th,
+        #tabla-dashboard-ep-grid td {
+            width: 1%;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        #tabla-dashboard-ep-grid th.ep-track-col-proyecto,
+        #tabla-dashboard-ep-grid td.ep-track-col-proyecto {
+            width: auto;
+            max-width: 16rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #tabla-dashboard-ep-grid .mov-filtro,
+        #tabla-dashboard-ep-grid .mov-filtro.form-select {
+            border: none;
+            box-shadow: none;
+            background: transparent;
+            border-radius: 0;
+            min-width: 0;
+            width: 100%;
+        }
+        #tabla-dashboard-ep-grid .mov-filtro:focus,
+        #tabla-dashboard-ep-grid .mov-filtro.form-select:focus {
+            background: #fff;
+            box-shadow: inset 0 0 0 1px var(--teal-green);
+            outline: none;
+        }
         #tabla-dashboard-ep-grid tbody tr.ep-tracking-nuevo-proyecto td { border-top: 2px solid #dee2e6; }
-        #tabla-dashboard-ep-grid tbody tr td:first-child { font-weight: 600; color: var(--teal-green); }
+        #tabla-dashboard-ep-grid tbody tr td.ep-track-col-proyecto { font-weight: 600; color: var(--teal-green); }
         .mov-sel-hint { font-size: 0.75rem; color: #868e96; }
         .table-proyectos tbody tr.proyecto-row { cursor: pointer; }
         .table-proyectos tbody tr.proyecto-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
@@ -2001,20 +2034,37 @@
                             <h5 class="mb-0">Seguimiento de Estados de Pago</h5>
                             <small class="text-muted">EP ya enviados por proyecto — facturado, cedido, pagado…</small>
                         </div>
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <small class="text-muted" id="epTrackContador"></small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosEpTrack()">Limpiar filtros</button>
+                        </div>
                     </div>
                     <div class="table-responsive tabla-scroll-wrap p-0">
                         <table id="tabla-dashboard-ep-grid" class="table table-hover table-panel table-compact mb-0">
-                            <thead><tr>
-                                <th>Proyecto</th>
-                                <th>N° EP</th>
-                                <th>Estado</th>
-                                <th class="text-end">UF</th>
-                                <th class="text-end">Valor UF</th>
-                                <th class="text-end">Monto</th>
-                                <th>Fecha envío</th>
-                                <th>Facturación</th>
-                                <th>Pago / cesión</th>
-                            </tr></thead>
+                            <thead>
+                                <tr>
+                                    <th class="mov-th-sort ep-track-col-proyecto" data-col="proyecto" onclick="ordenarEpTrack('proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="numero_ep" onclick="ordenarEpTrack('numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="status_pago" onclick="ordenarEpTrack('status_pago')">Estado <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarEpTrack('monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="valor_uf" onclick="ordenarEpTrack('valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="monto" onclick="ordenarEpTrack('monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarEpTrack('fecha_movimiento')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_facturacion" onclick="ordenarEpTrack('fecha_facturacion')">Facturación <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_estado_pago" onclick="ordenarEpTrack('fecha_estado_pago')">Pago / cesión <i class="fa-solid fa-sort sort-icon"></i></th>
+                                </tr>
+                                <tr class="mov-filtros">
+                                    <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpTrackProyecto" onchange="renderSeguimientoEstadosPago()"><option value="">Todos</option></select></th>
+                                    <th><input type="text" class="form-control mov-filtro" id="filtroEpTrackNumero" placeholder="N°" oninput="debounceRenderEpTrack()"></th>
+                                    <th><select class="form-select mov-filtro" id="filtroEpTrackEstado" onchange="renderSeguimientoEstadosPago()"><option value="">Todos</option></select></th>
+                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackUf" placeholder="UF" oninput="debounceRenderEpTrack()"></th>
+                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackValorUf" placeholder="Valor" oninput="debounceRenderEpTrack()"></th>
+                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackMonto" placeholder="Monto" oninput="debounceRenderEpTrack()"></th>
+                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaEnvio" placeholder="dd-mm-aaaa" oninput="debounceRenderEpTrack()"></th>
+                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaFact" placeholder="dd-mm-aaaa" oninput="debounceRenderEpTrack()"></th>
+                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaPago" placeholder="dd-mm-aaaa" oninput="debounceRenderEpTrack()"></th>
+                                </tr>
+                            </thead>
                             <tbody id="tabla-dashboard-ep-body"><tr><td colspan="9" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
                         </table>
                     </div>
@@ -4923,6 +4973,11 @@
         await cargarCalendarioContable();
     }
 
+    let _epTrackCache = [];
+    let _epTrackOrdenCol = 'proyecto';
+    let _epTrackOrdenDir = 'asc';
+    let _epTrackFilterTimer = null;
+
     async function cargarSeguimientoEstadosPago() {
         const tbody = document.getElementById('tabla-dashboard-ep-body');
         if (!tbody) return;
@@ -4934,12 +4989,121 @@
             const res = await apiFetch(url);
             if (res.ok) filas = await res.json();
         } catch (e) { /* deja tabla vacía */ }
-        if (!Array.isArray(filas) || !filas.length) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Sin estados de pago enviados en el periodo</td></tr>';
+        _epTrackCache = Array.isArray(filas) ? filas : [];
+        poblarFiltrosEpTrackSelects();
+        renderSeguimientoEstadosPago();
+    }
+
+    function poblarFiltrosEpTrackSelects() {
+        const proySel = document.getElementById('filtroEpTrackProyecto');
+        const estadoSel = document.getElementById('filtroEpTrackEstado');
+        if (!proySel || !estadoSel) return;
+        const vProy = proySel.value;
+        const vEstado = estadoSel.value;
+        const proyectos = [...new Set(_epTrackCache.map(f => f.proyecto || 'Sin proyecto'))]
+            .sort((a, b) => a.localeCompare(b, 'es'));
+        proySel.innerHTML = '<option value="">Todos</option>'
+            + proyectos.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+        const estadosBase = (_statusPagoCache || []).filter(s => s && s !== 'Por enviar');
+        const estadosData = [...new Set(_epTrackCache.map(f => f.status_pago).filter(Boolean))];
+        const estados = [...new Set([...estadosBase, ...estadosData])]
+            .sort((a, b) => a.localeCompare(b, 'es'));
+        estadoSel.innerHTML = '<option value="">Todos</option>'
+            + estados.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+        if ([...proySel.options].some(o => o.value === vProy)) proySel.value = vProy;
+        if ([...estadoSel.options].some(o => o.value === vEstado)) estadoSel.value = vEstado;
+    }
+
+    function leerFiltrosEpTrack() {
+        return {
+            proyecto: document.getElementById('filtroEpTrackProyecto')?.value || '',
+            numero_ep: document.getElementById('filtroEpTrackNumero')?.value.trim() || '',
+            status_pago: document.getElementById('filtroEpTrackEstado')?.value || '',
+            monto_uf: document.getElementById('filtroEpTrackUf')?.value.trim() || '',
+            valor_uf: document.getElementById('filtroEpTrackValorUf')?.value.trim() || '',
+            monto: document.getElementById('filtroEpTrackMonto')?.value.trim() || '',
+            fecha_movimiento: parseFechaMov(document.getElementById('filtroEpTrackFechaEnvio')?.value || ''),
+            fecha_facturacion: parseFechaMov(document.getElementById('filtroEpTrackFechaFact')?.value || ''),
+            fecha_estado_pago: parseFechaMov(document.getElementById('filtroEpTrackFechaPago')?.value || ''),
+        };
+    }
+
+    function epTrackCoincideFiltro(f, filtro) {
+        if (filtro.proyecto && (f.proyecto || 'Sin proyecto') !== filtro.proyecto) return false;
+        if (filtro.status_pago && (f.status_pago || '') !== filtro.status_pago) return false;
+        if (filtro.numero_ep) {
+            const n = f.numero_ep != null ? String(f.numero_ep) : '';
+            if (!n.includes(filtro.numero_ep)) return false;
+        }
+        if (filtro.monto_uf) {
+            const needle = filtro.monto_uf.replace(/\./g, '').replace(',', '.');
+            const txt = f.monto_uf != null ? String(f.monto_uf) : '';
+            if (!txt.includes(needle) && !txt.includes(filtro.monto_uf)) return false;
+        }
+        if (filtro.valor_uf) {
+            const needle = filtro.valor_uf.replace(/\./g, '').replace(',', '.');
+            const txt = f.valor_uf != null ? String(f.valor_uf) : '';
+            if (!txt.includes(needle) && !txt.includes(filtro.valor_uf)) return false;
+        }
+        if (filtro.monto) {
+            const needle = filtro.monto.replace(/\./g, '').replace(',', '');
+            const txt = String(Math.round(Number(f.monto) || 0));
+            const fmt = (fmtMontoMov(f.monto) || '').replace(/\./g, '').replace(/[^\d]/g, '');
+            if (!txt.includes(needle) && !fmt.includes(needle)) return false;
+        }
+        if (filtro.fecha_movimiento && (f.fecha_movimiento || '') !== filtro.fecha_movimiento) return false;
+        if (filtro.fecha_facturacion && (f.fecha_facturacion || '') !== filtro.fecha_facturacion) return false;
+        if (filtro.fecha_estado_pago && (f.fecha_estado_pago || '') !== filtro.fecha_estado_pago) return false;
+        return true;
+    }
+
+    function getterEpTrack(f, col) {
+        if (col === 'proyecto') return (f.proyecto || 'Sin proyecto').toLowerCase();
+        if (col === 'numero_ep') return f.numero_ep != null ? Number(f.numero_ep) : -Infinity;
+        if (col === 'monto' || col === 'monto_uf' || col === 'valor_uf') return Number(f[col]) || 0;
+        if (col === 'status_pago') return f.status_pago || '';
+        return f[col] || '';
+    }
+
+    function compararEpTrack(a, b, col, asc) {
+        const va = getterEpTrack(a, col);
+        const vb = getterEpTrack(b, col);
+        let cmp = 0;
+        if (typeof va === 'number' && typeof vb === 'number') cmp = va - vb;
+        else cmp = String(va).localeCompare(String(vb), 'es', { numeric: true });
+        if (cmp === 0 && col !== 'proyecto') {
+            cmp = String(a.proyecto || '').localeCompare(String(b.proyecto || ''), 'es');
+        }
+        if (cmp === 0 && col !== 'numero_ep') {
+            cmp = (Number(b.numero_ep) || 0) - (Number(a.numero_ep) || 0);
+        }
+        return asc ? cmp : -cmp;
+    }
+
+    function renderSeguimientoEstadosPago() {
+        const tbody = document.getElementById('tabla-dashboard-ep-body');
+        const contador = document.getElementById('epTrackContador');
+        if (!tbody) return;
+        const filtro = leerFiltrosEpTrack();
+        const filtradas = _epTrackCache.filter(f => epTrackCoincideFiltro(f, filtro));
+        const asc = _epTrackOrdenDir === 'asc';
+        filtradas.sort((a, b) => compararEpTrack(a, b, _epTrackOrdenCol, asc));
+        if (contador) {
+            contador.textContent = !_epTrackCache.length
+                ? ''
+                : filtradas.length === _epTrackCache.length
+                    ? `${_epTrackCache.length} EP`
+                    : `${filtradas.length} de ${_epTrackCache.length}`;
+        }
+        actualizarIconosOrdenEpTrack();
+        if (!filtradas.length) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">${
+                _epTrackCache.length ? 'Sin coincidencias con los filtros' : 'Sin estados de pago enviados en el periodo'
+            }</td></tr>`;
             return;
         }
         let proyectoAnterior = null;
-        tbody.innerHTML = filas.map(f => {
+        tbody.innerHTML = filtradas.map(f => {
             const proyecto = f.proyecto || 'Sin proyecto';
             const nuevoGrupo = proyecto !== proyectoAnterior;
             proyectoAnterior = proyecto;
@@ -4950,17 +5114,53 @@
                 ? Number(f.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '—';
             return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
-                <td>${esc(proyecto)}</td>
+                <td class="ep-track-col-proyecto" title="${esc(proyecto)}">${esc(proyecto)}</td>
                 <td>${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
                 <td>${badgeStatusPago(f.status_pago)}</td>
-                <td class="text-end text-nowrap">${esc(ufTxt)}</td>
-                <td class="text-end text-nowrap">${esc(valorUfTxt)}</td>
-                <td class="text-end text-nowrap">${fmtMontoMov(f.monto)}</td>
-                <td class="text-nowrap">${fmtFechaMov(f.fecha_movimiento) || '—'}</td>
-                <td class="text-nowrap">${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
-                <td class="text-nowrap">${fmtFechaMov(f.fecha_estado_pago) || '—'}</td>
+                <td class="text-end">${esc(ufTxt)}</td>
+                <td class="text-end">${esc(valorUfTxt)}</td>
+                <td class="text-end">${fmtMontoMov(f.monto)}</td>
+                <td>${fmtFechaMov(f.fecha_movimiento) || '—'}</td>
+                <td>${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
+                <td>${fmtFechaMov(f.fecha_estado_pago) || '—'}</td>
             </tr>`;
         }).join('');
+    }
+
+    function debounceRenderEpTrack() {
+        clearTimeout(_epTrackFilterTimer);
+        _epTrackFilterTimer = setTimeout(() => renderSeguimientoEstadosPago(), 250);
+    }
+
+    function ordenarEpTrack(col) {
+        if (_epTrackOrdenCol === col) _epTrackOrdenDir = _epTrackOrdenDir === 'asc' ? 'desc' : 'asc';
+        else { _epTrackOrdenCol = col; _epTrackOrdenDir = 'asc'; }
+        renderSeguimientoEstadosPago();
+    }
+
+    function actualizarIconosOrdenEpTrack() {
+        document.querySelectorAll('#tabla-dashboard-ep-grid .mov-th-sort').forEach(th => {
+            const col = th.dataset.col;
+            const icon = th.querySelector('.sort-icon');
+            th.classList.toggle('active', col === _epTrackOrdenCol);
+            if (!icon) return;
+            icon.className = 'sort-icon fa-solid ' + (col === _epTrackOrdenCol
+                ? (_epTrackOrdenDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down')
+                : 'fa-sort');
+        });
+    }
+
+    function limpiarFiltrosEpTrack() {
+        ['filtroEpTrackNumero', 'filtroEpTrackUf', 'filtroEpTrackValorUf', 'filtroEpTrackMonto',
+            'filtroEpTrackFechaEnvio', 'filtroEpTrackFechaFact', 'filtroEpTrackFechaPago'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        ['filtroEpTrackProyecto', 'filtroEpTrackEstado'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        renderSeguimientoEstadosPago();
     }
 
     function iconoStatusGestion(status) {
