@@ -1910,7 +1910,7 @@
                             <div class="panel-header">
                                 <div>
                                     <h5 class="mb-0">Alertas</h5>
-                                    <small class="text-muted">Entregas, tareas y cobros próximos</small>
+                                    <small class="text-muted">Entregas y tareas</small>
                                 </div>
                             </div>
                             <div class="p-3" id="gestion-panel-alertas" style="max-height:420px;overflow-y:auto"></div>
@@ -1923,7 +1923,7 @@
                             <div class="panel-header flex-wrap gap-2">
                                 <div>
                                     <h5 class="mb-0">Actividades</h5>
-                                    <small class="text-muted">Entregas, tareas y cobros</small>
+                                    <small class="text-muted">Entregas y tareas</small>
                                 </div>
                                 <div class="btn-group btn-group-sm ms-auto" role="group">
                                     <button type="button" class="btn btn-outline-secondary active" id="gestionActSemanaBtn" onclick="setGestionActividadVista('semana', this)">Semana</button>
@@ -2537,9 +2537,10 @@
                 <div class="px-3 pt-2">
                     <p class="small text-muted mb-0">
                         <i class="fa-solid fa-circle-info"></i>
-                        Configure cada banco con su Secret Key, link token y account id de
+                        Configure cada banco con su Secret Key y link token de
                         <a href="https://dashboard.fintoc.com" target="_blank" rel="noopener">dashboard.fintoc.com</a>.
-                        Asócielo a una cuenta contable de tipo banco. Sin credenciales se usan movimientos simulados.
+                        El Account ID es opcional: si falta o no pertenece al Link, se elige
+                        automáticamente la cuenta corriente. Asócielo a una cuenta contable de tipo banco.
                     </p>
                 </div>
                 <div id="bancoSyncMsg" class="px-3 pt-2 small"></div>
@@ -2929,7 +2930,7 @@
             <div class="mb-3"><label class="form-label small fw-bold">Nombre</label><input type="text" class="form-control" id="bancoNombre" placeholder="Ej. Santander Cta Cte" required></div>
             <div class="mb-3"><label class="form-label small fw-bold">Fintoc Secret Key</label><input type="password" class="form-control" id="bancoApiKey" placeholder="sk_test_… o sk_live_…" autocomplete="off"></div>
             <div class="mb-3"><label class="form-label small fw-bold">Link token</label><input type="password" class="form-control" id="bancoLinkToken" placeholder="Dejar en blanco para mantener al editar" autocomplete="off"></div>
-            <div class="mb-3"><label class="form-label small fw-bold">Account ID</label><input type="text" class="form-control" id="bancoAccountId" placeholder="acc_…"></div>
+            <div class="mb-3"><label class="form-label small fw-bold">Account ID <span class="text-muted fw-normal">(opcional)</span></label><input type="text" class="form-control" id="bancoAccountId" placeholder="acc_… — vacío = auto desde el Link"></div>
             <div class="mb-3"><label class="form-label small fw-bold">Cuenta contable</label><select class="form-select" id="bancoCuentaContable"></select></div>
             <div class="form-check"><input class="form-check-input" type="checkbox" id="bancoActiva" checked><label class="form-check-label small" for="bancoActiva">Conexión activa</label></div>
             <div id="bancoModalMsg" class="small text-danger mt-2 d-none"></div>

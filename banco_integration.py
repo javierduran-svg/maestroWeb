@@ -129,7 +129,8 @@ class FintocClient:
         self.timeout = timeout
 
     def tiene_credenciales(self) -> bool:
-        return bool(self.api_key and self.account_id and self.link_token)
+        # account_id es opcional: se puede resolver desde el Link (GET /accounts).
+        return bool(self.api_key and self.link_token)
 
     def _mensaje_credenciales_faltantes(self) -> str:
         faltan = []
@@ -139,14 +140,64 @@ class FintocClient:
             faltan.append(
                 'FINTOC_LINK_TOKEN (token del Link; se muestra una sola vez al crearlo en el dashboard)'
             )
-        if not self.account_id.strip():
-            faltan.append('FINTOC_ACCOUNT_ID (id acc_… de la cuenta corriente)')
         if faltan:
             return 'Modo simulación: faltan ' + ', '.join(faltan) + ' en la conexión bancaria'
         return (
-            'Modo simulación: configure FINTOC_API_KEY, FINTOC_LINK_TOKEN '
-            'y FINTOC_ACCOUNT_ID en la conexión bancaria'
+            'Modo simulación: configure FINTOC_API_KEY y FINTOC_LINK_TOKEN '
+            'en la conexión bancaria'
         )
+
+    def _headers(self) -> dict[str, str]:
+        return {'Authorization': self.api_key, 'Accept': 'application/json'}
+
+    def listar_cuentas(self) -> list[dict]:
+        """Lista cuentas del Link (GET /v1/accounts?link_token=…)."""
+        if not self.api_key or not self.link_token:
+            raise BancoIntegrationError(
+                'Se requieren Secret Key y link_token para listar cuentas Fintoc.'
+            )
+        try:
+            resp = requests.get(
+                f'{self.base_url}/accounts',
+                headers=self._headers(),
+                params={'link_token': self.link_token},
+                timeout=self.timeout,
+            )
+        except requests.RequestException as e:
+            msg = mensaje_error_red_fintoc(e)
+            raise BancoIntegrationError(
+                msg or 'Error de red al listar cuentas Fintoc.'
+            ) from e
+        if not resp.ok:
+            raise BancoIntegrationError(self._format_fintoc_error(resp))
+        payload = resp.json()
+        if isinstance(payload, list):
+            return payload
+        if isinstance(payload, dict):
+            return payload.get('data') or payload.get('accounts') or []
+        return []
+
+    def resolver_account_id(self, prefer_type: str = 'checking_account') -> str:
+        """Elige account_id del Link: mantiene el configurado si existe; si no, la primera cuenta corriente."""
+        cuentas = self.listar_cuentas()
+        if not cuentas:
+            raise BancoIntegrationError(
+                'El Link de Fintoc no tiene cuentas asociadas. '
+                'Cree o simule un Link en dashboard.fintoc.com.'
+            )
+        ids = {str(c.get('id') or '') for c in cuentas}
+        if self.account_id and self.account_id in ids:
+            return self.account_id
+        preferidas = [
+            c for c in cuentas
+            if (c.get('type') or '').lower() == prefer_type
+        ]
+        elegida = preferidas[0] if preferidas else cuentas[0]
+        account_id = str(elegida.get('id') or '')
+        if not account_id:
+            raise BancoIntegrationError('Fintoc devolvió cuentas sin id válido.')
+        self.account_id = account_id
+        return account_id
 
     @classmethod
     def _format_fintoc_error(cls, resp: requests.Response) -> str:
@@ -173,17 +224,38 @@ class FintocClient:
             return f'Error al consultar Fintoc ({status}): {text[:500]}'
         return f'Error al consultar Fintoc ({status}): respuesta vacía'
 
-    def obtener_movimientos(self) -> tuple[list[dict], bool, str]:
+    def obtener_movimientos(
+        self,
+        since: str | date | None = None,
+    ) -> tuple[list[dict], bool, str]:
         """
         Devuelve (movimientos_normalizados, es_mock, mensaje).
         Sin credenciales usa datos de prueba; con credenciales consulta la API real.
+        `since` (YYYY-MM-DD) limita por post_date según la API de Fintoc.
         """
         if not self.tiene_credenciales():
             return [dict(m) for m in MOCK_MOVIMIENTOS], True, self._mensaje_credenciales_faltantes()
 
+        since_iso = self._normalize_since(since)
         try:
-            items = self._fetch_all_movements()
-            return [self._normalizar_movimiento(m) for m in items], False, 'Movimientos obtenidos desde Fintoc'
+            if not self.account_id:
+                self.resolver_account_id()
+            try:
+                items = self._fetch_all_movements(since=since_iso)
+            except BancoIntegrationError as e:
+                # Account id obsoleto / de otro Link → re-resolver desde el Link actual.
+                if 'No such account' in str(e) or 'missing_resource' in str(e).lower() or '(404)' in str(e):
+                    self.account_id = ''
+                    self.resolver_account_id()
+                    items = self._fetch_all_movements(since=since_iso)
+                else:
+                    raise
+            extra = f' desde {since_iso}' if since_iso else ''
+            return (
+                [self._normalizar_movimiento(m) for m in items],
+                False,
+                f'Movimientos obtenidos desde Fintoc ({self.account_id}{extra})',
+            )
         except BancoIntegrationError:
             raise
         except requests.RequestException as e:
@@ -194,23 +266,36 @@ class FintocClient:
         except (KeyError, TypeError, ValueError) as e:
             raise BancoIntegrationError(f'Error al procesar movimientos Fintoc: {e}') from e
 
-    def _fetch_all_movements(self) -> list[dict]:
+    @staticmethod
+    def _normalize_since(since: str | date | None) -> str | None:
+        if since is None or since == '':
+            return None
+        if isinstance(since, date):
+            return since.isoformat()
+        texto = str(since).strip()
+        return texto[:10] if texto else None
+
+    def _fetch_all_movements(self, since: str | None = None) -> list[dict]:
         """Pagina GET /accounts/{id}/movements (máx. 300 por página según docs Fintoc)."""
+        if not self.account_id:
+            raise BancoIntegrationError('Falta account_id para consultar movimientos Fintoc.')
         url = f'{self.base_url}/accounts/{self.account_id}/movements'
-        headers = {'Authorization': self.api_key, 'Accept': 'application/json'}
         per_page = 300
         page = 1
         all_items: list[dict] = []
 
         while True:
+            params = {
+                'link_token': self.link_token,
+                'per_page': str(per_page),
+                'page': page,
+            }
+            if since:
+                params['since'] = since
             resp = requests.get(
                 url,
-                headers=headers,
-                params={
-                    'link_token': self.link_token,
-                    'per_page': str(per_page),
-                    'page': page,
-                },
+                headers=self._headers(),
+                params=params,
                 timeout=self.timeout,
             )
             if not resp.ok:

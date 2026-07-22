@@ -635,7 +635,15 @@ def _sincronizar_conexion_banco(conn: EmpresaBancoConexion, empresa_id: int) -> 
         cuenta_banco = _obtener_cuenta_banco_santander(empresa_id)
         conn.cuenta_contable_id = cuenta_banco.id
     cliente = _fintoc_client_for_conexion(conn)
-    movimientos_ext, es_mock, mensaje = cliente.obtener_movimientos()
+    # Ventana: desde última sync (con margen) o últimos 90 días en la primera sync.
+    if conn.ultima_sincronizacion:
+        since = (conn.ultima_sincronizacion.date() - timedelta(days=3)).isoformat()
+    else:
+        since = (date.today() - timedelta(days=90)).isoformat()
+    movimientos_ext, es_mock, mensaje = cliente.obtener_movimientos(since=since)
+    # Persistir account_id resuelto (p. ej. tras cambiar de Link en Fintoc).
+    if cliente.account_id and cliente.account_id != (conn.fintoc_account_id or ''):
+        conn.fintoc_account_id = cliente.account_id
     insertados = 0
     omitidos = 0
     errores = []

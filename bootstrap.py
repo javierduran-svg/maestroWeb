@@ -661,6 +661,12 @@ def ensure_schema() -> None:
         )
         _migrar_schema_legacy()
     else:
+        # Aplica migraciones pendientes (p. ej. tras pull) para no fallar en runtime.
+        try:
+            from flask_migrate import upgrade as alembic_upgrade
+            alembic_upgrade()
+        except Exception as exc:
+            logger.warning('No se pudieron aplicar migraciones Alembic automáticamente: %s', exc)
         if not inspect(db.engine).has_table('empresas'):
             logger.warning(
                 'alembic_version presente pero el esquema falta; ejecute `flask db upgrade`. '
