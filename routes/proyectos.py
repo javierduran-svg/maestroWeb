@@ -1,6 +1,7 @@
 from datetime import date
 
 from flask import Blueprint, current_app, jsonify, request, send_file
+from sqlalchemy.exc import IntegrityError
 import io
 
 from bootstrap import ESTADOS_PROPUESTA
@@ -50,27 +51,20 @@ def manejar_clientes():
     if err:
         return err
     if request.method == 'POST':
-        data = request.json
-        nuevo = Cliente(
-            empresa_id=eid,
-            razon_social=data['razon_social'],
-            rut=data['rut'],
-            comentarios=data.get('comentarios'),
-        )
+        campos, error = _validar_datos_cliente(request.json or {}, eid)
+        if error:
+            return jsonify({'error': error}), 400
+        nuevo = Cliente(empresa_id=eid, **campos)
         db.session.add(nuevo)
-        db.session.commit()
-        return jsonify({'id': nuevo.id, 'mensaje': 'Cliente creado'}), 201
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            return jsonify({'error': 'Ya existe un cliente con ese RUT'}), 400
+        return jsonify({'id': nuevo.id, 'mensaje': 'Cliente creado', 'cliente': _cliente_a_dict(nuevo)}), 201
 
-    return jsonify([
-        {
-            'id': c.id,
-            'razon_social': c.razon_social,
-            'rut': c.rut,
-            'comentarios': c.comentarios,
-            'num_proyectos': len(c.proyectos),
-        }
-        for c in Cliente.query.filter_by(empresa_id=eid).all()
-    ])
+    clientes = Cliente.query.filter_by(empresa_id=eid).order_by(Cliente.razon_social).all()
+    return jsonify([_cliente_a_dict(c) for c in clientes])
 
 
 @bp.route('/api/clientes/<int:cliente_id>', methods=['GET', 'PUT', 'DELETE'])
@@ -81,13 +75,7 @@ def manejar_cliente(cliente_id):
     cliente = Cliente.query.filter_by(empresa_id=eid, id=cliente_id).first_or_404()
 
     if request.method == 'GET':
-        return jsonify({
-            'id': cliente.id,
-            'razon_social': cliente.razon_social,
-            'rut': cliente.rut,
-            'comentarios': cliente.comentarios,
-            'num_proyectos': len(cliente.proyectos),
-        })
+        return jsonify(_cliente_a_dict(cliente))
 
     if request.method == 'DELETE':
         if cliente.proyectos:
@@ -96,12 +84,18 @@ def manejar_cliente(cliente_id):
         db.session.commit()
         return jsonify({'mensaje': 'Cliente eliminado'})
 
-    data = request.json
-    cliente.razon_social = data.get('razon_social', cliente.razon_social)[:150]
-    cliente.rut = data.get('rut', cliente.rut)[:20]
-    cliente.comentarios = data.get('comentarios', cliente.comentarios)
-    db.session.commit()
-    return jsonify({'mensaje': 'Cliente actualizado', 'id': cliente.id})
+    campos, error = _validar_datos_cliente(request.json or {}, eid, cliente_id=cliente_id)
+    if error:
+        return jsonify({'error': error}), 400
+    cliente.razon_social = campos['razon_social']
+    cliente.rut = campos['rut']
+    cliente.comentarios = campos['comentarios']
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Ya existe un cliente con ese RUT'}), 400
+    return jsonify({'mensaje': 'Cliente actualizado', 'id': cliente.id, 'cliente': _cliente_a_dict(cliente)})
 
 
 @bp.route('/api/proyectos', methods=['GET', 'POST'])

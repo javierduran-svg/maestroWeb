@@ -114,7 +114,7 @@ _cargar_env_local()
 #   set FLASK_APP=app:app
 
 SERVICIOS = [
-    'CEV', 'CES', 'RT', 'Eficiencia energética', 'TDRe', 'VIT',
+    'CEV', 'CES', 'RT', 'Eficiencia energética', 'Simulación energética', 'TDRe', 'VIT',
     'LEED', 'EDGE', 'Certificación Energética', 'Consultoría',
     'CON EE Y CAI', 'ASESOR CER CES', 'ENTIDAD EVALUADORA CER CES',
     'CEV CALIFICACION', 'CALIFICACION',
@@ -2001,6 +2001,51 @@ def _ordenar_movimientos(query, sort: str | None, order: str | None):
     return query.order_by(col.desc() if descending else col.asc())
 
 
+def _normalizar_rut_cliente(rut: str | None) -> str:
+    """RUT sin puntos/espacios, DV en mayúscula (compatible con importación Excel)."""
+    return (rut or '').strip().replace('.', '').replace(' ', '').upper()[:20]
+
+
+def _cliente_a_dict(c: Cliente) -> dict:
+    return {
+        'id': c.id,
+        'razon_social': c.razon_social,
+        'rut': c.rut,
+        'comentarios': c.comentarios,
+        'num_proyectos': len(c.proyectos),
+    }
+
+
+def _validar_datos_cliente(
+    data: dict,
+    empresa_id: int,
+    cliente_id: int | None = None,
+) -> tuple[dict | None, str | None]:
+    """Valida payload de cliente; devuelve (campos_normalizados, error)."""
+    if not isinstance(data, dict):
+        return None, 'JSON inválido'
+    razon = (data.get('razon_social') or '').strip()
+    if not razon:
+        return None, 'Razón social requerida'
+    rut = _normalizar_rut_cliente(data.get('rut'))
+    if not rut:
+        return None, 'RUT requerido'
+    comentarios = (data.get('comentarios') or '').strip() or None
+
+    existentes = Cliente.query.filter_by(empresa_id=empresa_id).all()
+    for otro in existentes:
+        if cliente_id and otro.id == cliente_id:
+            continue
+        if _normalizar_rut_cliente(otro.rut) == rut:
+            return None, f'Ya existe un cliente con el RUT {otro.rut}'
+
+    return {
+        'razon_social': razon[:150],
+        'rut': rut,
+        'comentarios': comentarios,
+    }, None
+
+
 def _validar_datos_proyecto(data: dict, empresa_id: int) -> tuple[dict | None, str | None]:
     if not data:
         return None, 'JSON inválido'
@@ -2819,6 +2864,9 @@ __all__ = [
     '_ultimo_dia_mes',
     '_usuario_sesion',
     '_validar_asignado_id_trabajador',
+    '_cliente_a_dict',
+    '_normalizar_rut_cliente',
+    '_validar_datos_cliente',
     '_validar_datos_cuenta',
     '_validar_datos_propuesta',
     '_validar_datos_proyecto',

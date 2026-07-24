@@ -25,6 +25,7 @@ SERVICIOS_PROPUESTA = [
     'Eficiencia energética',
     'PGSEE',
     'Simulación',
+    'Simulación energética',
     'Seguimiento en obra',
 ]
 

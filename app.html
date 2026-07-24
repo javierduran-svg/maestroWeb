@@ -2143,9 +2143,28 @@
                     <h5 class="mb-0">Clientes</h5>
                     <button class="btn btn-sm btn-teal" onclick="abrirClienteModal()">+ CLIENTE</button>
                 </div>
+                <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
+                    <small class="text-muted" id="cliContador">—</small>
+                    <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarFiltrosClientes()">Limpiar filtros</button>
+                </div>
                 <div class="table-responsive tabla-scroll-wrap">
                     <table id="tabla-clientes-grid" class="table table-hover table-panel table-compact mb-0">
-                        <thead><tr><th>Razón Social</th><th>RUT</th><th class="text-center">Proyectos</th><th>Comentarios</th><th class="text-end"></th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th class="mov-th-sort" data-col="razon_social" onclick="ordenarClientes('razon_social')">Razón Social <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort" data-col="rut" onclick="ordenarClientes('rut')">RUT <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort text-center" data-col="num_proyectos" onclick="ordenarClientes('num_proyectos')">Proyectos <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="mov-th-sort" data-col="comentarios" onclick="ordenarClientes('comentarios')">Comentarios <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th class="text-end"></th>
+                            </tr>
+                            <tr class="mov-filtros">
+                                <th><input type="text" class="form-control mov-filtro" id="filtroCliRazon" placeholder="Buscar…" oninput="debounceRenderClientes()"></th>
+                                <th><input type="text" class="form-control mov-filtro" id="filtroCliRut" placeholder="RUT" oninput="debounceRenderClientes()"></th>
+                                <th><input type="text" class="form-control mov-filtro text-center" id="filtroCliProyectos" placeholder="N°" oninput="debounceRenderClientes()"></th>
+                                <th><input type="text" class="form-control mov-filtro" id="filtroCliComent" placeholder="Buscar…" oninput="debounceRenderClientes()"></th>
+                                <th></th>
+                            </tr>
+                        </thead>
                         <tbody id="tabla-clientes"></tbody>
                     </table>
                 </div>
@@ -2944,11 +2963,12 @@
         <div class="modal-header"><h5 class="modal-title" id="tituloModalCliente">Nuevo Cliente</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
             <input type="hidden" id="cliId">
-            <div class="mb-3"><label class="form-label small fw-bold">Razón Social</label><input type="text" class="form-control" id="cliRazon" required></div>
-            <div class="mb-3"><label class="form-label small fw-bold">RUT</label><input type="text" class="form-control" id="cliRut" required></div>
+            <div class="mb-3"><label class="form-label small fw-bold">Razón Social</label><input type="text" class="form-control" id="cliRazon" required maxlength="150"></div>
+            <div class="mb-3"><label class="form-label small fw-bold">RUT</label><input type="text" class="form-control" id="cliRut" placeholder="76.123.456-7" required maxlength="20"></div>
             <div class="mb-3"><label class="form-label small fw-bold">Comentarios</label><textarea class="form-control" id="cliComent" rows="2"></textarea></div>
+            <div id="cliMsg" class="small text-danger d-none"></div>
         </div>
-        <div class="modal-footer border-0"><button class="btn btn-teal px-4" onclick="guardarCliente()">GUARDAR</button></div>
+        <div class="modal-footer border-0"><button type="button" class="btn btn-teal px-4" onclick="guardarCliente()">GUARDAR</button></div>
     </div></div>
 </div>
 
@@ -3403,6 +3423,10 @@
     let _propuestasCache = [];
     let _propOrdenCol = 'numero';
     let _propOrdenDir = 'desc';
+    let _clientesCache = [];
+    let _cliOrdenCol = 'razon_social';
+    let _cliOrdenDir = 'asc';
+    let _cliFilterTimer = null;
     let _propServiciosLista = [];
     let _propCalcConfig = null;
     let _propCalcFilas = [];
@@ -5832,9 +5856,87 @@
 
     async function listarClientes() {
         const res = await apiFetch('/api/clientes');
-        const clientes = res.ok ? normalizarListaApi(await res.json()) : [];
-        document.getElementById('tabla-clientes').innerHTML = clientes.length
-            ? clientes.map(c => `<tr>
+        _clientesCache = res.ok ? normalizarListaApi(await res.json()) : [];
+        renderClientes();
+    }
+
+    function debounceRenderClientes() {
+        clearTimeout(_cliFilterTimer);
+        _cliFilterTimer = setTimeout(renderClientes, 180);
+    }
+
+    function leerFiltrosClientes() {
+        return {
+            razon_social: (document.getElementById('filtroCliRazon')?.value || '').trim().toLowerCase(),
+            rut: (document.getElementById('filtroCliRut')?.value || '').trim().toLowerCase().replace(/\./g, ''),
+            num_proyectos: (document.getElementById('filtroCliProyectos')?.value || '').trim(),
+            comentarios: (document.getElementById('filtroCliComent')?.value || '').trim().toLowerCase(),
+        };
+    }
+
+    function clientePasaFiltro(c, f) {
+        if (f.razon_social && !(c.razon_social || '').toLowerCase().includes(f.razon_social)) return false;
+        if (f.rut && !(c.rut || '').toLowerCase().replace(/\./g, '').includes(f.rut)) return false;
+        if (f.num_proyectos && !String(c.num_proyectos ?? '').includes(f.num_proyectos)) return false;
+        if (f.comentarios && !(c.comentarios || '').toLowerCase().includes(f.comentarios)) return false;
+        return true;
+    }
+
+    function valorOrdenCliente(c, col) {
+        const map = {
+            razon_social: (c.razon_social || '').toLowerCase(),
+            rut: (c.rut || '').toLowerCase(),
+            num_proyectos: Number(c.num_proyectos) || 0,
+            comentarios: (c.comentarios || '').toLowerCase(),
+        };
+        return map[col] ?? '';
+    }
+
+    function ordenarClientes(col) {
+        if (_cliOrdenCol === col) _cliOrdenDir = _cliOrdenDir === 'asc' ? 'desc' : 'asc';
+        else { _cliOrdenCol = col; _cliOrdenDir = col === 'num_proyectos' ? 'desc' : 'asc'; }
+        document.querySelectorAll('#view-clientes .mov-th-sort').forEach(th => {
+            const icon = th.querySelector('.sort-icon');
+            if (!icon) return;
+            icon.className = 'fa-solid sort-icon ' + (th.dataset.col === col
+                ? (_cliOrdenDir === 'asc' ? 'fa-sort-up' : 'fa-sort-down')
+                : 'fa-sort');
+            th.classList.toggle('active', th.dataset.col === col);
+        });
+        renderClientes();
+    }
+
+    function limpiarFiltrosClientes() {
+        ['filtroCliRazon', 'filtroCliRut', 'filtroCliProyectos', 'filtroCliComent'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        renderClientes();
+    }
+
+    function renderClientes() {
+        const f = leerFiltrosClientes();
+        const col = _cliOrdenCol;
+        const dir = _cliOrdenDir === 'asc' ? 1 : -1;
+        const lista = _clientesCache
+            .filter(c => clientePasaFiltro(c, f))
+            .sort((a, b) => {
+                const va = valorOrdenCliente(a, col);
+                const vb = valorOrdenCliente(b, col);
+                if (va < vb) return -1 * dir;
+                if (va > vb) return 1 * dir;
+                return 0;
+            });
+        const contador = document.getElementById('cliContador');
+        if (contador) {
+            contador.textContent = lista.length === _clientesCache.length
+                ? `${lista.length} cliente${lista.length === 1 ? '' : 's'}`
+                : `${lista.length} de ${_clientesCache.length}`;
+        }
+        const tbody = document.getElementById('tabla-clientes');
+        if (!tbody) return;
+        tbody.innerHTML = lista.length
+            ? lista.map(c => `<tr>
                 <td class="fw-medium text-truncate" style="max-width:220px">${esc(c.razon_social)}</td>
                 <td class="text-nowrap">${esc(c.rut)}</td>
                 <td class="text-center"><span class="badge bg-light text-dark border" style="font-size:0.7rem">${c.num_proyectos}</span></td>
@@ -5855,28 +5957,54 @@
         document.getElementById('cliRazon').value = '';
         document.getElementById('cliRut').value = '';
         document.getElementById('cliComent').value = '';
+        const msg = document.getElementById('cliMsg');
+        if (msg) { msg.textContent = ''; msg.classList.add('d-none'); }
         if (id) {
             apiFetch(`/api/clientes/${id}`).then(r => r.json()).then(c => {
-                document.getElementById('cliRazon').value = c.razon_social;
-                document.getElementById('cliRut').value = c.rut;
+                document.getElementById('cliRazon').value = c.razon_social || '';
+                document.getElementById('cliRut').value = c.rut || '';
                 document.getElementById('cliComent').value = c.comentarios || '';
             });
         }
-        new bootstrap.Modal(document.getElementById('modalCliente')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCliente')).show();
     }
 
     async function guardarCliente() {
+        const msg = document.getElementById('cliMsg');
+        if (msg) { msg.textContent = ''; msg.classList.add('d-none'); }
         const id = document.getElementById('cliId').value;
+        const razon = document.getElementById('cliRazon').value.trim();
+        const rutRaw = document.getElementById('cliRut').value.trim();
+        const rut = (normalizarRutChileno(rutRaw) || rutRaw).replace(/\./g, '').replace(/\s/g, '').toUpperCase();
+        if (!razon) {
+            if (msg) { msg.textContent = 'La razón social es obligatoria'; msg.classList.remove('d-none'); }
+            else alert('La razón social es obligatoria');
+            return;
+        }
+        if (!rut) {
+            if (msg) { msg.textContent = 'El RUT es obligatorio'; msg.classList.remove('d-none'); }
+            else alert('El RUT es obligatorio');
+            return;
+        }
         const payload = {
-            razon_social: document.getElementById('cliRazon').value,
-            rut: document.getElementById('cliRut').value,
-            comentarios: document.getElementById('cliComent').value,
+            razon_social: razon,
+            rut,
+            comentarios: document.getElementById('cliComent').value.trim(),
         };
-        await apiFetch(id ? `/api/clientes/${id}` : '/api/clientes', {
-            method: id ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+        const res = await apiFetch(id ? `/api/clientes/${id}` : '/api/clientes', {
+            method: id ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
         });
-        bootstrap.Modal.getInstance(document.getElementById('modalCliente')).hide();
-        listarClientes();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const err = data.error || 'No se pudo guardar el cliente';
+            if (msg) { msg.textContent = err; msg.classList.remove('d-none'); }
+            else alert(err);
+            return;
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCliente')).hide();
+        await listarClientes();
     }
 
     async function borrarCliente(id) {
@@ -5884,11 +6012,11 @@
         const res = await apiFetch(`/api/clientes/${id}`, { method: 'DELETE' });
         const data = await res.json();
         if (!res.ok) { alert(data.error || 'No se pudo eliminar'); return; }
-        listarClientes();
+        await listarClientes();
     }
 
     async function cargarClientesSelect() {
-        const clientes = await (await apiFetch('/api/clientes')).json();
+        const clientes = normalizarListaApi(await (await apiFetch('/api/clientes')).json());
         document.getElementById('clienteP').innerHTML = clientes.map(c => `<option value="${c.id}">${esc(c.razon_social)}</option>`).join('');
     }
 
@@ -6562,8 +6690,8 @@
         const servicioSel = document.getElementById('filtroProyServicio');
         const vCliente = clienteSel.value, vServicio = servicioSel.value;
         const [clientes, servicios] = await Promise.all([
-            (await apiFetch('/api/clientes')).json(),
-            (await apiFetch('/api/servicios')).json(),
+            apiFetch('/api/clientes').then(async r => r.ok ? normalizarListaApi(await r.json()) : []),
+            apiFetch('/api/servicios').then(async r => r.ok ? normalizarListaApi(await r.json()) : []),
         ]);
         clienteSel.innerHTML = '<option value="">Todos</option>' + clientes
             .sort((a, b) => a.razon_social.localeCompare(b.razon_social, 'es'))
@@ -9446,7 +9574,7 @@
     }
 
     async function poblarClientesPropuestaModal() {
-        const clientes = await (await apiFetch('/api/clientes')).json();
+        const clientes = normalizarListaApi(await (await apiFetch('/api/clientes')).json());
         document.getElementById('propClienteId').innerHTML = '<option value="">— Sin vínculo —</option>' +
             clientes.map(c => `<option value="${c.id}">${esc(c.razon_social)}</option>`).join('');
     }
