@@ -1117,55 +1117,57 @@ _MESES_CORTOS_ES = (
 
 
 def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
-    """Totales mensuales de propuestas enviadas / adjudicadas y montos.
+    """Totales mensuales de propuestas enviadas / adjudicadas y montos en pesos.
 
-    - enviadas: conteo por ``fecha_envio``
-    - adjudicadas: conteo por ``fecha_adjudicacion``
-    - monto_pesos / monto_uf: suma de montos de las propuestas enviadas
-      ese mes (según ``fecha_envio``)
+    - cantidad_enviadas: conteo por ``fecha_envio``
+    - cantidad_adjudicadas: conteo por ``fecha_adjudicacion``
+    - monto_pesos_enviadas: suma de ``monto_pesos`` por ``fecha_envio``
+    - monto_pesos_adjudicadas: suma de ``monto_pesos`` por ``fecha_adjudicacion``
     """
     from datetime import date as _date
 
     buckets = {
         mes: {
-            'enviadas': 0,
-            'adjudicadas': 0,
-            'monto_pesos': 0.0,
-            'monto_uf': 0.0,
+            'cantidad_enviadas': 0,
+            'cantidad_adjudicadas': 0,
+            'monto_pesos_enviadas': 0.0,
+            'monto_pesos_adjudicadas': 0.0,
         }
         for mes in range(1, 13)
     }
 
     for p in propuestas:
+        monto = float(getattr(p, 'monto_pesos', None) or 0)
         fecha_envio = getattr(p, 'fecha_envio', None)
         if fecha_envio and fecha_envio.year == anio:
             b = buckets[fecha_envio.month]
-            b['enviadas'] += 1
-            b['monto_pesos'] += float(getattr(p, 'monto_pesos', None) or 0)
-            b['monto_uf'] += float(getattr(p, 'monto_uf', None) or 0)
+            b['cantidad_enviadas'] += 1
+            b['monto_pesos_enviadas'] += monto
 
         fecha_adj = getattr(p, 'fecha_adjudicacion', None)
         if fecha_adj and fecha_adj.year == anio:
-            buckets[fecha_adj.month]['adjudicadas'] += 1
+            b = buckets[fecha_adj.month]
+            b['cantidad_adjudicadas'] += 1
+            b['monto_pesos_adjudicadas'] += monto
 
     labels = [f'{_MESES_CORTOS_ES[m - 1]} {anio}' for m in range(1, 13)]
-    enviadas = [buckets[m]['enviadas'] for m in range(1, 13)]
-    adjudicadas = [buckets[m]['adjudicadas'] for m in range(1, 13)]
-    monto_pesos = [round(buckets[m]['monto_pesos']) for m in range(1, 13)]
-    monto_uf = [round(buckets[m]['monto_uf'], 2) for m in range(1, 13)]
+    cantidad_enviadas = [buckets[m]['cantidad_enviadas'] for m in range(1, 13)]
+    cantidad_adjudicadas = [buckets[m]['cantidad_adjudicadas'] for m in range(1, 13)]
+    monto_pesos_enviadas = [round(buckets[m]['monto_pesos_enviadas']) for m in range(1, 13)]
+    monto_pesos_adjudicadas = [round(buckets[m]['monto_pesos_adjudicadas']) for m in range(1, 13)]
 
     return {
         'anio': anio,
         'labels': labels,
-        'enviadas': enviadas,
-        'adjudicadas': adjudicadas,
-        'monto_pesos': monto_pesos,
-        'monto_uf': monto_uf,
+        'cantidad_enviadas': cantidad_enviadas,
+        'cantidad_adjudicadas': cantidad_adjudicadas,
+        'monto_pesos_enviadas': monto_pesos_enviadas,
+        'monto_pesos_adjudicadas': monto_pesos_adjudicadas,
         'totales': {
-            'enviadas': sum(enviadas),
-            'adjudicadas': sum(adjudicadas),
-            'monto_pesos': round(sum(monto_pesos)),
-            'monto_uf': round(sum(monto_uf), 2),
+            'cantidad_enviadas': sum(cantidad_enviadas),
+            'cantidad_adjudicadas': sum(cantidad_adjudicadas),
+            'monto_pesos_enviadas': round(sum(monto_pesos_enviadas)),
+            'monto_pesos_adjudicadas': round(sum(monto_pesos_adjudicadas)),
         },
         'generado': _date.today().isoformat(),
     }

@@ -536,7 +536,7 @@ def get_servicios_propuesta():
 
 @bp.route('/api/propuestas/resumen-mensual', methods=['GET'])
 def get_resumen_mensual_propuestas():
-    """Totales mensuales: enviadas, adjudicadas, monto $ y monto UF."""
+    """Totales mensuales: montos $ y cantidades de enviadas / adjudicadas."""
     eid, err = _requiere_empresa()
     if err:
         return err

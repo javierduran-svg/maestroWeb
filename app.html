@@ -2394,41 +2394,6 @@
                         <button class="btn btn-sm btn-teal" onclick="abrirPropuestaModal()">+ PROPUESTA</button>
                     </div>
                 </div>
-                <div class="panel-card border-0 border-bottom rounded-0 mb-0">
-                    <div class="panel-header flex-wrap gap-2">
-                        <div>
-                            <h5 class="mb-0">Totales mensuales</h5>
-                            <small class="text-muted">Enviadas, adjudicadas y montos según fecha de envío / adjudicación</small>
-                        </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                            <select class="form-select form-select-sm" id="propResumenAnio" style="width:auto;min-width:88px" onchange="cargarResumenMensualPropuestas()"></select>
-                        </div>
-                    </div>
-                    <div class="chart-box border-0 p-0">
-                        <div class="row g-0 dashboard-chart-split">
-                            <div class="col-lg-7 dashboard-chart-col">
-                                <canvas id="chartPropuestasMensual"></canvas>
-                            </div>
-                            <div class="col-lg-5 dashboard-chart-table-col">
-                                <div class="table-responsive tabla-scroll-wrap tabla-scroll-nested p-0">
-                                    <table id="tabla-propuestas-resumen-grid" class="table table-hover table-panel table-compact mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Mes</th>
-                                                <th class="text-end">Enviadas</th>
-                                                <th class="text-end">Adjudicadas</th>
-                                                <th class="text-end">Monto $</th>
-                                                <th class="text-end">Monto UF</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tabla-propuestas-resumen-body"></tbody>
-                                        <tfoot id="tabla-propuestas-resumen-foot"></tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
                     <small class="text-muted" id="propContador">—</small>
                     <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarFiltrosPropuestas()">Limpiar filtros</button>
@@ -2485,6 +2450,41 @@
                         </thead>
                         <tbody id="tabla-propuestas"></tbody>
                     </table>
+                </div>
+                <div class="panel-card border-0 border-top rounded-0 mb-0">
+                    <div class="panel-header flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">Totales mensuales</h5>
+                            <small class="text-muted">Montos y cantidades de enviadas / adjudicadas por mes</small>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                            <select class="form-select form-select-sm" id="propResumenAnio" style="width:auto;min-width:88px" onchange="cargarResumenMensualPropuestas()"></select>
+                        </div>
+                    </div>
+                    <div class="chart-box border-0 p-0">
+                        <div class="row g-0 dashboard-chart-split">
+                            <div class="col-lg-7 dashboard-chart-col">
+                                <canvas id="chartPropuestasMensual"></canvas>
+                            </div>
+                            <div class="col-lg-5 dashboard-chart-table-col">
+                                <div class="table-responsive tabla-scroll-wrap tabla-scroll-nested p-0">
+                                    <table id="tabla-propuestas-resumen-grid" class="table table-hover table-panel table-compact mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Mes</th>
+                                                <th class="text-end">Monto $ / enviadas</th>
+                                                <th class="text-end">Monto $ / adjudicadas</th>
+                                                <th class="text-end">Cantidad / enviadas</th>
+                                                <th class="text-end">Cantidad / adjudicadas</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-propuestas-resumen-body"></tbody>
+                                        <tfoot id="tabla-propuestas-resumen-foot"></tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -9638,18 +9638,18 @@
         const labels = data.labels || [];
         tbody.innerHTML = labels.map((label, i) => `<tr>
             <td>${esc(label)}</td>
-            <td class="text-end">${data.enviadas[i] || 0}</td>
-            <td class="text-end">${data.adjudicadas[i] || 0}</td>
-            <td class="text-end">${fmt(data.monto_pesos[i] || 0)}</td>
-            <td class="text-end">${fmtUfNum(data.monto_uf[i] || 0)}</td>
+            <td class="text-end">${fmt(data.monto_pesos_enviadas[i] || 0)}</td>
+            <td class="text-end">${fmt(data.monto_pesos_adjudicadas[i] || 0)}</td>
+            <td class="text-end">${data.cantidad_enviadas[i] || 0}</td>
+            <td class="text-end">${data.cantidad_adjudicadas[i] || 0}</td>
         </tr>`).join('');
         const t = data.totales || {};
         tfoot.innerHTML = `<tr class="fw-bold">
             <td>Total</td>
-            <td class="text-end">${t.enviadas || 0}</td>
-            <td class="text-end">${t.adjudicadas || 0}</td>
-            <td class="text-end">${fmt(t.monto_pesos || 0)}</td>
-            <td class="text-end">${fmtUfNum(t.monto_uf || 0)}</td>
+            <td class="text-end">${fmt(t.monto_pesos_enviadas || 0)}</td>
+            <td class="text-end">${fmt(t.monto_pesos_adjudicadas || 0)}</td>
+            <td class="text-end">${t.cantidad_enviadas || 0}</td>
+            <td class="text-end">${t.cantidad_adjudicadas || 0}</td>
         </tr>`;
     }
 
@@ -9673,8 +9673,8 @@
                 datasets: [
                     {
                         type: 'bar',
-                        label: 'Enviadas',
-                        data: data.enviadas || [],
+                        label: 'Monto $ / enviadas',
+                        data: data.monto_pesos_enviadas || [],
                         backgroundColor: 'rgba(0, 128, 128, 0.75)',
                         borderColor: '#008080',
                         borderWidth: 1,
@@ -9683,20 +9683,32 @@
                     },
                     {
                         type: 'bar',
-                        label: 'Adjudicadas',
-                        data: data.adjudicadas || [],
-                        backgroundColor: 'rgba(25, 135, 84, 0.75)',
-                        borderColor: '#198754',
+                        label: 'Monto $ / adjudicadas',
+                        data: data.monto_pesos_adjudicadas || [],
+                        backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                        borderColor: '#0d6efd',
                         borderWidth: 1,
                         yAxisID: 'y',
                         order: 2,
                     },
                     {
                         type: 'line',
-                        label: 'Monto UF',
-                        data: data.monto_uf || [],
+                        label: 'Cantidad / enviadas',
+                        data: data.cantidad_enviadas || [],
                         borderColor: '#fd7e14',
                         backgroundColor: 'rgba(253, 126, 20, 0.15)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        tension: 0.25,
+                        yAxisID: 'y1',
+                        order: 1,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Cantidad / adjudicadas',
+                        data: data.cantidad_adjudicadas || [],
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.15)',
                         borderWidth: 2,
                         pointRadius: 3,
                         tension: 0.25,
@@ -9716,7 +9728,7 @@
                             label(ctx) {
                                 if (ctx.raw == null || ctx.raw === '') return null;
                                 const label = ctx.dataset.label || '';
-                                if (label === 'Monto UF') return `${label}: ${fmtUfNum(ctx.raw)} UF`;
+                                if (label.startsWith('Monto $')) return `${label}: ${fmt(ctx.raw)}`;
                                 return `${label}: ${ctx.raw}`;
                             },
                         },
@@ -9730,15 +9742,15 @@
                     y: {
                         beginAtZero: true,
                         position: 'left',
-                        title: { display: true, text: 'Cantidad', font: { size: 10 } },
-                        ticks: { precision: 0, font: { size: 10 } },
+                        title: { display: true, text: 'Monto $', font: { size: 10 } },
+                        ticks: { callback: v => fmt(v), font: { size: 10 } },
                         grid: { color: '#eef1f3' },
                     },
                     y1: {
                         beginAtZero: true,
                         position: 'right',
-                        title: { display: true, text: 'UF', font: { size: 10 } },
-                        ticks: { callback: v => fmtUfNum(v), font: { size: 10 } },
+                        title: { display: true, text: 'Cantidad', font: { size: 10 } },
+                        ticks: { precision: 0, font: { size: 10 } },
                         grid: { drawOnChartArea: false },
                     },
                 },
