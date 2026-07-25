@@ -264,9 +264,13 @@ def manejar_entregas_proyecto(proyecto_id):
     status = data.get('status', 'Por Hacer')
     if status not in ESTADOS_ENTREGA:
         return jsonify({'error': f'status debe ser uno de: {", ".join(ESTADOS_ENTREGA)}'}), 400
+    asignado_id, asig_err = _validar_asignado_id_trabajador(data.get('asignado_id'), eid)
+    if asig_err:
+        return jsonify({'error': asig_err}), 400
     entrega = EntregaProgramada(
         empresa_id=eid,
         proyecto_id=proyecto.id,
+        asignado_id=asignado_id,
         fecha_entrega=fecha,
         descripcion=(data.get('descripcion') or '')[:255] or None,
         status=status,
@@ -292,9 +296,13 @@ def crear_entrega():
     status = data.get('status', 'Por Hacer')
     if status not in ESTADOS_ENTREGA:
         return jsonify({'error': f'status debe ser uno de: {", ".join(ESTADOS_ENTREGA)}'}), 400
+    asignado_id, asig_err = _validar_asignado_id_trabajador(data.get('asignado_id'), eid)
+    if asig_err:
+        return jsonify({'error': asig_err}), 400
     entrega = EntregaProgramada(
         empresa_id=eid,
         proyecto_id=proyecto.id,
+        asignado_id=asignado_id,
         fecha_entrega=fecha,
         descripcion=(data.get('descripcion') or '')[:255] or None,
         status=status,
@@ -327,6 +335,11 @@ def manejar_entrega(entrega_id):
         entrega.fecha_entrega = fecha
     if 'descripcion' in data:
         entrega.descripcion = (data.get('descripcion') or '')[:255] or None
+    if 'asignado_id' in data:
+        asignado_id, asig_err = _validar_asignado_id_trabajador(data.get('asignado_id'), eid)
+        if asig_err:
+            return jsonify({'error': asig_err}), 400
+        entrega.asignado_id = asignado_id
     if 'status' in data:
         status = data.get('status')
         if status not in ESTADOS_ENTREGA:

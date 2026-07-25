@@ -510,6 +510,14 @@ def _migrar_schema_legacy() -> None:
             if 'saldo_inicial' not in cols_c:
                 conn.execute(text('ALTER TABLE cuentas ADD COLUMN saldo_inicial FLOAT DEFAULT 0'))
             conn.commit()
+    if inspect(db.engine).has_table('entregas_programadas'):
+        cols_ep = {c['name'] for c in inspect(db.engine).get_columns('entregas_programadas')}
+        with db.engine.connect() as conn:
+            if 'asignado_id' not in cols_ep:
+                conn.execute(text(
+                    'ALTER TABLE entregas_programadas ADD COLUMN asignado_id INTEGER REFERENCES trabajadores(id)',
+                ))
+            conn.commit()
     if inspect(db.engine).has_table('tareas_entrega'):
         cols_te = {c['name'] for c in inspect(db.engine).get_columns('tareas_entrega')}
         with db.engine.connect() as conn:

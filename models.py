@@ -61,6 +61,7 @@ class EntregaProgramada(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
     proyecto_id = db.Column(db.Integer, db.ForeignKey('proyectos.id'), nullable=False)
+    asignado_id = db.Column(db.Integer, db.ForeignKey('trabajadores.id'), nullable=True)
     fecha_entrega = db.Column(db.Date, nullable=False)
     descripcion = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='Por Hacer', nullable=False)

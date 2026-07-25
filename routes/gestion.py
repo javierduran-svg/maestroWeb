@@ -108,6 +108,7 @@ def get_gestion_dashboard():
             dias = (e.fecha_entrega - hoy).days
             if e.fecha_entrega > limite_entregas:
                 continue
+            entrega_dict = _entrega_a_dict(e)
             entrega_tareas = []
             for t in sorted(
                 tareas_por_entrega.get(e.id, []),
@@ -120,12 +121,7 @@ def get_gestion_dashboard():
                     td['dias_restantes'] = None
                 entrega_tareas.append(td)
             proximas_entregas.append({
-                'id': e.id,
-                'proyecto_id': e.proyecto_id,
-                'proyecto': e.proyecto_rel.nombre if e.proyecto_rel else '',
-                'fecha_entrega': e.fecha_entrega.strftime('%Y-%m-%d'),
-                'descripcion': e.descripcion or '',
-                'status': e.status,
+                **entrega_dict,
                 'dias_restantes': dias,
                 'nivel': _nivel_alerta_dias(dias),
                 'tareas': entrega_tareas,

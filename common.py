@@ -2557,10 +2557,17 @@ def _tarea_a_dict(t: TareaEntrega) -> dict:
 
 
 def _entrega_a_dict(e: EntregaProgramada, include_tareas: bool = False) -> dict:
+    nombre = ''
+    if e.asignado_id:
+        tr = Trabajador.query.filter_by(empresa_id=e.empresa_id, id=e.asignado_id).first()
+        if tr:
+            nombre = _nombre_display_trabajador(tr)
     d = {
         'id': e.id,
         'proyecto_id': e.proyecto_id,
         'proyecto': e.proyecto_rel.nombre if e.proyecto_rel else None,
+        'asignado_id': e.asignado_id,
+        'asignado_nombre': nombre,
         'fecha_entrega': e.fecha_entrega.strftime('%Y-%m-%d'),
         'descripcion': e.descripcion,
         'status': e.status,
