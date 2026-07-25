@@ -1110,6 +1110,67 @@ def siguiente_numero_propuesta(empresa_id: int) -> int:
     return (max_num or 0) + 1
 
 
+_MESES_CORTOS_ES = (
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+)
+
+
+def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
+    """Totales mensuales de propuestas enviadas / adjudicadas y montos.
+
+    - enviadas: conteo por ``fecha_envio``
+    - adjudicadas: conteo por ``fecha_adjudicacion``
+    - monto_pesos / monto_uf: suma de montos de las propuestas enviadas
+      ese mes (según ``fecha_envio``)
+    """
+    from datetime import date as _date
+
+    buckets = {
+        mes: {
+            'enviadas': 0,
+            'adjudicadas': 0,
+            'monto_pesos': 0.0,
+            'monto_uf': 0.0,
+        }
+        for mes in range(1, 13)
+    }
+
+    for p in propuestas:
+        fecha_envio = getattr(p, 'fecha_envio', None)
+        if fecha_envio and fecha_envio.year == anio:
+            b = buckets[fecha_envio.month]
+            b['enviadas'] += 1
+            b['monto_pesos'] += float(getattr(p, 'monto_pesos', None) or 0)
+            b['monto_uf'] += float(getattr(p, 'monto_uf', None) or 0)
+
+        fecha_adj = getattr(p, 'fecha_adjudicacion', None)
+        if fecha_adj and fecha_adj.year == anio:
+            buckets[fecha_adj.month]['adjudicadas'] += 1
+
+    labels = [f'{_MESES_CORTOS_ES[m - 1]} {anio}' for m in range(1, 13)]
+    enviadas = [buckets[m]['enviadas'] for m in range(1, 13)]
+    adjudicadas = [buckets[m]['adjudicadas'] for m in range(1, 13)]
+    monto_pesos = [round(buckets[m]['monto_pesos']) for m in range(1, 13)]
+    monto_uf = [round(buckets[m]['monto_uf'], 2) for m in range(1, 13)]
+
+    return {
+        'anio': anio,
+        'labels': labels,
+        'enviadas': enviadas,
+        'adjudicadas': adjudicadas,
+        'monto_pesos': monto_pesos,
+        'monto_uf': monto_uf,
+        'totales': {
+            'enviadas': sum(enviadas),
+            'adjudicadas': sum(adjudicadas),
+            'monto_pesos': round(sum(monto_pesos)),
+            'monto_uf': round(sum(monto_uf), 2),
+        },
+        'generado': _date.today().isoformat(),
+    }
+
+
 def _plantilla_default(servicio: str) -> str | None:
     return TEMPLATES_POR_SERVICIO.get(servicio)
 

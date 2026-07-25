@@ -23,6 +23,7 @@ from estados_pago_service import (
 )
 from propuestas_service import (
     SERVICIOS_PROPUESTA,
+    calcular_resumen_mensual_propuestas,
     get_config_calculadora,
     generar_docx_propuesta,
     generar_pdf_propuesta,
@@ -531,6 +532,22 @@ def get_estados_propuesta():
 @bp.route('/api/propuestas/servicios', methods=['GET'])
 def get_servicios_propuesta():
     return jsonify(SERVICIOS_PROPUESTA)
+
+
+@bp.route('/api/propuestas/resumen-mensual', methods=['GET'])
+def get_resumen_mensual_propuestas():
+    """Totales mensuales: enviadas, adjudicadas, monto $ y monto UF."""
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    try:
+        anio = int(request.args.get('anio') or date.today().year)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'anio inválido'}), 400
+    if anio < 2000 or anio > 2100:
+        return jsonify({'error': 'anio fuera de rango'}), 400
+    propuestas = Propuesta.query.filter_by(empresa_id=eid).all()
+    return jsonify(calcular_resumen_mensual_propuestas(propuestas, anio))
 
 
 @bp.route('/api/propuestas/siguiente-numero', methods=['GET'])

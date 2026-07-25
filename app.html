@@ -2394,6 +2394,41 @@
                         <button class="btn btn-sm btn-teal" onclick="abrirPropuestaModal()">+ PROPUESTA</button>
                     </div>
                 </div>
+                <div class="panel-card border-0 border-bottom rounded-0 mb-0">
+                    <div class="panel-header flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">Totales mensuales</h5>
+                            <small class="text-muted">Enviadas, adjudicadas y montos según fecha de envío / adjudicación</small>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                            <select class="form-select form-select-sm" id="propResumenAnio" style="width:auto;min-width:88px" onchange="cargarResumenMensualPropuestas()"></select>
+                        </div>
+                    </div>
+                    <div class="chart-box border-0 p-0">
+                        <div class="row g-0 dashboard-chart-split">
+                            <div class="col-lg-7 dashboard-chart-col">
+                                <canvas id="chartPropuestasMensual"></canvas>
+                            </div>
+                            <div class="col-lg-5 dashboard-chart-table-col">
+                                <div class="table-responsive tabla-scroll-wrap tabla-scroll-nested p-0">
+                                    <table id="tabla-propuestas-resumen-grid" class="table table-hover table-panel table-compact mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Mes</th>
+                                                <th class="text-end">Enviadas</th>
+                                                <th class="text-end">Adjudicadas</th>
+                                                <th class="text-end">Monto $</th>
+                                                <th class="text-end">Monto UF</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla-propuestas-resumen-body"></tbody>
+                                        <tfoot id="tabla-propuestas-resumen-foot"></tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
                     <small class="text-muted" id="propContador">—</small>
                     <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarFiltrosPropuestas()">Limpiar filtros</button>
@@ -3423,6 +3458,7 @@
     let _propuestasCache = [];
     let _propOrdenCol = 'numero';
     let _propOrdenDir = 'desc';
+    let _chartPropuestasMensual = null;
     let _clientesCache = [];
     let _cliOrdenCol = 'razon_social';
     let _cliOrdenDir = 'asc';
@@ -9570,7 +9606,145 @@
         const res = await apiFetch('/api/propuestas');
         _propuestasCache = res.ok ? normalizarListaApi(await res.json()) : [];
         poblarFiltrosPropuestasSelects();
+        poblarAniosResumenPropuestas();
         renderPropuestas();
+        await cargarResumenMensualPropuestas();
+    }
+
+    function poblarAniosResumenPropuestas() {
+        const sel = document.getElementById('propResumenAnio');
+        if (!sel) return;
+        const anioActual = new Date().getFullYear();
+        const anios = new Set([anioActual]);
+        _propuestasCache.forEach(p => {
+            for (const campo of ['fecha_envio', 'fecha_adjudicacion']) {
+                const f = p[campo];
+                if (f && String(f).length >= 4) {
+                    const y = parseInt(String(f).slice(0, 4), 10);
+                    if (y >= 2000 && y <= 2100) anios.add(y);
+                }
+            }
+        });
+        const prev = sel.value ? parseInt(sel.value, 10) : anioActual;
+        const lista = [...anios].sort((a, b) => b - a);
+        sel.innerHTML = lista.map(y => `<option value="${y}">${y}</option>`).join('');
+        sel.value = lista.includes(prev) ? String(prev) : String(anioActual);
+    }
+
+    function _renderTablaResumenPropuestas(data) {
+        const tbody = document.getElementById('tabla-propuestas-resumen-body');
+        const tfoot = document.getElementById('tabla-propuestas-resumen-foot');
+        if (!tbody || !tfoot) return;
+        const labels = data.labels || [];
+        tbody.innerHTML = labels.map((label, i) => `<tr>
+            <td>${esc(label)}</td>
+            <td class="text-end">${data.enviadas[i] || 0}</td>
+            <td class="text-end">${data.adjudicadas[i] || 0}</td>
+            <td class="text-end">${fmt(data.monto_pesos[i] || 0)}</td>
+            <td class="text-end">${fmtUfNum(data.monto_uf[i] || 0)}</td>
+        </tr>`).join('');
+        const t = data.totales || {};
+        tfoot.innerHTML = `<tr class="fw-bold">
+            <td>Total</td>
+            <td class="text-end">${t.enviadas || 0}</td>
+            <td class="text-end">${t.adjudicadas || 0}</td>
+            <td class="text-end">${fmt(t.monto_pesos || 0)}</td>
+            <td class="text-end">${fmtUfNum(t.monto_uf || 0)}</td>
+        </tr>`;
+    }
+
+    async function cargarResumenMensualPropuestas() {
+        const sel = document.getElementById('propResumenAnio');
+        const canvas = document.getElementById('chartPropuestasMensual');
+        if (!sel || !canvas) return;
+        const anio = sel.value || new Date().getFullYear();
+        const res = await apiFetch(`/api/propuestas/resumen-mensual?anio=${encodeURIComponent(anio)}`);
+        const data = await res.json();
+        if (!res.ok) {
+            console.error('Resumen mensual propuestas:', data.error);
+            return;
+        }
+        _renderTablaResumenPropuestas(data);
+        if (_chartPropuestasMensual) _chartPropuestasMensual.destroy();
+        _chartPropuestasMensual = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: data.labels || [],
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Enviadas',
+                        data: data.enviadas || [],
+                        backgroundColor: 'rgba(0, 128, 128, 0.75)',
+                        borderColor: '#008080',
+                        borderWidth: 1,
+                        yAxisID: 'y',
+                        order: 2,
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Adjudicadas',
+                        data: data.adjudicadas || [],
+                        backgroundColor: 'rgba(25, 135, 84, 0.75)',
+                        borderColor: '#198754',
+                        borderWidth: 1,
+                        yAxisID: 'y',
+                        order: 2,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Monto UF',
+                        data: data.monto_uf || [],
+                        borderColor: '#fd7e14',
+                        backgroundColor: 'rgba(253, 126, 20, 0.15)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        tension: 0.25,
+                        yAxisID: 'y1',
+                        order: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label(ctx) {
+                                if (ctx.raw == null || ctx.raw === '') return null;
+                                const label = ctx.dataset.label || '';
+                                if (label === 'Monto UF') return `${label}: ${fmtUfNum(ctx.raw)} UF`;
+                                return `${label}: ${ctx.raw}`;
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 }, maxRotation: 45 },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Cantidad', font: { size: 10 } },
+                        ticks: { precision: 0, font: { size: 10 } },
+                        grid: { color: '#eef1f3' },
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: { display: true, text: 'UF', font: { size: 10 } },
+                        ticks: { callback: v => fmtUfNum(v), font: { size: 10 } },
+                        grid: { drawOnChartArea: false },
+                    },
+                },
+                datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.85 } },
+            },
+        });
     }
 
     async function poblarClientesPropuestaModal() {
