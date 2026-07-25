@@ -1095,6 +1095,8 @@
         .mov-th-sort .sort-icon { opacity: 0.35; font-size: 0.6rem; margin-left: 0.15rem; }
         .mov-th-sort.active .sort-icon { opacity: 1; color: var(--teal-green); }
         .mov-filtro { font-size: 0.75rem; padding: 0.15rem 0.3rem; min-width: 72px; width: 100%; }
+        .mov-filtro-rango { display: flex; flex-direction: column; gap: 0.12rem; min-width: 5.5rem; }
+        .mov-filtro-rango .mov-filtro { min-width: 0; }
         .table-movimientos tbody tr.mov-row { cursor: pointer; }
         .table-movimientos tbody tr.mov-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
         .table-movimientos tbody tr.mov-row-selected:hover { background-color: #d6ecec !important; }
@@ -2272,12 +2274,27 @@
                             </tr>
                             <tr class="mov-filtros">
                                 <th></th>
-                                <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
+                                <th>
+                                    <div class="mov-filtro-rango">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                    </div>
+                                </th>
                                 <th><select class="form-select mov-filtro" id="filtroMovProyecto" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovMonto" placeholder="Monto" oninput="debounceRenderMovimientos()"></th>
                                 <th><select class="form-select mov-filtro" id="filtroMovStatusPago" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
-                                <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPago" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
-                                <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFact" placeholder="dd-mm-aaaa" oninput="debounceRenderMovimientos()"></th>
+                                <th>
+                                    <div class="mov-filtro-rango">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPagoDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPagoHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                    </div>
+                                </th>
+                                <th>
+                                    <div class="mov-filtro-rango">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFactDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFactHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                    </div>
+                                </th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovDesc" placeholder="Buscar…" oninput="debounceRenderMovimientos()"></th>
                                 <th><select class="form-select mov-filtro" id="filtroMovOrigen" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><select class="form-select mov-filtro" id="filtroMovDestino" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
@@ -10874,9 +10891,12 @@
         const buscar = document.getElementById('filtroMovBuscar')?.value.trim().toLowerCase() || '';
         const descCol = document.getElementById('filtroMovDesc').value.trim().toLowerCase();
         return {
-            fecha_movimiento: parseFechaMov(document.getElementById('filtroMovFecha').value),
-            fecha_estado_pago: parseFechaMov(document.getElementById('filtroMovFechaPago').value),
-            fecha_facturacion: parseFechaMov(document.getElementById('filtroMovFechaFact').value),
+            fecha_movimiento_desde: parseFechaMov(document.getElementById('filtroMovFechaDesde')?.value),
+            fecha_movimiento_hasta: parseFechaMov(document.getElementById('filtroMovFechaHasta')?.value),
+            fecha_estado_pago_desde: parseFechaMov(document.getElementById('filtroMovFechaPagoDesde')?.value),
+            fecha_estado_pago_hasta: parseFechaMov(document.getElementById('filtroMovFechaPagoHasta')?.value),
+            fecha_facturacion_desde: parseFechaMov(document.getElementById('filtroMovFechaFactDesde')?.value),
+            fecha_facturacion_hasta: parseFechaMov(document.getElementById('filtroMovFechaFactHasta')?.value),
             descripcion: buscar || descCol,
             origen_id: document.getElementById('filtroMovOrigen').value,
             destino_id: document.getElementById('filtroMovDestino').value,
@@ -10892,9 +10912,11 @@
     function movFiltrosActivos() {
         const f = leerFiltrosMovimientos();
         const buscar = document.getElementById('filtroMovBuscar')?.value.trim() || '';
-        return !!(f.fecha_movimiento || f.fecha_estado_pago || f.fecha_facturacion || f.descripcion
-            || f.origen_id || f.destino_id || f.proyecto_id || f.monto || f.numero_factura
-            || f.status_pago || f.estado || f.tipo || buscar);
+        return !!(f.fecha_movimiento_desde || f.fecha_movimiento_hasta
+            || f.fecha_estado_pago_desde || f.fecha_estado_pago_hasta
+            || f.fecha_facturacion_desde || f.fecha_facturacion_hasta
+            || f.descripcion || f.origen_id || f.destino_id || f.proyecto_id || f.monto
+            || f.numero_factura || f.status_pago || f.estado || f.tipo || buscar);
     }
 
     function buildMovimientosQueryParams() {
@@ -10904,9 +10926,11 @@
         p.set('per_page', String(_movPerPage));
         p.set('sort', _movOrdenCol);
         p.set('order', _movOrdenDir);
-        if (f.fecha_movimiento) p.set('fecha_movimiento', f.fecha_movimiento);
-        if (f.fecha_estado_pago) p.set('fecha_estado_pago', f.fecha_estado_pago);
-        if (f.fecha_facturacion) p.set('fecha_facturacion', f.fecha_facturacion);
+        [
+            'fecha_movimiento_desde', 'fecha_movimiento_hasta',
+            'fecha_estado_pago_desde', 'fecha_estado_pago_hasta',
+            'fecha_facturacion_desde', 'fecha_facturacion_hasta',
+        ].forEach(k => { if (f[k]) p.set(k, f[k]); });
         if (f.descripcion) p.set('search', f.descripcion);
         if (f.origen_id) p.set('origen_id', f.origen_id);
         if (f.destino_id) p.set('destino_id', f.destino_id);
@@ -10943,7 +10967,12 @@
     }
 
     function limpiarFiltrosMovimientos() {
-        ['filtroMovFecha','filtroMovFechaPago','filtroMovFechaFact','filtroMovDesc','filtroMovMonto','filtroMovFactura','filtroMovBuscar'].forEach(id => {
+        [
+            'filtroMovFechaDesde', 'filtroMovFechaHasta',
+            'filtroMovFechaPagoDesde', 'filtroMovFechaPagoHasta',
+            'filtroMovFechaFactDesde', 'filtroMovFechaFactHasta',
+            'filtroMovDesc', 'filtroMovMonto', 'filtroMovFactura', 'filtroMovBuscar',
+        ].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });

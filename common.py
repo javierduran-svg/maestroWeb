@@ -1952,11 +1952,23 @@ def _filtrar_movimientos_query(query, args):
     if estado:
         query = query.filter(Movimiento.estado == estado)
     for date_field in ('fecha_movimiento', 'fecha_estado_pago', 'fecha_facturacion'):
+        col = getattr(Movimiento, date_field)
         val = args.get(date_field)
         if val:
             parsed = _parse_fecha(val)
             if parsed:
-                query = query.filter(getattr(Movimiento, date_field) == parsed)
+                query = query.filter(col == parsed)
+        desde = args.get(f'{date_field}_desde')
+        if desde:
+            parsed = _parse_fecha(desde)
+            if parsed:
+                query = query.filter(col >= parsed)
+        hasta = args.get(f'{date_field}_hasta')
+        if hasta:
+            parsed = _parse_fecha(hasta)
+            if parsed:
+                query = query.filter(col <= parsed)
+    # Compat: fecha_desde / fecha_hasta filtran fecha_movimiento
     fecha_desde = args.get('fecha_desde')
     if fecha_desde:
         parsed = _parse_fecha(fecha_desde)
