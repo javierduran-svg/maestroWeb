@@ -1095,8 +1095,9 @@
         .mov-th-sort .sort-icon { opacity: 0.35; font-size: 0.6rem; margin-left: 0.15rem; }
         .mov-th-sort.active .sort-icon { opacity: 1; color: var(--teal-green); }
         .mov-filtro { font-size: 0.75rem; padding: 0.15rem 0.3rem; min-width: 72px; width: 100%; }
-        .mov-filtro-rango { display: flex; flex-direction: column; gap: 0.12rem; min-width: 5.5rem; }
+        .mov-filtro-rango { display: flex; flex-direction: column; gap: 0.12rem; min-width: 7.5rem; }
         .mov-filtro-rango .mov-filtro { min-width: 0; }
+        .mov-filtro-rango-lbl { font-size: 0.58rem; color: #6c757d; line-height: 1; margin: 0; font-weight: 600; }
         .table-movimientos tbody tr.mov-row { cursor: pointer; }
         .table-movimientos tbody tr.mov-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
         .table-movimientos tbody tr.mov-row-selected:hover { background-color: #d6ecec !important; }
@@ -2276,8 +2277,10 @@
                                 <th></th>
                                 <th>
                                     <div class="mov-filtro-rango">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaDesde">Desde</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaDesde" title="Desde" aria-label="Desde" onchange="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaHasta">Hasta</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaHasta" title="Hasta" aria-label="Hasta" onchange="debounceRenderMovimientos()">
                                     </div>
                                 </th>
                                 <th><select class="form-select mov-filtro" id="filtroMovProyecto" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
@@ -2285,14 +2288,18 @@
                                 <th><select class="form-select mov-filtro" id="filtroMovStatusPago" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th>
                                     <div class="mov-filtro-rango">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPagoDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaPagoHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaPagoDesde">Desde</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaPagoDesde" title="Desde" aria-label="Desde" onchange="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaPagoHasta">Hasta</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaPagoHasta" title="Hasta" aria-label="Hasta" onchange="debounceRenderMovimientos()">
                                     </div>
                                 </th>
                                 <th>
                                     <div class="mov-filtro-rango">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFactDesde" placeholder="Desde" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
-                                        <input type="text" class="form-control mov-filtro cell-edit-date" id="filtroMovFechaFactHasta" placeholder="Hasta" title="dd-mm-aaaa" oninput="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaFactDesde">Desde</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaFactDesde" title="Desde" aria-label="Desde" onchange="debounceRenderMovimientos()">
+                                        <label class="mov-filtro-rango-lbl" for="filtroMovFechaFactHasta">Hasta</label>
+                                        <input type="date" class="form-control mov-filtro" id="filtroMovFechaFactHasta" title="Hasta" aria-label="Hasta" onchange="debounceRenderMovimientos()">
                                     </div>
                                 </th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovDesc" placeholder="Buscar…" oninput="debounceRenderMovimientos()"></th>
