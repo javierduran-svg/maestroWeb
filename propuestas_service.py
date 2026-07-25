@@ -1116,16 +1116,59 @@ _MESES_CORTOS_ES = (
 )
 
 
+def _valor_uf_para_fecha(fecha: date | None, cache: dict | None = None) -> float:
+    """Valor UF CLP para una fecha, reutilizando ``_obtener_uf_para_fecha``.
+
+    Si no hay registro ni respaldo histórico, usa ``UF_REFERENCIA_CLP``.
+    """
+    from bootstrap import UF_REFERENCIA_CLP, _obtener_uf_para_fecha
+
+    ref = fecha or date.today()
+    if cache is not None and ref in cache:
+        return cache[ref]
+    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(ref, auto_fetch=True)
+    if valor is None:
+        valor = UF_REFERENCIA_CLP
+    resultado = float(valor)
+    if cache is not None:
+        cache[ref] = resultado
+    return resultado
+
+
+def _monto_completo_pesos(propuesta, fecha_ref: date | None, uf_cache: dict | None = None) -> float:
+    """Monto de la propuesta en pesos, convirtiendo desde UF si hace falta.
+
+    - Si ``monto_pesos`` > 0, se usa tal cual.
+    - Si no hay pesos (0/None) pero sí ``monto_uf``, convierte con la UF de
+      ``fecha_ref`` (misma regla que EP: ``round(monto_uf * valor_uf)``).
+    """
+    pesos = getattr(propuesta, 'monto_pesos', None)
+    try:
+        pesos_f = float(pesos) if pesos not in (None, '') else 0.0
+    except (TypeError, ValueError):
+        pesos_f = 0.0
+    if pesos_f > 0:
+        return pesos_f
+
+    uf = getattr(propuesta, 'monto_uf', None)
+    try:
+        uf_f = float(uf) if uf not in (None, '') else 0.0
+    except (TypeError, ValueError):
+        uf_f = 0.0
+    if uf_f <= 0:
+        return 0.0
+    return float(round(uf_f * _valor_uf_para_fecha(fecha_ref, uf_cache)))
+
+
 def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
     """Totales mensuales de propuestas enviadas / adjudicadas y montos en pesos.
 
     - cantidad_enviadas: conteo por ``fecha_envio``
     - cantidad_adjudicadas: conteo por ``fecha_adjudicacion``
-    - monto_pesos_enviadas: suma de ``monto_pesos`` por ``fecha_envio``
-    - monto_pesos_adjudicadas: suma de ``monto_pesos`` por ``fecha_adjudicacion``
+    - monto_pesos_enviadas: suma en pesos por ``fecha_envio``
+      (convierte ``monto_uf`` → pesos si ``monto_pesos`` está vacío)
+    - monto_pesos_adjudicadas: idem por ``fecha_adjudicacion``
     """
-    from datetime import date as _date
-
     buckets = {
         mes: {
             'cantidad_enviadas': 0,
@@ -1135,20 +1178,20 @@ def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
         }
         for mes in range(1, 13)
     }
+    uf_cache: dict = {}
 
     for p in propuestas:
-        monto = float(getattr(p, 'monto_pesos', None) or 0)
         fecha_envio = getattr(p, 'fecha_envio', None)
         if fecha_envio and fecha_envio.year == anio:
             b = buckets[fecha_envio.month]
             b['cantidad_enviadas'] += 1
-            b['monto_pesos_enviadas'] += monto
+            b['monto_pesos_enviadas'] += _monto_completo_pesos(p, fecha_envio, uf_cache)
 
         fecha_adj = getattr(p, 'fecha_adjudicacion', None)
         if fecha_adj and fecha_adj.year == anio:
             b = buckets[fecha_adj.month]
             b['cantidad_adjudicadas'] += 1
-            b['monto_pesos_adjudicadas'] += monto
+            b['monto_pesos_adjudicadas'] += _monto_completo_pesos(p, fecha_adj, uf_cache)
 
     labels = [f'{_MESES_CORTOS_ES[m - 1]} {anio}' for m in range(1, 13)]
     cantidad_enviadas = [buckets[m]['cantidad_enviadas'] for m in range(1, 13)]
@@ -1169,7 +1212,7 @@ def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
             'monto_pesos_enviadas': round(sum(monto_pesos_enviadas)),
             'monto_pesos_adjudicadas': round(sum(monto_pesos_adjudicadas)),
         },
-        'generado': _date.today().isoformat(),
+        'generado': date.today().isoformat(),
     }
 
 
