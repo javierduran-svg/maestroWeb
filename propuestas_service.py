@@ -1115,6 +1115,12 @@ _MESES_CORTOS_ES = (
     'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
 )
 
+# Status de propuestas (ESTADOS_PROPUESTA). Las métricas del resumen son
+# mutuamente excluyentes por status para no contar dos veces la misma propuesta
+# como "enviada" cuando ya pasó a Adjudicada.
+_STATUS_ENVIADAS = frozenset({'Enviada', 'No Adjudicada'})
+_STATUS_ADJUDICADA = 'Adjudicada'
+
 
 def _valor_uf_para_fecha(fecha: date | None, cache: dict | None = None) -> float:
     """Valor UF CLP para una fecha, reutilizando ``_obtener_uf_para_fecha``.
@@ -1138,7 +1144,7 @@ def _valor_uf_para_fecha(fecha: date | None, cache: dict | None = None) -> float
 def _monto_completo_pesos(propuesta, fecha_ref: date | None, uf_cache: dict | None = None) -> float:
     """Monto de la propuesta en pesos, convirtiendo desde UF si hace falta.
 
-    - Si ``monto_pesos`` > 0, se usa tal cual.
+    - Si ``monto_pesos`` > 0, se usa tal cual (no se suma además el UF).
     - Si no hay pesos (0/None) pero sí ``monto_uf``, convierte con la UF de
       ``fecha_ref`` (misma regla que EP: ``round(monto_uf * valor_uf)``).
     """
@@ -1163,11 +1169,14 @@ def _monto_completo_pesos(propuesta, fecha_ref: date | None, uf_cache: dict | No
 def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
     """Totales mensuales de propuestas enviadas / adjudicadas y montos en pesos.
 
-    - cantidad_enviadas: conteo por ``fecha_envio``
-    - cantidad_adjudicadas: conteo por ``fecha_adjudicacion``
-    - monto_pesos_enviadas: suma en pesos por ``fecha_envio``
-      (convierte ``monto_uf`` → pesos si ``monto_pesos`` está vacío)
-    - monto_pesos_adjudicadas: idem por ``fecha_adjudicacion``
+    Definiciones (mutuamente excluyentes por ``status``):
+
+    - **Enviadas** (status ``Enviada`` o ``No Adjudicada``): se agrupan por
+      ``fecha_envio``. No incluye ``Adjudicada`` aunque tenga fecha de envío.
+    - **Adjudicadas** (status ``Adjudicada``): se agrupan por
+      ``fecha_adjudicacion`` (si falta, ``fecha_envio``).
+    - ``No enviada`` no entra en ninguna métrica.
+    - Montos: ``monto_pesos`` si > 0; si no, conversión de ``monto_uf``.
     """
     buckets = {
         mes: {
@@ -1181,17 +1190,22 @@ def calcular_resumen_mensual_propuestas(propuestas, anio: int) -> dict:
     uf_cache: dict = {}
 
     for p in propuestas:
+        status = (getattr(p, 'status', None) or '').strip()
         fecha_envio = getattr(p, 'fecha_envio', None)
-        if fecha_envio and fecha_envio.year == anio:
+        fecha_adj = getattr(p, 'fecha_adjudicacion', None)
+
+        if status == _STATUS_ADJUDICADA:
+            fecha_ref = fecha_adj or fecha_envio
+            if fecha_ref and fecha_ref.year == anio:
+                b = buckets[fecha_ref.month]
+                b['cantidad_adjudicadas'] += 1
+                b['monto_pesos_adjudicadas'] += _monto_completo_pesos(p, fecha_ref, uf_cache)
+            continue
+
+        if status in _STATUS_ENVIADAS and fecha_envio and fecha_envio.year == anio:
             b = buckets[fecha_envio.month]
             b['cantidad_enviadas'] += 1
             b['monto_pesos_enviadas'] += _monto_completo_pesos(p, fecha_envio, uf_cache)
-
-        fecha_adj = getattr(p, 'fecha_adjudicacion', None)
-        if fecha_adj and fecha_adj.year == anio:
-            b = buckets[fecha_adj.month]
-            b['cantidad_adjudicadas'] += 1
-            b['monto_pesos_adjudicadas'] += _monto_completo_pesos(p, fecha_adj, uf_cache)
 
     labels = [f'{_MESES_CORTOS_ES[m - 1]} {anio}' for m in range(1, 13)]
     cantidad_enviadas = [buckets[m]['cantidad_enviadas'] for m in range(1, 13)]

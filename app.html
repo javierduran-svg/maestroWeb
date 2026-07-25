@@ -2455,7 +2455,7 @@
                     <div class="panel-header flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">Totales mensuales</h5>
-                            <small class="text-muted">Montos y cantidades de enviadas / adjudicadas por mes</small>
+                            <small class="text-muted">Enviadas = status Enviada o No Adjudicada (fecha envío). Adjudicadas = status Adjudicada (fecha adjudicación).</small>
                         </div>
                         <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                             <select class="form-select form-select-sm" id="propResumenAnio" style="width:auto;min-width:88px" onchange="cargarResumenMensualPropuestas()"></select>
@@ -2472,10 +2472,10 @@
                                         <thead>
                                             <tr>
                                                 <th>Mes</th>
-                                                <th class="text-end">Monto $ / enviadas</th>
-                                                <th class="text-end">Monto $ / adjudicadas</th>
-                                                <th class="text-end">Cantidad / enviadas</th>
-                                                <th class="text-end">Cantidad / adjudicadas</th>
+                                                <th class="text-end">Monto $ Enviadas</th>
+                                                <th class="text-end">Monto $ Adjudicadas</th>
+                                                <th class="text-end">Cant. Enviadas</th>
+                                                <th class="text-end">Cant. Adjudicadas</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tabla-propuestas-resumen-body"></tbody>
@@ -9673,7 +9673,7 @@
                 datasets: [
                     {
                         type: 'bar',
-                        label: 'Monto $ / enviadas',
+                        label: 'Monto $ Enviadas',
                         data: data.monto_pesos_enviadas || [],
                         backgroundColor: 'rgba(0, 128, 128, 0.75)',
                         borderColor: '#008080',
@@ -9683,7 +9683,7 @@
                     },
                     {
                         type: 'bar',
-                        label: 'Monto $ / adjudicadas',
+                        label: 'Monto $ Adjudicadas',
                         data: data.monto_pesos_adjudicadas || [],
                         backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: '#0d6efd',
@@ -9693,7 +9693,7 @@
                     },
                     {
                         type: 'line',
-                        label: 'Cantidad / enviadas',
+                        label: 'Cant. Enviadas',
                         data: data.cantidad_enviadas || [],
                         borderColor: '#fd7e14',
                         backgroundColor: 'rgba(253, 126, 20, 0.15)',
@@ -9705,7 +9705,7 @@
                     },
                     {
                         type: 'line',
-                        label: 'Cantidad / adjudicadas',
+                        label: 'Cant. Adjudicadas',
                         data: data.cantidad_adjudicadas || [],
                         borderColor: '#198754',
                         backgroundColor: 'rgba(25, 135, 84, 0.15)',
