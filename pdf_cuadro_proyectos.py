@@ -199,20 +199,24 @@ def generar_pdf_cuadro_proyectos(
     pdf._empresa_nombre = empresa.get('razon_social') or empresa.get('nombre') or ''
     pdf.add_page()
 
-    # Cabecera empresa
+    # Cabecera empresa: datos a la izquierda, logo a la derecha
     logo_path = empresa.get('logo_path')
     y0 = pdf.get_y()
     if logo_path and Path(logo_path).is_file():
         try:
-            pdf.image(str(logo_path), x=14, y=y0, h=14)
+            logo_h = 14.0
+            # Aproximar ancho tipico del logo y anclarlo al borde derecho de la tabla
+            logo_w = 42.0
+            x_logo = 14 + _TABLE_W - logo_w
+            pdf.image(str(logo_path), x=x_logo, y=y0, h=logo_h)
         except Exception:
             pass
 
-    pdf.set_xy(32 if logo_path else 14, y0)
+    pdf.set_xy(14, y0)
     pdf._set_font('B', 12)
     pdf.set_text_color(*DARK)
     pdf.cell(180, 5, _texto_seguro(pdf._empresa_nombre), new_x='LMARGIN', new_y='NEXT')
-    pdf.set_x(32 if logo_path else 14)
+    pdf.set_x(14)
     pdf._set_font('', 8)
     pdf.set_text_color(*TEXT_MUTED)
     meta_parts = []
