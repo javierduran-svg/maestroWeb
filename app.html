@@ -2208,7 +2208,12 @@
                     <div class="proyectos-split-top">
                         <div class="panel-header">
                             <h5 class="mb-0">Proyectos</h5>
-                            <button class="btn btn-sm btn-teal" onclick="abrirProyectoModal()">+ PROYECTO</button>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportarCuadroProyectos()" title="Exportar listado de proyectos activos para presentación bancaria">
+                                    <i class="fa-solid fa-file-pdf me-1"></i>Cuadro de proyectos
+                                </button>
+                                <button class="btn btn-sm btn-teal" onclick="abrirProyectoModal()">+ PROYECTO</button>
+                            </div>
                         </div>
                         <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
                             <small class="text-muted" id="proyContador">—</small>
@@ -7018,6 +7023,14 @@
         ['filtroProyNombre','filtroProySuperficie','filtroProyContrato','filtroProyPagado','filtroProyGastos'].forEach(id => document.getElementById(id).value = '');
         ['filtroProyCliente','filtroProyServicio','filtroProyStatus'].forEach(id => document.getElementById(id).value = '');
         renderProyectos(true);
+    }
+
+    function exportarCuadroProyectos() {
+        if (!_empresaActivaId) {
+            alert('Seleccione una empresa para exportar el cuadro de proyectos.');
+            return;
+        }
+        window.open(`/api/proyectos/cuadro/pdf?empresa_id=${_empresaActivaId}`, '_blank');
     }
 
     let _proyTimelineDrag = null;

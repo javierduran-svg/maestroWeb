@@ -34,6 +34,7 @@ from propuestas_service import (
 )
 
 from services.rentabilidad_service import calcular_rentabilidad_proyectos
+from pdf_cuadro_proyectos import generar_pdf_cuadro_proyectos
 
 bp = Blueprint('proyectos', __name__)
 
@@ -44,6 +45,67 @@ def rentabilidad_proyectos():
     if err:
         return err
     return jsonify(calcular_rentabilidad_proyectos(eid))
+
+
+@bp.route('/api/proyectos/cuadro/pdf', methods=['GET'])
+def exportar_cuadro_proyectos_pdf():
+    """PDF formal con proyectos activos (montos contratados, facturados, pagados)."""
+    eid = _empresa_id_request(required=False) or request.args.get('empresa_id', type=int)
+    if not eid:
+        return jsonify({'error': 'X-Empresa-Id requerido'}), 400
+
+    try:
+        empresa = Empresa.query.get(eid)
+        if not empresa:
+            return jsonify({'error': 'Empresa no encontrada'}), 404
+
+        movimientos = Movimiento.query.filter_by(empresa_id=eid).all()
+        proyectos = (
+            Proyecto.query.filter_by(empresa_id=eid, status='Activo')
+            .order_by(Proyecto.nombre)
+            .all()
+        )
+        for p in proyectos:
+            recalcular_proyecto(p, movimientos)
+        db.session.commit()
+
+        filas = []
+        for p in proyectos:
+            contrato = float(p.monto_contrato or 0)
+            pagado = float(p.monto_pagado or 0)
+            filas.append({
+                'nombre': p.nombre,
+                'cliente': p.cliente_rel.razon_social if p.cliente_rel else '',
+                'servicio': p.servicio or '',
+                'monto_contrato': contrato,
+                'monto_facturado': float(p.monto_facturado or 0),
+                'monto_pagado': pagado,
+                'saldo_por_cobrar': max(0.0, contrato - pagado),
+                'avance_cobro': (pagado / contrato * 100.0) if contrato > 0 else None,
+            })
+
+        logo = _logo_path(empresa)
+        pdf_bytes = generar_pdf_cuadro_proyectos(
+            {
+                'razon_social': empresa.nombre,
+                'rut': empresa.rut,
+                'direccion': empresa.direccion or '',
+                'giro': empresa.giro or '',
+                'logo_path': str(logo) if logo else None,
+            },
+            filas,
+        )
+        nombre_emp = (empresa.nombre or 'empresa').strip().replace(' ', '_')[:40]
+        return send_file(
+            io.BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'cuadro_proyectos_activos_{nombre_emp}.pdf',
+        )
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.exception('Error en GET /api/proyectos/cuadro/pdf empresa_id=%s', eid)
+        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/api/clientes', methods=['GET', 'POST'])
