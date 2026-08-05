@@ -1795,6 +1795,39 @@ def _calcular_montos_liquidacion(trabajador: Trabajador, dias_trabajados: int, u
     }
 
 
+def _recalcular_proyectos(empresa_id: int, *proyecto_ids):
+    """Recalcula montos solo de los proyectos indicados. Más barato que todo el portafolio."""
+    ids = {int(pid) for pid in proyecto_ids if pid is not None}
+    if not ids:
+        return []
+    proyectos = Proyecto.query.filter(
+        Proyecto.empresa_id == empresa_id,
+        Proyecto.id.in_(ids),
+    ).all()
+    if not proyectos:
+        return []
+    movimientos = Movimiento.query.filter(
+        Movimiento.empresa_id == empresa_id,
+        Movimiento.proyecto_id.in_(ids),
+    ).all()
+    for proyecto in proyectos:
+        recalcular_proyecto(proyecto, movimientos)
+    db.session.commit()
+    return proyectos
+
+
+def _proyecto_montos_dict(p: Proyecto) -> dict:
+    """Resumen de montos ya recalculados (sin volver a calcular)."""
+    return {
+        'id': p.id,
+        'monto_contrato': p.monto_contrato,
+        'monto_pagado': p.monto_pagado,
+        'monto_facturado': p.monto_facturado,
+        'saldo_por_facturar': p.saldo_por_facturar,
+        'monto_gastos': p.monto_gastos,
+    }
+
+
 def _recalcular_todos_proyectos(empresa_id: int):
     movimientos = Movimiento.query.filter_by(empresa_id=empresa_id).all()
     for proyecto in Proyecto.query.filter_by(empresa_id=empresa_id).all():
@@ -2859,6 +2892,8 @@ __all__ = [
     '_propuesta_a_dict',
     '_proyecto_a_dict',
     '_proyecto_gantt_dict',
+    '_proyecto_montos_dict',
+    '_recalcular_proyectos',
     '_recalcular_todos_proyectos',
     '_registrar_movimiento_desde_dte',
     '_requiere_empresa',

@@ -224,7 +224,6 @@ def manejar_proyecto(proyecto_id):
         EntregaProgramada.query.filter_by(empresa_id=eid, proyecto_id=proyecto_id).delete()
         db.session.delete(proyecto)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
         return jsonify({'mensaje': 'Proyecto eliminado'})
 
     data = request.json or {}
@@ -258,7 +257,7 @@ def manejar_proyecto(proyecto_id):
     if 'status' in data:
         proyecto.status = data['status']
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
+    _recalcular_proyectos(eid, proyecto.id)
     return jsonify({'mensaje': 'Proyecto actualizado', 'id': proyecto.id})
 
 
@@ -280,7 +279,7 @@ def movimientos_proyecto(proyecto_id):
             cambiado = True
     if cambiado:
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
+        _recalcular_proyectos(eid, proyecto_id)
     return jsonify([_movimiento_a_dict(m) for m in movimientos])
 
 
@@ -291,8 +290,12 @@ def crear_estado_pago(proyecto_id):
         return err
     mov = _crear_estado_pago(proyecto_id, request.json, eid)
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
-    return jsonify({'mensaje': 'Estado de pago registrado', 'id': mov.id}), 201
+    proyectos = _recalcular_proyectos(eid, proyecto_id)
+    return jsonify({
+        'mensaje': 'Estado de pago registrado',
+        'id': mov.id,
+        'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+    }), 201
 
 
 @bp.route('/api/proyectos/<int:proyecto_id>/gastos', methods=['POST'])
@@ -302,8 +305,12 @@ def crear_gasto(proyecto_id):
         return err
     mov = _crear_gasto(proyecto_id, request.json, eid)
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
-    return jsonify({'mensaje': 'Gasto registrado', 'id': mov.id}), 201
+    proyectos = _recalcular_proyectos(eid, proyecto_id)
+    return jsonify({
+        'mensaje': 'Gasto registrado',
+        'id': mov.id,
+        'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+    }), 201
 
 
 @bp.route('/api/proyectos/<int:proyecto_id>/entregas', methods=['GET', 'POST'])
@@ -502,7 +509,7 @@ def manejar_estados_pago_gantt():
         elif data.get('estado') == 'Facturado' and data.get('fecha_facturacion'):
             mov.fecha_facturacion = _parse_fecha(data.get('fecha_facturacion'))
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
+        _recalcular_proyectos(eid, int(proyecto_id))
         return jsonify({'mensaje': 'Estado de pago creado', 'estado_pago': _estado_pago_gantt_dict(mov)}), 201
 
     query = Movimiento.query.filter_by(empresa_id=eid, clase='estado_pago', estado='Activo')
@@ -547,7 +554,7 @@ def manejar_estado_pago_gantt(ep_id):
     if 'monto' in data:
         mov.monto_pesos = float(data['monto'])
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
+    _recalcular_proyectos(eid, mov.proyecto_id)
     return jsonify({'mensaje': 'Estado de pago actualizado', 'estado_pago': _estado_pago_gantt_dict(mov)})
 
 

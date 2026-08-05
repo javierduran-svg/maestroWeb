@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Consultoría | Minimal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --teal-green: #008080;
+            --accent-blue: #007bff;
+            --bg-gray: #f8f9fa;
+            --dark-text: #212529;
+            --border-color: #dee2e6;
+        }
+        body { font-family: 'Roboto', sans-serif; background-color: white; color: var(--dark-text); }
+        .navbar { background-color: #000 !important; border-bottom: 2px solid var(--teal-green); }
+        .card { border: 1px solid var(--border-color); border-radius: 4px; box-shadow: none; transition: 0.3s; }
+        .card:hover { border-color: var(--teal-green); }
+        .btn-teal { background-color: var(--teal-green); color: white; border-radius: 4px; border: none; }
+        .btn-teal:hover { background-color: #006666; color: white; }
+        .card-stats { border-top: 3px solid var(--teal-green); }
+        .text-teal { color: var(--teal-green) !important; }
+        .table thead { background-color: #f1f3f5; }
+        .modal-content { border-radius: 4px; border: none; }
+        .modal-header { background-color: #000; color: white; border-radius: 4px 4px 0 0; }
+        .form-control:focus, .form-select:focus { border-color: var(--teal-green); box-shadow: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">CONSULTORA<span class="text-teal">.Sustentable</span></a>
+    </div>
+</nav>
+
+<div class="container-fluid px-5">
+    
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <div class="card card-stats p-3">
+                <small class="text-uppercase fw-bold text-muted">Disponible Pesos</small>
+                <h2 class="fw-light">$12.450.000</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stats p-3" style="border-top-color: var(--accent-blue);">
+                <small class="text-uppercase fw-bold text-muted">Por Facturar</small>
+                <h2 class="fw-light text-primary">$5.800.000</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stats p-3">
+                <small class="text-uppercase fw-bold text-muted">Proyectos Activos</small>
+                <h2 class="fw-light" id="count-proyectos">0</h2>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card card-stats p-3" style="border-top-color: #333;">
+                <small class="text-uppercase fw-bold text-muted">Egresos Mes</small>
+                <h2 class="fw-light text-danger">$1.200.000</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <h5 class="mb-0">Cartera de Proyectos</h5>
+                <button class="btn btn-sm btn-teal" data-bs-toggle="modal" data-bs-target="#modalProyecto" onclick="cargarClientes()">+ PROYECTO</button>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-proyectos">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="d-flex justify-content-between align-items-end mb-3">
+                <h5 class="mb-0">Últimos Movimientos</h5>
+                <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalMovimiento" onclick="cargarCuentas()">+ MOVIMIENTO</button>
+            </div>
+            <div class="card p-0 overflow-hidden">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Descripción</th>
+                            <th>Monto</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-movimientos">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalProyecto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nuevo Proyecto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formNuevoProyecto">
+                    <div class="row g-3">
+                        <div class="col-md-8"><label class="form-label small fw-bold">Nombre</label><input type="text" class="form-control" id="nombreP" required></div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Superficie (m²)</label><input type="number" class="form-control" id="superficieP" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Cliente</label><select class="form-select" id="clienteP" required></select></div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Servicio</label>
+                            <select class="form-select" id="servicioP" required>
+                                <option value="CEV">CEV</option>
+                                <option value="CES">CES</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12"><label class="form-label small fw-bold">Monto Contrato</label><input type="number" class="form-control" id="montoP" required></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-teal px-5" onclick="guardarProyecto()">GUARDAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalMovimiento" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Movimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formNuevoMovimiento">
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label small fw-bold">Fecha</label><input type="date" class="form-control" id="fechaM" required></div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Tipo</label>
+                            <select class="form-select" id="tipoM">
+                                <option value="Ingreso">Ingreso</option>
+                                <option value="Egreso">Egreso</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4"><label class="form-label small fw-bold">Monto ($)</label><input type="number" class="form-control" id="montoM" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Cta. Origen</label><select class="form-select" id="origenM"></select></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Cta. Destino</label><select class="form-select" id="destinoM"></select></div>
+                        <div class="col-md-12"><label class="form-label small fw-bold">Descripción</label><input type="text" class="form-control" id="descM" required></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-dark px-5" onclick="guardarMovimiento()">REGISTRAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // === LÓGICA DE PROYECTOS ===
+    async function cargarClientes() {
+        const res = await fetch('/api/clientes');
+        const clientes = await res.json();
+        document.getElementById('clienteP').innerHTML = clientes.map(c => `<option value="${c.id}">${c.razon_social}</option>`).join('');
+    }
+
+    async function guardarProyecto() {
+        const pData = {
+            nombre: document.getElementById('nombreP').value,
+            superficie: document.getElementById('superficieP').value,
+            cliente_id: document.getElementById('clienteP').value,
+            servicio: document.getElementById('servicioP').value,
+            monto_contrato: document.getElementById('montoP').value
+        };
+        
+        // Enviamos datos al backend
+        const res = await fetch('/api/proyectos', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(pData) 
+        });
+
+        // Verificamos que se guardó correctamente antes de hacer cambios visuales
+        if(res.ok) {
+            document.getElementById('formNuevoProyecto').reset(); // Limpiamos los campos
+            bootstrap.Modal.getInstance(document.getElementById('modalProyecto')).hide(); // Cerramos el modal
+            await listarProyectos(); // Refrescamos la tabla inmediatamente
+        } else {
+            alert("Error al guardar el proyecto. Verifica los datos.");
+        }
+    }
+
+    async function listarProyectos() {
+        const res = await fetch('/api/proyectos');
+        const proyectos = await res.json();
+        
+        // Actualiza el contador de la tarjeta superior
+        document.getElementById('count-proyectos').innerText = proyectos.length;
+        
+        // Dibuja la tabla con los proyectos actualizados
+        document.getElementById('tabla-proyectos').innerHTML = proyectos.map(p => `
+            <tr>
+                <td class="fw-medium">${p.nombre}<br><small class="text-muted">${p.cliente}</small></td>
+                <td class="fw-bold">$${p.monto_contrato.toLocaleString('es-CL')}</td>
+                <td><span class="text-teal"><i class="fa-solid fa-circle-check"></i> ${p.status}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    // === LÓGICA DE MOVIMIENTOS ===
+    async function cargarCuentas() {
+        const res = await fetch('/api/cuentas');
+        const cuentas = await res.json();
+        const options = cuentas.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+        document.getElementById('origenM').innerHTML = options;
+        document.getElementById('destinoM').innerHTML = options;
+    }
+
+    async function guardarMovimiento() {
+        const mData = {
+            fecha: document.getElementById('fechaM').value,
+            tipo: document.getElementById('tipoM').value,
+            monto: document.getElementById('montoM').value,
+            origen_id: document.getElementById('origenM').value,
+            destino_id: document.getElementById('destinoM').value,
+            descripcion: document.getElementById('descM').value,
+            centro_costo: 'Administración'
+        };
+        
+        const res = await fetch('/api/movimientos', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(mData) 
+        });
+
+        if(res.ok) {
+            document.getElementById('formNuevoMovimiento').reset();
+            bootstrap.Modal.getInstance(document.getElementById('modalMovimiento')).hide();
+            await listarMovimientos(); // Refrescamos la tabla inmediatamente
+        }
+    }
+
+    async function listarMovimientos() {
+        const res = await fetch('/api/movimientos');
+        const movimientos = await res.json();
+        document.getElementById('tabla-movimientos').innerHTML = movimientos.map(m => `
+            <tr>
+                <td class="text-muted">${m.fecha}</td>
+                <td class="fw-medium">${m.descripcion}</td>
+                <td class="fw-bold ${m.tipo === 'Egreso' ? 'text-danger' : 'text-success'}">$${m.monto.toLocaleString('es-CL')}</td>
+                <td><span class="badge bg-light text-dark border">${m.tipo}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    // Inicializar vistas apenas cargue la página
+    listarProyectos();
+    listarMovimientos();
+</script>
+</body>
+</html>

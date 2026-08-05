@@ -126,7 +126,13 @@ def get_dashboard_series():
 
 @bp.route('/api/dashboard/estados-pago', methods=['GET'])
 def get_dashboard_estados_pago():
-    """Seguimiento de EP ya enviados por proyecto (facturado, cedido, pagado, etc.)."""
+    """EP del dashboard por status (Programado, Enviado, Facturado, etc.).
+
+    Query params:
+      - anio: filtra por año de fecha_movimiento
+      - status: uno o varios status_pago separados por coma
+        (si se omite: todos excepto 'Por enviar')
+    """
     try:
         eid, err = _requiere_empresa()
         if err:
@@ -134,13 +140,22 @@ def get_dashboard_estados_pago():
         query = Movimiento.query.filter_by(
             empresa_id=eid, clase='estado_pago', estado='Activo',
         ).filter(Movimiento.proyecto_id.isnot(None))
-        # "Por enviar" (incluye status_pago vacío/null, que la UI trata como "Por enviar")
-        # es el estado previo al envío/cobro: no corresponde a este seguimiento de cobranza.
-        query = query.filter(
-            Movimiento.status_pago.isnot(None),
-            Movimiento.status_pago != '',
-            Movimiento.status_pago != 'Por enviar',
-        )
+        status_param = (request.args.get('status') or '').strip()
+        if status_param:
+            statuses = [s.strip() for s in status_param.split(',') if s.strip()]
+            invalid = [s for s in statuses if s not in STATUS_PAGO]
+            if invalid:
+                return jsonify({
+                    'error': f'Status no válido: {", ".join(invalid)}. Use: {", ".join(STATUS_PAGO)}',
+                }), 400
+            query = query.filter(Movimiento.status_pago.in_(statuses))
+        else:
+            # "Por enviar" (incluye vacío/null) no entra en el seguimiento del dashboard.
+            query = query.filter(
+                Movimiento.status_pago.isnot(None),
+                Movimiento.status_pago != '',
+                Movimiento.status_pago != 'Por enviar',
+            )
         anio_param = request.args.get('anio')
         if anio_param:
             anio = int(anio_param)
@@ -517,16 +532,25 @@ def manejar_movimiento(mov_id):
         return jsonify(_movimiento_a_dict(mov))
 
     if request.method == 'DELETE':
+        proyecto_id = mov.proyecto_id
         db.session.delete(mov)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
-        return jsonify({'mensaje': 'Movimiento eliminado'})
+        proyectos = _recalcular_proyectos(eid, proyecto_id)
+        return jsonify({
+            'mensaje': 'Movimiento eliminado',
+            'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+        })
 
     data = request.json
+    proyecto_prev = mov.proyecto_id
     _aplicar_datos_movimiento(mov, data)
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
-    return jsonify({'mensaje': 'Movimiento actualizado', 'movimiento': _movimiento_a_dict(mov)})
+    proyectos = _recalcular_proyectos(eid, proyecto_prev, mov.proyecto_id)
+    return jsonify({
+        'mensaje': 'Movimiento actualizado',
+        'movimiento': _movimiento_a_dict(mov),
+        'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+    })
 
 
 @bp.route('/api/movimientos/<int:mov_id>/duplicar', methods=['POST'])
@@ -563,8 +587,12 @@ def duplicar_movimiento(mov_id):
     )
     db.session.add(copia)
     db.session.commit()
-    _recalcular_todos_proyectos(eid)
-    return jsonify({'mensaje': 'Movimiento duplicado', 'id': copia.id}), 201
+    proyectos = _recalcular_proyectos(eid, copia.proyecto_id)
+    return jsonify({
+        'mensaje': 'Movimiento duplicado',
+        'id': copia.id,
+        'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+    }), 201
 
 
 @bp.route('/api/movimientos', methods=['GET', 'POST'])
@@ -615,8 +643,12 @@ def manejar_movimientos():
             )
             db.session.add(mov)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
-        return jsonify({'mensaje': 'Movimiento registrado', 'id': mov.id}), 201
+        proyectos = _recalcular_proyectos(eid, mov.proyecto_id)
+        return jsonify({
+            'mensaje': 'Movimiento registrado',
+            'id': mov.id,
+            'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
+        }), 201
 
     query = Movimiento.query.filter_by(empresa_id=eid)
     query = _filtrar_movimientos_query(query, request.args)
@@ -691,7 +723,7 @@ def sii_emitir_documento():
         )
         mov = _registrar_movimiento_desde_dte(data, dte, eid)
         db.session.commit()
-        _recalcular_todos_proyectos(eid)
+        _recalcular_proyectos(eid, getattr(mov, 'proyecto_id', None))
         return jsonify({
             'mensaje': 'DTE emitido y movimiento registrado',
             'dte': dte,
