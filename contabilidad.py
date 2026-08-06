@@ -200,6 +200,26 @@ def calcular_kpis(cuentas, proyectos, movimientos) -> dict:
     )
     utilidad_proyectada = ingresos_proyectados_mes - flotacion_mes
 
+    # Snapshot actual del pipeline de EP (sin filtro de mes/año).
+    total_facturado_por_pagar = sum(
+        m.monto_pesos for m in movimientos
+        if m.estado == 'Activo'
+        and m.clase == 'estado_pago'
+        and getattr(m, 'status_pago', None) == 'Facturado'
+    )
+    total_ep_enviados = sum(
+        m.monto_pesos for m in movimientos
+        if m.estado == 'Activo'
+        and m.clase == 'estado_pago'
+        and getattr(m, 'status_pago', None) == 'Enviado'
+    )
+    total_ep_programados = sum(
+        m.monto_pesos for m in movimientos
+        if m.estado == 'Activo'
+        and m.clase == 'estado_pago'
+        and getattr(m, 'status_pago', None) == 'Programado'
+    )
+
     return {
         'disponible_pesos': disponible_pesos,
         'por_facturar': por_facturar,
@@ -208,6 +228,9 @@ def calcular_kpis(cuentas, proyectos, movimientos) -> dict:
         'flotacion_mes': flotacion_mes,
         'ingresos_proyectados_mes': ingresos_proyectados_mes,
         'utilidad_proyectada': utilidad_proyectada,
+        'total_facturado_por_pagar': total_facturado_por_pagar,
+        'total_ep_enviados': total_ep_enviados,
+        'total_ep_programados': total_ep_programados,
     }
 
 
