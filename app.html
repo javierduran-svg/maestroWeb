@@ -1151,8 +1151,8 @@
         .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
         td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
         .tabla-dashboard-ep-grid {
-            width: auto;
-            max-width: 100%;
+            width: max-content !important; /* no estirar al 100% de .table */
+            max-width: none;
             table-layout: auto;
         }
         .tabla-dashboard-ep-grid th,
@@ -1165,28 +1165,23 @@
         }
         .tabla-dashboard-ep-grid th.ep-track-col-proyecto,
         .tabla-dashboard-ep-grid td.ep-track-col-proyecto {
-            width: auto;
-            min-width: 8rem;
-            max-width: 18rem;
+            width: 1%;
+            max-width: 16rem;
+        }
+        .tabla-dashboard-ep-grid .ep-proyecto-cell {
+            display: block;
+            max-width: 16rem;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tabla-dashboard-ep-grid th.ep-track-col-proyecto .mov-filtro {
+            width: 14rem;
+            max-width: 14rem;
         }
         .tabla-dashboard-ep-grid th.ep-col-num,
         .tabla-dashboard-ep-grid td.ep-col-num {
             text-align: center;
-            min-width: 3.25rem;
-        }
-        .tabla-dashboard-ep-grid th.ep-col-uf,
-        .tabla-dashboard-ep-grid td.ep-col-uf {
-            min-width: 4.5rem;
-        }
-        .tabla-dashboard-ep-grid th.ep-col-monto,
-        .tabla-dashboard-ep-grid td.ep-col-monto {
-            min-width: 5.5rem;
-        }
-        .tabla-dashboard-ep-grid th.ep-col-fecha,
-        .tabla-dashboard-ep-grid td.ep-col-fecha {
-            min-width: 6.75rem;
         }
         .tabla-dashboard-ep-grid .mov-filtro,
         .tabla-dashboard-ep-grid .mov-filtro.form-select {
@@ -1195,18 +1190,29 @@
             background: transparent;
             border-radius: 0;
             min-width: 0;
-            width: 100%;
+            width: auto;
             max-width: 100%;
             padding-left: 0.25rem;
             padding-right: 0.25rem;
         }
-        .tabla-dashboard-ep-grid th.ep-col-num .mov-filtro,
-        .tabla-dashboard-ep-grid th.ep-col-uf .mov-filtro,
+        .tabla-dashboard-ep-grid th.ep-col-num .mov-filtro {
+            width: 3.25rem;
+            max-width: 3.25rem;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-uf .mov-filtro {
+            width: 4.5rem;
+            max-width: 4.5rem;
+            margin-left: auto;
+            display: block;
+        }
         .tabla-dashboard-ep-grid th.ep-col-monto .mov-filtro {
+            width: 5.5rem;
             max-width: 5.5rem;
             margin-left: auto;
+            display: block;
         }
         .tabla-dashboard-ep-grid th.ep-col-fecha .mov-filtro {
+            width: 7rem;
             max-width: 7rem;
         }
         .tabla-dashboard-ep-grid .mov-filtro:focus,
@@ -5537,7 +5543,7 @@
                 : '—';
             const dateField = cfg.dateField || 'fecha_movimiento';
             return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
-                <td class="ep-track-col-proyecto" title="${esc(proyecto)}">${esc(proyecto)}</td>
+                <td class="ep-track-col-proyecto" title="${esc(proyecto)}"><span class="ep-proyecto-cell">${esc(proyecto)}</span></td>
                 <td class="ep-col-num">${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
                 <td class="text-end ep-col-uf">${esc(ufTxt)}</td>
                 <td class="text-end ep-col-uf">${esc(valorUfTxt)}</td>
