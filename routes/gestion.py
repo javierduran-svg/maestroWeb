@@ -101,12 +101,24 @@ def get_gestion_dashboard():
             })
         proximas_tareas.sort(key=lambda x: (x['fecha_limite'] or '9999-12-31', x['id']))
 
-        dias_proximas_entregas = int(request.args.get('dias_entregas', 60))
-        limite_entregas = hoy + timedelta(days=dias_proximas_entregas)
+        dias_param = (request.args.get('dias_entregas') or '60').strip().lower()
+        if dias_param in ('0', 'all', 'todo'):
+            dias_proximas_entregas = None
+        else:
+            try:
+                dias_proximas_entregas = int(dias_param)
+            except ValueError:
+                return jsonify({'error': 'Parámetro dias_entregas inválido'}), 400
+            if dias_proximas_entregas < 1:
+                return jsonify({'error': 'dias_entregas debe ser >= 1 o all'}), 400
+        limite_entregas = (
+            hoy + timedelta(days=dias_proximas_entregas)
+            if dias_proximas_entregas is not None else None
+        )
         proximas_entregas = []
         for e in entregas:
             dias = (e.fecha_entrega - hoy).days
-            if e.fecha_entrega > limite_entregas:
+            if limite_entregas is not None and e.fecha_entrega > limite_entregas:
                 continue
             entrega_dict = _entrega_a_dict(e)
             entrega_tareas = []
@@ -201,8 +213,9 @@ def get_gestion_dashboard():
         return jsonify({
             'proyectos': proyectos_resumen,
             'alertas': alertas,
-            'proximas_tareas': proximas_tareas[:30],
-            'proximas_entregas': proximas_entregas[:30],
+            'proximas_tareas': proximas_tareas,
+            'proximas_entregas': proximas_entregas,
+            'dias_entregas': dias_proximas_entregas,
             'actividades_semana': actividades_semana,
             'actividades_mes': actividades_mes,
             'resumen': {
