@@ -1151,7 +1151,7 @@
         .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
         td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
         .tabla-dashboard-ep-grid {
-            width: max-content;
+            width: auto;
             max-width: 100%;
             table-layout: auto;
         }
@@ -1160,13 +1160,33 @@
             width: 1%;
             white-space: nowrap;
             vertical-align: middle;
+            padding-left: 0.55rem;
+            padding-right: 0.55rem;
         }
         .tabla-dashboard-ep-grid th.ep-track-col-proyecto,
         .tabla-dashboard-ep-grid td.ep-track-col-proyecto {
             width: auto;
-            max-width: 16rem;
+            min-width: 8rem;
+            max-width: 18rem;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-num,
+        .tabla-dashboard-ep-grid td.ep-col-num {
+            text-align: center;
+            min-width: 3.25rem;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-uf,
+        .tabla-dashboard-ep-grid td.ep-col-uf {
+            min-width: 4.5rem;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-monto,
+        .tabla-dashboard-ep-grid td.ep-col-monto {
+            min-width: 5.5rem;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-fecha,
+        .tabla-dashboard-ep-grid td.ep-col-fecha {
+            min-width: 6.75rem;
         }
         .tabla-dashboard-ep-grid .mov-filtro,
         .tabla-dashboard-ep-grid .mov-filtro.form-select {
@@ -1176,6 +1196,18 @@
             border-radius: 0;
             min-width: 0;
             width: 100%;
+            max-width: 100%;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-num .mov-filtro,
+        .tabla-dashboard-ep-grid th.ep-col-uf .mov-filtro,
+        .tabla-dashboard-ep-grid th.ep-col-monto .mov-filtro {
+            max-width: 5.5rem;
+            margin-left: auto;
+        }
+        .tabla-dashboard-ep-grid th.ep-col-fecha .mov-filtro {
+            max-width: 7rem;
         }
         .tabla-dashboard-ep-grid .mov-filtro:focus,
         .tabla-dashboard-ep-grid .mov-filtro.form-select:focus {
@@ -2106,19 +2138,19 @@
                             <thead>
                                 <tr>
                                     <th class="mov-th-sort ep-track-col-proyecto" data-col="proyecto" onclick="ordenarEpDash('programados','proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="numero_ep" onclick="ordenarEpDash('programados','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarEpDash('programados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="valor_uf" onclick="ordenarEpDash('programados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto" onclick="ordenarEpDash('programados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarEpDash('programados','fecha_movimiento')">Fecha programada <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-num" data-col="numero_ep" onclick="ordenarEpDash('programados','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="monto_uf" onclick="ordenarEpDash('programados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="valor_uf" onclick="ordenarEpDash('programados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-monto" data-col="monto" onclick="ordenarEpDash('programados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-fecha" data-col="fecha_movimiento" onclick="ordenarEpDash('programados','fecha_movimiento')">Fecha programada <i class="fa-solid fa-sort sort-icon"></i></th>
                                 </tr>
                                 <tr class="mov-filtros">
                                     <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpProgProyecto" onchange="renderEpDashTable('programados')"><option value="">Todos</option></select></th>
-                                    <th><input type="text" class="form-control mov-filtro" id="filtroEpProgNumero" placeholder="N°" oninput="debounceRenderEpDash('programados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgUf" placeholder="UF" oninput="debounceRenderEpDash('programados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgValorUf" placeholder="Valor" oninput="debounceRenderEpDash('programados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgMonto" placeholder="Monto" oninput="debounceRenderEpDash('programados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpProgFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('programados')"></th>
+                                    <th class="ep-col-num"><input type="text" class="form-control mov-filtro text-center" id="filtroEpProgNumero" placeholder="N°" oninput="debounceRenderEpDash('programados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgUf" placeholder="UF" oninput="debounceRenderEpDash('programados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgValorUf" placeholder="Valor" oninput="debounceRenderEpDash('programados')"></th>
+                                    <th class="ep-col-monto"><input type="text" class="form-control mov-filtro text-end" id="filtroEpProgMonto" placeholder="Monto" oninput="debounceRenderEpDash('programados')"></th>
+                                    <th class="ep-col-fecha"><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpProgFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('programados')"></th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-dashboard-ep-programados-body"><tr><td colspan="6" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
@@ -2141,19 +2173,19 @@
                             <thead>
                                 <tr>
                                     <th class="mov-th-sort ep-track-col-proyecto" data-col="proyecto" onclick="ordenarEpDash('enviados','proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="numero_ep" onclick="ordenarEpDash('enviados','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarEpDash('enviados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="valor_uf" onclick="ordenarEpDash('enviados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto" onclick="ordenarEpDash('enviados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarEpDash('enviados','fecha_movimiento')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-num" data-col="numero_ep" onclick="ordenarEpDash('enviados','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="monto_uf" onclick="ordenarEpDash('enviados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="valor_uf" onclick="ordenarEpDash('enviados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-monto" data-col="monto" onclick="ordenarEpDash('enviados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-fecha" data-col="fecha_movimiento" onclick="ordenarEpDash('enviados','fecha_movimiento')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
                                 </tr>
                                 <tr class="mov-filtros">
                                     <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpEnvProyecto" onchange="renderEpDashTable('enviados')"><option value="">Todos</option></select></th>
-                                    <th><input type="text" class="form-control mov-filtro" id="filtroEpEnvNumero" placeholder="N°" oninput="debounceRenderEpDash('enviados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvUf" placeholder="UF" oninput="debounceRenderEpDash('enviados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvValorUf" placeholder="Valor" oninput="debounceRenderEpDash('enviados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvMonto" placeholder="Monto" oninput="debounceRenderEpDash('enviados')"></th>
-                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpEnvFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('enviados')"></th>
+                                    <th class="ep-col-num"><input type="text" class="form-control mov-filtro text-center" id="filtroEpEnvNumero" placeholder="N°" oninput="debounceRenderEpDash('enviados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvUf" placeholder="UF" oninput="debounceRenderEpDash('enviados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvValorUf" placeholder="Valor" oninput="debounceRenderEpDash('enviados')"></th>
+                                    <th class="ep-col-monto"><input type="text" class="form-control mov-filtro text-end" id="filtroEpEnvMonto" placeholder="Monto" oninput="debounceRenderEpDash('enviados')"></th>
+                                    <th class="ep-col-fecha"><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpEnvFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('enviados')"></th>
                                 </tr>
                             </thead>
                             <tbody id="tabla-dashboard-ep-enviados-body"><tr><td colspan="6" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
@@ -2163,41 +2195,35 @@
                 <div class="panel-card mt-4">
                     <div class="panel-header flex-wrap gap-2">
                         <div>
-                            <h5 class="mb-0">Seguimiento de Estados de Pago</h5>
-                            <small class="text-muted">EP facturados, cedidos o pagados — seguimiento de cobranza</small>
+                            <h5 class="mb-0">Estados de pago Facturados</h5>
+                            <small class="text-muted">EP con status Facturado — por cobrar</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 ms-auto">
-                            <small class="text-muted" id="epTrackContador"></small>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosEpDash('seguimiento')">Limpiar filtros</button>
+                            <small class="text-muted" id="epFactContador"></small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosEpDash('facturados')">Limpiar filtros</button>
                         </div>
                     </div>
                     <div class="table-responsive tabla-scroll-wrap p-0">
-                        <table id="tabla-dashboard-ep-grid" class="table table-hover table-panel table-compact mb-0 tabla-dashboard-ep-grid" data-ep-table="seguimiento">
+                        <table id="tabla-dashboard-ep-facturados" class="table table-hover table-panel table-compact mb-0 tabla-dashboard-ep-grid" data-ep-table="facturados">
                             <thead>
                                 <tr>
-                                    <th class="mov-th-sort ep-track-col-proyecto" data-col="proyecto" onclick="ordenarEpDash('seguimiento','proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="numero_ep" onclick="ordenarEpDash('seguimiento','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="status_pago" onclick="ordenarEpDash('seguimiento','status_pago')">Estado <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarEpDash('seguimiento','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="valor_uf" onclick="ordenarEpDash('seguimiento','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort text-end" data-col="monto" onclick="ordenarEpDash('seguimiento','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="fecha_movimiento" onclick="ordenarEpDash('seguimiento','fecha_movimiento')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="fecha_facturacion" onclick="ordenarEpDash('seguimiento','fecha_facturacion')">Facturación <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort" data-col="fecha_estado_pago" onclick="ordenarEpDash('seguimiento','fecha_estado_pago')">Pago / cesión <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-track-col-proyecto" data-col="proyecto" onclick="ordenarEpDash('facturados','proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-num" data-col="numero_ep" onclick="ordenarEpDash('facturados','numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="monto_uf" onclick="ordenarEpDash('facturados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-uf" data-col="valor_uf" onclick="ordenarEpDash('facturados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end ep-col-monto" data-col="monto" onclick="ordenarEpDash('facturados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-fecha" data-col="fecha_facturacion" onclick="ordenarEpDash('facturados','fecha_facturacion')">Fecha facturación <i class="fa-solid fa-sort sort-icon"></i></th>
                                 </tr>
                                 <tr class="mov-filtros">
-                                    <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpTrackProyecto" onchange="renderEpDashTable('seguimiento')"><option value="">Todos</option></select></th>
-                                    <th><input type="text" class="form-control mov-filtro" id="filtroEpTrackNumero" placeholder="N°" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><select class="form-select mov-filtro" id="filtroEpTrackEstado" onchange="renderEpDashTable('seguimiento')"><option value="">Todos</option></select></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackUf" placeholder="UF" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackValorUf" placeholder="Valor" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><input type="text" class="form-control mov-filtro text-end" id="filtroEpTrackMonto" placeholder="Monto" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaEnvio" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaFact" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('seguimiento')"></th>
-                                    <th><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpTrackFechaPago" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('seguimiento')"></th>
+                                    <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpFactProyecto" onchange="renderEpDashTable('facturados')"><option value="">Todos</option></select></th>
+                                    <th class="ep-col-num"><input type="text" class="form-control mov-filtro text-center" id="filtroEpFactNumero" placeholder="N°" oninput="debounceRenderEpDash('facturados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpFactUf" placeholder="UF" oninput="debounceRenderEpDash('facturados')"></th>
+                                    <th class="ep-col-uf"><input type="text" class="form-control mov-filtro text-end" id="filtroEpFactValorUf" placeholder="Valor" oninput="debounceRenderEpDash('facturados')"></th>
+                                    <th class="ep-col-monto"><input type="text" class="form-control mov-filtro text-end" id="filtroEpFactMonto" placeholder="Monto" oninput="debounceRenderEpDash('facturados')"></th>
+                                    <th class="ep-col-fecha"><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroEpFactFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderEpDash('facturados')"></th>
                                 </tr>
                             </thead>
-                            <tbody id="tabla-dashboard-ep-body"><tr><td colspan="9" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
+                            <tbody id="tabla-dashboard-ep-facturados-body"><tr><td colspan="6" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -5307,7 +5333,7 @@
             tableId: 'tabla-dashboard-ep-programados',
             contadorId: 'epProgContador',
             cols: 6,
-            showEstado: false,
+            dateField: 'fecha_movimiento',
             emptyMsg: 'Sin estados de pago programados en el periodo',
             filtroIds: {
                 proyecto: 'filtroEpProgProyecto',
@@ -5324,7 +5350,7 @@
             tableId: 'tabla-dashboard-ep-enviados',
             contadorId: 'epEnvContador',
             cols: 6,
-            showEstado: false,
+            dateField: 'fecha_movimiento',
             emptyMsg: 'Sin estados de pago enviados en el periodo',
             filtroIds: {
                 proyecto: 'filtroEpEnvProyecto',
@@ -5335,24 +5361,21 @@
                 fecha_movimiento: 'filtroEpEnvFecha',
             },
         },
-        seguimiento: {
-            statuses: ['Facturado', 'Pagado', 'Cedida'],
-            bodyId: 'tabla-dashboard-ep-body',
-            tableId: 'tabla-dashboard-ep-grid',
-            contadorId: 'epTrackContador',
-            cols: 9,
-            showEstado: true,
-            emptyMsg: 'Sin estados de pago en seguimiento en el periodo',
+        facturados: {
+            statuses: ['Facturado'],
+            bodyId: 'tabla-dashboard-ep-facturados-body',
+            tableId: 'tabla-dashboard-ep-facturados',
+            contadorId: 'epFactContador',
+            cols: 6,
+            dateField: 'fecha_facturacion',
+            emptyMsg: 'Sin estados de pago facturados en el periodo',
             filtroIds: {
-                proyecto: 'filtroEpTrackProyecto',
-                numero_ep: 'filtroEpTrackNumero',
-                status_pago: 'filtroEpTrackEstado',
-                monto_uf: 'filtroEpTrackUf',
-                valor_uf: 'filtroEpTrackValorUf',
-                monto: 'filtroEpTrackMonto',
-                fecha_movimiento: 'filtroEpTrackFechaEnvio',
-                fecha_facturacion: 'filtroEpTrackFechaFact',
-                fecha_estado_pago: 'filtroEpTrackFechaPago',
+                proyecto: 'filtroEpFactProyecto',
+                numero_ep: 'filtroEpFactNumero',
+                monto_uf: 'filtroEpFactUf',
+                valor_uf: 'filtroEpFactValorUf',
+                monto: 'filtroEpFactMonto',
+                fecha_facturacion: 'filtroEpFactFecha',
             },
         },
     };
@@ -5360,7 +5383,7 @@
     const _epDashOrden = {
         programados: { col: 'proyecto', dir: 'asc' },
         enviados: { col: 'proyecto', dir: 'asc' },
-        seguimiento: { col: 'proyecto', dir: 'asc' },
+        facturados: { col: 'proyecto', dir: 'asc' },
     };
     const _epDashFilterTimers = {};
 
@@ -5404,18 +5427,6 @@
             proySel.innerHTML = '<option value="">Todos</option>'
                 + proyectos.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
             if ([...proySel.options].some(o => o.value === vProy)) proySel.value = vProy;
-        }
-        if (cfg.showEstado && cfg.filtroIds.status_pago) {
-            const estadoSel = document.getElementById(cfg.filtroIds.status_pago);
-            if (!estadoSel) return;
-            const vEstado = estadoSel.value;
-            const estadosBase = cfg.statuses;
-            const estadosData = [...new Set(filas.map(f => f.status_pago).filter(Boolean))];
-            const estados = [...new Set([...estadosBase, ...estadosData])]
-                .sort((a, b) => a.localeCompare(b, 'es'));
-            estadoSel.innerHTML = '<option value="">Todos</option>'
-                + estados.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
-            if ([...estadoSel.options].some(o => o.value === vEstado)) estadoSel.value = vEstado;
         }
     }
 
@@ -5524,22 +5535,14 @@
             const valorUfTxt = f.valor_uf != null && f.valor_uf !== ''
                 ? Number(f.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '—';
-            const colsExtra = cfg.showEstado
-                ? `<td>${badgeStatusPago(f.status_pago)}</td>
-                <td class="text-end">${esc(ufTxt)}</td>
-                <td class="text-end">${esc(valorUfTxt)}</td>
-                <td class="text-end">${fmtMontoMov(f.monto)}</td>
-                <td>${fmtFechaMov(f.fecha_movimiento) || '—'}</td>
-                <td>${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
-                <td>${fmtFechaMov(f.fecha_estado_pago) || '—'}</td>`
-                : `<td class="text-end">${esc(ufTxt)}</td>
-                <td class="text-end">${esc(valorUfTxt)}</td>
-                <td class="text-end">${fmtMontoMov(f.monto)}</td>
-                <td>${fmtFechaMov(f.fecha_movimiento) || '—'}</td>`;
+            const dateField = cfg.dateField || 'fecha_movimiento';
             return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
                 <td class="ep-track-col-proyecto" title="${esc(proyecto)}">${esc(proyecto)}</td>
-                <td>${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
-                ${colsExtra}
+                <td class="ep-col-num">${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
+                <td class="text-end ep-col-uf">${esc(ufTxt)}</td>
+                <td class="text-end ep-col-uf">${esc(valorUfTxt)}</td>
+                <td class="text-end ep-col-monto">${fmtMontoMov(f.monto)}</td>
+                <td class="ep-col-fecha">${fmtFechaMov(f[dateField]) || '—'}</td>
             </tr>`;
         }).join('');
     }
@@ -5583,10 +5586,10 @@
     }
 
     // Compatibilidad con llamadas previas
-    function renderSeguimientoEstadosPago() { renderEpDashTable('seguimiento'); }
-    function debounceRenderEpTrack() { debounceRenderEpDash('seguimiento'); }
-    function ordenarEpTrack(col) { ordenarEpDash('seguimiento', col); }
-    function limpiarFiltrosEpTrack() { limpiarFiltrosEpDash('seguimiento'); }
+    function renderSeguimientoEstadosPago() { renderEpDashTable('facturados'); }
+    function debounceRenderEpTrack() { debounceRenderEpDash('facturados'); }
+    function ordenarEpTrack(col) { ordenarEpDash('facturados', col); }
+    function limpiarFiltrosEpTrack() { limpiarFiltrosEpDash('facturados'); }
 
     function iconoStatusGestion(status) {
         if (status === 'Hecho') {
