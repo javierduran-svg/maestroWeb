@@ -420,6 +420,36 @@ class RegistroTiempo(db.Model):
     tarea = db.relationship('TareaEntrega', lazy=True)
 
 
+class Reembolso(db.Model):
+    """Gasto reembolsable registrado por un trabajador."""
+    __tablename__ = 'reembolsos'
+    id = db.Column(db.Integer, primary_key=True)
+    empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
+    trabajador_id = db.Column(db.Integer, db.ForeignKey('trabajadores.id'), nullable=False)
+    # NULL = Administración (gasto no asignable a un proyecto)
+    proyecto_id = db.Column(db.Integer, db.ForeignKey('proyectos.id'), nullable=True)
+    fecha_gasto = db.Column(db.Date, nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    descripcion = db.Column(db.String(500), nullable=True)
+    status = db.Column(db.String(30), default='Por reembolsar', nullable=False)
+    adjunto_path = db.Column(db.String(255), nullable=True)
+    adjunto_nombre = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    fecha_reembolso = db.Column(db.Date, nullable=True)
+    reembolsado_at = db.Column(db.DateTime, nullable=True)
+    reembolsado_por_id = db.Column(db.Integer, db.ForeignKey('trabajadores.id'), nullable=True)
+    movimiento_id = db.Column(db.Integer, db.ForeignKey('movimientos.id'), nullable=True)
+
+    trabajador = db.relationship(
+        'Trabajador', foreign_keys=[trabajador_id], lazy=True,
+    )
+    reembolsado_por = db.relationship(
+        'Trabajador', foreign_keys=[reembolsado_por_id], lazy=True,
+    )
+    proyecto = db.relationship('Proyecto', lazy=True)
+    movimiento = db.relationship('Movimiento', foreign_keys=[movimiento_id], lazy=True)
+
+
 class LineaComprobante(db.Model):
     """Línea de debe/haber en un comprobante contable (montos siempre en CLP)."""
     __tablename__ = 'lineas_comprobante'

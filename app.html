@@ -1150,6 +1150,10 @@
         td.status-pago-otro,
         .badge.status-pago-otro { background-color: #495057 !important; color: #fff !important; }
         td[class*="status-pago-"] select { background-color: inherit !important; color: inherit !important; }
+        .badge.status-reembolso-pendiente { background-color: #fd7e14 !important; color: #fff !important; }
+        .badge.status-reembolso-ok { background-color: #198754 !important; color: #fff !important; }
+        #view-reembolsos .tabla-scroll-wrap { --tabla-scroll-max: min(52vh, 480px); }
+        #view-reembolsos .reemb-kpi small { font-size: 0.75rem; }
         .tabla-dashboard-ep-grid {
             width: max-content !important; /* no estirar al 100% de .table */
             max-width: none;
@@ -1879,6 +1883,7 @@
             <a href="#" class="sidebar-link" data-vista="gantt" onclick="return mostrarVista('gantt', this)"><i class="fa-solid fa-bars-staggered"></i><span>Planificación Gantt</span></a>
             <a href="#" class="sidebar-link" data-vista="propuestas" onclick="return mostrarVista('propuestas', this)"><i class="fa-solid fa-file-lines"></i><span>Propuestas</span></a>
             <a href="#" class="sidebar-link" data-vista="time-tracker" onclick="return mostrarVista('time-tracker', this)"><i class="fa-solid fa-clock"></i><span>Time Tracker</span></a>
+            <a href="#" class="sidebar-link" data-vista="reembolsos" onclick="return mostrarVista('reembolsos', this)"><i class="fa-solid fa-receipt"></i><span>Reembolsos</span></a>
             <a href="#" class="sidebar-link" data-vista="analisis-resultados" onclick="return mostrarVista('analisis-resultados', this)"><i class="fa-solid fa-chart-pie"></i><span>Análisis de Resultados</span></a>
             <div class="sidebar-divider">Finanzas</div>
             <a href="#" class="sidebar-link sub" data-vista="dashboard-finanzas" onclick="return mostrarVista('dashboard-finanzas', this)"><i class="fa-solid fa-chart-line"></i><span>Dashboard financiero</span></a>
@@ -2982,6 +2987,77 @@
                 </div>
             </section>
 
+            <!-- REEMBOLSOS -->
+            <section id="view-reembolsos" class="vista-panel panel-card d-none">
+                <div class="panel-header flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-0">Reembolsos</h5>
+                        <small class="text-muted">Gastos reembolsables · asignar a proyecto o Administración</small>
+                    </div>
+                    <div class="d-flex gap-2 ms-auto">
+                        <button type="button" class="btn btn-sm btn-teal" onclick="abrirReembolsoModal()"><i class="fa-solid fa-plus"></i> Nuevo gasto</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="cargarReembolsos()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+                    </div>
+                </div>
+                <div class="row g-3 p-3 pb-0 reemb-kpi">
+                    <div class="col-md-4"><div class="card p-3"><small class="text-muted fw-bold">Registros</small><h4 class="mb-0 fw-light" id="reemb-kpi-cant">0</h4></div></div>
+                    <div class="col-md-4"><div class="card p-3" style="border-top-color:#fd7e14"><small class="text-muted fw-bold">Por reembolsar</small><h4 class="mb-0 fw-light" id="reemb-kpi-pendiente" style="color:#fd7e14">$0</h4></div></div>
+                    <div class="col-md-4"><div class="card p-3" style="border-top-color:var(--teal-green)"><small class="text-muted fw-bold">Total filtrado</small><h4 class="mb-0 fw-light text-teal" id="reemb-kpi-total">$0</h4></div></div>
+                </div>
+                <div class="p-3 border-bottom bg-light">
+                    <div class="d-flex flex-wrap align-items-end gap-2">
+                        <div>
+                            <label class="form-label small fw-bold mb-1">Status</label>
+                            <select class="form-select form-select-sm" id="reembFiltroStatus" style="min-width:140px" onchange="cargarReembolsos()">
+                                <option value="">Todos</option>
+                                <option value="Por reembolsar">Por reembolsar</option>
+                                <option value="Reembolsado">Reembolsado</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-bold mb-1">Proyecto</label>
+                            <select class="form-select form-select-sm" id="reembFiltroProyecto" style="min-width:180px" onchange="cargarReembolsos()">
+                                <option value="">Todos</option>
+                                <option value="__admin__">Administración</option>
+                            </select>
+                        </div>
+                        <div id="reembFiltroTrabajadorWrap" class="d-none">
+                            <label class="form-label small fw-bold mb-1">Persona</label>
+                            <select class="form-select form-select-sm" id="reembFiltroTrabajador" style="min-width:160px" onchange="cargarReembolsos()">
+                                <option value="">Todas</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-bold mb-1">Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="reembFiltroDesde" onchange="cargarReembolsos()">
+                        </div>
+                        <div>
+                            <label class="form-label small fw-bold mb-1">Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="reembFiltroHasta" onchange="cargarReembolsos()">
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosReembolsos()">Limpiar</button>
+                    </div>
+                </div>
+                <div class="table-responsive tabla-scroll-wrap">
+                    <table class="table table-hover table-panel table-compact mb-0" id="tabla-reembolsos-grid">
+                        <thead><tr>
+                            <th>Fecha gasto</th>
+                            <th>Persona</th>
+                            <th>Proyecto</th>
+                            <th>Descripción</th>
+                            <th class="text-end">Monto</th>
+                            <th>Status</th>
+                            <th>Fecha pago</th>
+                            <th>Respaldo</th>
+                            <th style="width:110px"></th>
+                        </tr></thead>
+                        <tbody id="tabla-reembolsos-body">
+                            <tr><td colspan="9" class="text-center text-muted py-4">Cargando…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <!-- ANÁLISIS DE RESULTADOS -->
             <section id="view-analisis-resultados" class="vista-panel panel-card d-none">
                 <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -3492,6 +3568,83 @@
             </div>
         </div>
         <div class="modal-footer border-0"><button class="btn btn-dark px-4" onclick="guardarGasto()">GUARDAR</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalReembolso" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="tituloReembolso">Nuevo gasto reembolsable</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+            <input type="hidden" id="reembId">
+            <div id="reembMsg" class="alert alert-danger d-none py-2 small"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold" for="reembFecha">Fecha del gasto</label>
+                    <input type="date" class="form-control" id="reembFecha" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold" for="reembMonto">Monto ($)</label>
+                    <input type="number" class="form-control" id="reembMonto" min="1" step="1" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold" for="reembProyecto">Proyecto / Administración</label>
+                    <select class="form-select" id="reembProyecto" required>
+                        <option value="__admin__">Administración</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold" for="reembDesc">Descripción</label>
+                    <input type="text" class="form-control" id="reembDesc" maxlength="500" placeholder="Ej. Taxi a visita de obra">
+                </div>
+                <div class="col-12" id="reembStatusWrap">
+                    <label class="form-label small fw-bold" for="reembStatus">Status</label>
+                    <select class="form-select" id="reembStatus" onchange="toggleReembFechaPagoUI()">
+                        <option value="Por reembolsar">Por reembolsar</option>
+                        <option value="Reembolsado">Reembolsado</option>
+                    </select>
+                    <small class="text-muted">Solo administradores pueden marcar como reembolsado</small>
+                </div>
+                <div class="col-md-6 d-none" id="reembFechaPagoWrap">
+                    <label class="form-label small fw-bold" for="reembFechaPago">Fecha de pago</label>
+                    <input type="date" class="form-control" id="reembFechaPago">
+                    <small class="text-muted">Fecha del egreso en banco → Rendiciones</small>
+                </div>
+                <div class="col-12">
+                    <label class="form-label small fw-bold" for="reembAdjunto">Respaldo (scan o foto)</label>
+                    <input type="file" class="form-control" id="reembAdjunto" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.heic,image/*,application/pdf">
+                    <small class="text-muted" id="reembAdjuntoHint">PDF o imagen · máx. 8 MB</small>
+                    <div class="mt-1" id="reembAdjuntoActual"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-dark px-4" onclick="guardarReembolso()">GUARDAR</button>
+        </div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalMarcarReembolso" tabindex="-1">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Marcar reembolsado</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+            <input type="hidden" id="marcarReembId">
+            <p class="small text-muted mb-3" id="marcarReembResumen"></p>
+            <label class="form-label small fw-bold" for="marcarReembFecha">Fecha de pago</label>
+            <input type="date" class="form-control" id="marcarReembFecha" required>
+            <small class="text-muted">Se crea egreso banco → Rendiciones de gastos</small>
+            <div id="marcarReembMsg" class="alert alert-danger d-none py-2 small mt-2"></div>
+        </div>
+        <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-teal" onclick="confirmarMarcarReembolsado()">Confirmar</button>
+        </div>
     </div></div>
 </div>
 
@@ -4529,6 +4682,12 @@
         return `<span class="badge bg-light text-dark">${esc(s)}</span>`;
     }
 
+    function badgeStatusReembolso(s) {
+        if (!s) return '<span class="text-muted">—</span>';
+        const cls = s === 'Reembolsado' ? 'status-reembolso-ok' : 'status-reembolso-pendiente';
+        return `<span class="badge ${cls}">${esc(s)}</span>`;
+    }
+
     function badgeStatusPago(s) {
         if (!s) return '<span class="text-muted">—</span>';
         const cls = {
@@ -4834,6 +4993,7 @@
             'centros-costo': cargarCentrosCosto,
             comprobantes: cargarComprobantes,
             'time-tracker': cargarTimeTrackerRegistros,
+            reembolsos: cargarReembolsos,
             'analisis-resultados': cargarAnalisisResultados,
             'simulador-utilidades': initVistaSimuladorUtilidades,
         };
@@ -13785,6 +13945,304 @@
             `<option value="${t.id}">${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
         ).join('');
         if (prevT && trabs.some(t => String(t.id) === String(prevT))) selT.value = prevT;
+    }
+
+    let _reembolsosCache = [];
+
+    function badgeStatusReembolsoRow(s) {
+        return badgeStatusReembolso(s);
+    }
+
+    async function poblarSelectsReembolsosProyectos() {
+        const proys = await fetchProyectosSelect();
+        const opts = '<option value="__admin__">Administración</option>'
+            + proys.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+        const filtro = document.getElementById('reembFiltroProyecto');
+        if (filtro) {
+            const prev = filtro.value;
+            filtro.innerHTML = '<option value="">Todos</option><option value="__admin__">Administración</option>'
+                + proys.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+            if ([...filtro.options].some(o => o.value === prev)) filtro.value = prev;
+        }
+        const modalSel = document.getElementById('reembProyecto');
+        if (modalSel) {
+            const prevM = modalSel.value || '__admin__';
+            modalSel.innerHTML = opts;
+            if ([...modalSel.options].some(o => o.value === prevM)) modalSel.value = prevM;
+            else modalSel.value = '__admin__';
+        }
+    }
+
+    async function poblarFiltroReembolsosPersonas() {
+        const wrap = document.getElementById('reembFiltroTrabajadorWrap');
+        const sel = document.getElementById('reembFiltroTrabajador');
+        if (!wrap || !sel) return;
+        const esAdmin = _userRol === 'admin';
+        wrap.classList.toggle('d-none', !esAdmin);
+        if (!esAdmin) {
+            sel.innerHTML = '<option value="">Todas</option>';
+            return;
+        }
+        await asegurarTrabajadoresTareasCache();
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">Todas</option>' + _trabajadoresTareasCache.map(t =>
+            `<option value="${t.id}">${esc(t.nombre_completo)}</option>`
+        ).join('');
+        if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+    }
+
+    function limpiarFiltrosReembolsos() {
+        const ids = ['reembFiltroStatus', 'reembFiltroProyecto', 'reembFiltroTrabajador', 'reembFiltroDesde', 'reembFiltroHasta'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        cargarReembolsos();
+    }
+
+    async function cargarReembolsos() {
+        await Promise.all([poblarSelectsReembolsosProyectos(), poblarFiltroReembolsosPersonas()]);
+        const params = new URLSearchParams();
+        const status = document.getElementById('reembFiltroStatus')?.value;
+        const proy = document.getElementById('reembFiltroProyecto')?.value;
+        const trab = document.getElementById('reembFiltroTrabajador')?.value;
+        const desde = document.getElementById('reembFiltroDesde')?.value;
+        const hasta = document.getElementById('reembFiltroHasta')?.value;
+        if (status) params.set('status', status);
+        if (proy) params.set('proyecto_id', proy);
+        if (trab) params.set('trabajador_id', trab);
+        if (desde) params.set('desde', desde);
+        if (hasta) params.set('hasta', hasta);
+
+        const tbody = document.getElementById('tabla-reembolsos-body');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Cargando…</td></tr>';
+
+        try {
+            const res = await apiFetch('/api/reembolsos?' + params.toString());
+            const data = await res.json();
+            if (!res.ok) {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${esc(data.error || 'Error')}</td></tr>`;
+                return;
+            }
+            _reembolsosCache = data.items || [];
+            const r = data.resumen || {};
+            const elCant = document.getElementById('reemb-kpi-cant');
+            const elPend = document.getElementById('reemb-kpi-pendiente');
+            const elTot = document.getElementById('reemb-kpi-total');
+            if (elCant) elCant.textContent = r.cantidad ?? _reembolsosCache.length;
+            if (elPend) elPend.textContent = '$' + Math.round(r.por_reembolsar || 0).toLocaleString('es-CL');
+            if (elTot) elTot.textContent = '$' + Math.round(r.total || 0).toLocaleString('es-CL');
+            renderTablaReembolsos(_reembolsosCache);
+        } catch (e) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4">No se pudo cargar</td></tr>';
+        }
+    }
+
+    function renderTablaReembolsos(items) {
+        const tbody = document.getElementById('tabla-reembolsos-body');
+        if (!tbody) return;
+        const esAdmin = _userRol === 'admin';
+        const miId = _authUser?.id || _authUser?.trabajador_id;
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Sin reembolsos</td></tr>';
+            return;
+        }
+        tbody.innerHTML = items.map(r => {
+            const propio = Number(r.trabajador_id) === Number(miId);
+            const editable = esAdmin || (propio && r.status !== 'Reembolsado');
+            const puedeMarcar = esAdmin && r.status === 'Por reembolsar';
+            const adjunto = r.tiene_adjunto
+                ? `<a href="${esc(r.adjunto_url)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary py-0 px-2" title="${esc(r.adjunto_nombre || 'Ver')}"><i class="fa-solid fa-paperclip"></i></a>`
+                : '<span class="text-muted">—</span>';
+            const movHint = r.movimiento_id
+                ? `<span class="text-muted small ms-1" title="Movimiento #${r.movimiento_id}"><i class="fa-solid fa-link"></i></span>`
+                : '';
+            const acciones = [];
+            if (puedeMarcar) {
+                acciones.push(`<button type="button" class="btn btn-sm btn-outline-success py-0 px-2" title="Marcar reembolsado" onclick="marcarReembolsado(${r.id})"><i class="fa-solid fa-check"></i></button>`);
+            }
+            if (editable) {
+                acciones.push(`<button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" title="Editar" onclick="abrirReembolsoModal(${r.id})"><i class="fa-solid fa-pen"></i></button>`);
+                acciones.push(`<button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="Eliminar" onclick="borrarReembolso(${r.id})"><i class="fa-solid fa-trash"></i></button>`);
+            }
+            return `<tr>
+                <td class="text-nowrap">${fmtFechaMov(r.fecha_gasto) || '—'}</td>
+                <td class="text-truncate" style="max-width:140px">${esc(r.trabajador_nombre)}</td>
+                <td class="text-truncate" style="max-width:160px">${esc(r.proyecto_nombre)}</td>
+                <td class="text-truncate" style="max-width:220px" title="${esc(r.descripcion)}">${esc(r.descripcion) || '—'}</td>
+                <td class="text-end text-nowrap">${fmtMontoMov(r.monto)}</td>
+                <td>${badgeStatusReembolsoRow(r.status)}${movHint}</td>
+                <td class="text-nowrap">${r.fecha_reembolso ? fmtFechaMov(r.fecha_reembolso) : '—'}</td>
+                <td>${adjunto}</td>
+                <td class="text-nowrap">${acciones.join(' ')}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function toggleReembFechaPagoUI() {
+        const status = document.getElementById('reembStatus')?.value;
+        const wrap = document.getElementById('reembFechaPagoWrap');
+        if (!wrap) return;
+        const show = _userRol === 'admin' && status === 'Reembolsado';
+        wrap.classList.toggle('d-none', !show);
+        if (show && !document.getElementById('reembFechaPago').value) {
+            document.getElementById('reembFechaPago').value = new Date().toISOString().slice(0, 10);
+        }
+    }
+
+    async function abrirReembolsoModal(id) {
+        await poblarSelectsReembolsosProyectos();
+        const msg = document.getElementById('reembMsg');
+        if (msg) { msg.classList.add('d-none'); msg.textContent = ''; }
+        document.getElementById('reembId').value = id || '';
+        document.getElementById('tituloReembolso').textContent = id ? 'Editar reembolso' : 'Nuevo gasto reembolsable';
+        document.getElementById('reembFecha').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('reembMonto').value = '';
+        document.getElementById('reembDesc').value = '';
+        document.getElementById('reembProyecto').value = '__admin__';
+        document.getElementById('reembStatus').value = 'Por reembolsar';
+        document.getElementById('reembFechaPago').value = '';
+        document.getElementById('reembAdjunto').value = '';
+        document.getElementById('reembAdjuntoActual').innerHTML = '';
+        const statusWrap = document.getElementById('reembStatusWrap');
+        if (statusWrap) statusWrap.classList.toggle('d-none', _userRol !== 'admin');
+        toggleReembFechaPagoUI();
+
+        if (id) {
+            const res = await apiFetch(`/api/reembolsos/${id}`);
+            const r = await res.json();
+            if (!res.ok) {
+                alert(r.error || 'No se pudo cargar');
+                return;
+            }
+            document.getElementById('reembFecha').value = r.fecha_gasto || '';
+            document.getElementById('reembMonto').value = r.monto ?? '';
+            document.getElementById('reembDesc').value = r.descripcion || '';
+            document.getElementById('reembProyecto').value = r.proyecto_id != null ? String(r.proyecto_id) : '__admin__';
+            document.getElementById('reembStatus').value = r.status || 'Por reembolsar';
+            document.getElementById('reembFechaPago').value = r.fecha_reembolso || '';
+            toggleReembFechaPagoUI();
+            if (r.tiene_adjunto) {
+                document.getElementById('reembAdjuntoActual').innerHTML =
+                    `<a href="${esc(r.adjunto_url)}" target="_blank" rel="noopener"><i class="fa-solid fa-paperclip me-1"></i>${esc(r.adjunto_nombre || 'Ver respaldo')}</a>`
+                    + ` <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-2" onclick="borrarAdjuntoReembolso(${r.id})">Quitar</button>`;
+            }
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalReembolso')).show();
+    }
+
+    async function guardarReembolso() {
+        const msg = document.getElementById('reembMsg');
+        msg.classList.add('d-none');
+        const id = document.getElementById('reembId').value;
+        const fecha = document.getElementById('reembFecha').value;
+        const monto = document.getElementById('reembMonto').value;
+        const desc = document.getElementById('reembDesc').value.trim();
+        const proy = document.getElementById('reembProyecto').value;
+        const status = document.getElementById('reembStatus').value;
+        const fechaPago = document.getElementById('reembFechaPago').value;
+        const file = document.getElementById('reembAdjunto').files[0];
+        if (!fecha || !monto) {
+            msg.textContent = 'Fecha y monto son obligatorios';
+            msg.classList.remove('d-none');
+            return;
+        }
+        if (_userRol === 'admin' && status === 'Reembolsado' && !fechaPago) {
+            msg.textContent = 'Indique la fecha de pago del reembolso';
+            msg.classList.remove('d-none');
+            return;
+        }
+        if (file && file.size > 8 * 1024 * 1024) {
+            msg.textContent = 'El respaldo no puede superar 8 MB';
+            msg.classList.remove('d-none');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('fecha_gasto', fecha);
+        fd.append('monto', monto);
+        fd.append('descripcion', desc);
+        fd.append('proyecto_id', proy || '__admin__');
+        if (_userRol === 'admin') {
+            fd.append('status', status);
+            if (fechaPago) fd.append('fecha_reembolso', fechaPago);
+        }
+        if (file) fd.append('adjunto', file);
+
+        const res = await apiFetch(id ? `/api/reembolsos/${id}` : '/api/reembolsos', {
+            method: id ? 'PUT' : 'POST',
+            body: fd,
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            msg.textContent = data.error || 'No se pudo guardar';
+            msg.classList.remove('d-none');
+            return;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('modalReembolso'))?.hide();
+        await cargarReembolsos();
+    }
+
+    function marcarReembolsado(id) {
+        const item = (_reembolsosCache || []).find(r => Number(r.id) === Number(id));
+        document.getElementById('marcarReembId').value = id;
+        document.getElementById('marcarReembFecha').value = new Date().toISOString().slice(0, 10);
+        const msg = document.getElementById('marcarReembMsg');
+        if (msg) { msg.classList.add('d-none'); msg.textContent = ''; }
+        const resumen = document.getElementById('marcarReembResumen');
+        if (resumen && item) {
+            resumen.textContent = `${item.trabajador_nombre || ''} · ${fmtMontoMov(item.monto)} · ${item.descripcion || 'Sin descripción'}`;
+        } else if (resumen) {
+            resumen.textContent = '';
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalMarcarReembolso')).show();
+    }
+
+    async function confirmarMarcarReembolsado() {
+        const id = document.getElementById('marcarReembId').value;
+        const fecha = document.getElementById('marcarReembFecha').value;
+        const msg = document.getElementById('marcarReembMsg');
+        if (!fecha) {
+            msg.textContent = 'Indique la fecha de pago';
+            msg.classList.remove('d-none');
+            return;
+        }
+        const res = await apiFetch(`/api/reembolsos/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Reembolsado', fecha_reembolso: fecha }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            msg.textContent = data.error || 'No se pudo actualizar';
+            msg.classList.remove('d-none');
+            return;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('modalMarcarReembolso'))?.hide();
+        await cargarReembolsos();
+    }
+
+    async function borrarReembolso(id) {
+        if (!confirm('¿Eliminar este reembolso? Si estaba pagado, también se elimina el movimiento contable.')) return;
+        const res = await apiFetch(`/api/reembolsos/${id}`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'No se pudo eliminar');
+            return;
+        }
+        await cargarReembolsos();
+    }
+
+    async function borrarAdjuntoReembolso(id) {
+        if (!confirm('¿Quitar el respaldo?')) return;
+        const res = await apiFetch(`/api/reembolsos/${id}/adjunto`, { method: 'DELETE' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'No se pudo quitar el respaldo');
+            return;
+        }
+        document.getElementById('reembAdjuntoActual').innerHTML = '';
+        await cargarReembolsos();
     }
 
     async function cargarTimeTrackerRegistros() {
