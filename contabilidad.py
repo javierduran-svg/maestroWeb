@@ -114,7 +114,7 @@ def _es_movimiento_ingreso(m) -> bool:
     if m.estado != 'Activo' or m.transaccion != 'Ingreso':
         return False
     if m.clase == 'estado_pago':
-        return getattr(m, 'status_pago', None) == 'Pagado'
+        return getattr(m, 'status_pago', None) in ('Pagado', 'Cedida')
     return True
 
 

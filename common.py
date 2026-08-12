@@ -189,6 +189,7 @@ def migrar_movimientos_admin_estado_pago() -> int:
         db.session.commit()
     return actualizados
 NOMBRE_CUENTA_GASTO_BANCO = 'Otros gastos'
+NOMBRE_CUENTA_COMISION_CESION = 'Comisiones cobros e intereses'
 NOMBRE_CUENTA_REMUNERACIONES_POR_PAGAR = 'Remuneraciones por pagar'
 
 TASA_AFP = 0.11
@@ -2261,6 +2262,13 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
         'intro_ep': m.intro_ep,
         'incluir_iva': bool(m.incluir_iva) if m.incluir_iva is not None else False,
         'template_html': m.template_html,
+        'monto_ingreso_cesion': m.monto_ingreso_cesion,
+        'gasto_cesion_id': m.gasto_cesion_id,
+        'gasto_cesion_monto': (
+            max(0.0, float(m.monto_pesos or 0) - float(m.monto_ingreso_cesion or 0))
+            if m.status_pago == 'Cedida' and m.monto_ingreso_cesion is not None
+            else None
+        ),
     }
 
 
@@ -2413,6 +2421,145 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
             if not data.get('centro_costo'):
                 mov.centro_costo = 'Administración'
     _aplicar_regla_pesos_ep(mov, status_prev)
+    _sincronizar_gasto_cesion(mov, data, status_prev)
+
+
+def _cuenta_comision_cesion(empresa_id: int) -> Cuenta:
+    """Cuenta de gasto para la comisión de factoring/cesión."""
+    try:
+        return _cuenta_por_nombre(NOMBRE_CUENTA_COMISION_CESION, empresa_id)
+    except ValueError:
+        cuenta = Cuenta(
+            empresa_id=empresa_id,
+            nombre=NOMBRE_CUENTA_COMISION_CESION,
+            categoria='gasto',
+            moneda='CLP',
+        )
+        db.session.add(cuenta)
+        db.session.flush()
+        return cuenta
+
+
+def _descripcion_gasto_cesion(ep: Movimiento) -> str:
+    num = ep.numero_ep or ep.id
+    detalle = (ep.descripcion or '').strip()
+    base = f'Comisión cesión EP #{num}'
+    if detalle:
+        base = f'{base} — {detalle}'
+    return base[:255]
+
+
+def _eliminar_gasto_cesion(ep: Movimiento) -> None:
+    gid = ep.gasto_cesion_id
+    ep.gasto_cesion_id = None
+    ep.monto_ingreso_cesion = None
+    if not gid:
+        return
+    gasto = Movimiento.query.filter_by(empresa_id=ep.empresa_id, id=gid).first()
+    if gasto:
+        db.session.delete(gasto)
+        db.session.flush()
+
+
+def _parse_monto_ingreso_cesion(raw):
+    if raw in (None, ''):
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _sincronizar_gasto_cesion(mov: Movimiento, data: dict, status_prev: str | None) -> None:
+    """Si el EP pasa a Cedida, pide monto real cobrado y crea el gasto de la diferencia."""
+    if not _es_movimiento_estado_pago(mov):
+        return
+    nuevo = mov.status_pago
+    if nuevo != 'Cedida':
+        if status_prev == 'Cedida' or mov.gasto_cesion_id or mov.monto_ingreso_cesion is not None:
+            _eliminar_gasto_cesion(mov)
+        return
+
+    recibido = _parse_monto_ingreso_cesion(data.get('monto_ingreso_cesion'))
+    if recibido is None:
+        recibido = mov.monto_ingreso_cesion
+    if recibido is None:
+        abort(400, description='Indique el monto real que ingresa a la cuenta por la cesión')
+    if recibido <= 0:
+        abort(400, description='El monto ingresado por cesión debe ser mayor a 0')
+    facturado = float(mov.monto_pesos or 0)
+    if recibido > facturado + 0.5:
+        abort(400, description='El monto ingresado no puede superar lo facturado')
+    recibido = round(recibido)
+    diferencia = round(facturado - recibido)
+    mov.monto_ingreso_cesion = float(recibido)
+
+    if diferencia <= 0:
+        gid = mov.gasto_cesion_id
+        mov.gasto_cesion_id = None
+        if gid:
+            gasto = Movimiento.query.filter_by(empresa_id=mov.empresa_id, id=gid).first()
+            if gasto:
+                db.session.delete(gasto)
+                db.session.flush()
+        return
+
+    fecha = mov.fecha_estado_pago or mov.fecha_movimiento or date.today()
+    origen_id = mov.cta_destino_id
+    destino = _cuenta_comision_cesion(mov.empresa_id)
+    origen = Cuenta.query.filter_by(empresa_id=mov.empresa_id, id=origen_id).first()
+    if not origen:
+        abort(400, description='El EP no tiene cuenta de destino (banco) para registrar la cesión')
+    tipo = calcular_transaccion(origen.categoria, destino.categoria)
+    desc = _descripcion_gasto_cesion(mov)
+    centro = (mov.centro_costo or 'Administración')[:50]
+
+    gasto = None
+    if mov.gasto_cesion_id:
+        gasto = Movimiento.query.filter_by(empresa_id=mov.empresa_id, id=mov.gasto_cesion_id).first()
+    if gasto:
+        gasto.fecha_movimiento = fecha
+        gasto.monto_pesos = float(diferencia)
+        gasto.cta_origen_id = origen.id
+        gasto.cta_destino_id = destino.id
+        gasto.transaccion = tipo
+        gasto.descripcion = desc
+        gasto.proyecto_id = mov.proyecto_id
+        gasto.centro_costo = centro
+        gasto.estado = 'Activo'
+        gasto.clase = 'gasto'
+        gasto.status_pago = None
+        return
+
+    gasto = Movimiento(
+        empresa_id=mov.empresa_id,
+        fecha_movimiento=fecha,
+        monto_pesos=float(diferencia),
+        centro_costo=centro,
+        estado='Activo',
+        clase='gasto',
+        cta_origen_id=origen.id,
+        cta_destino_id=destino.id,
+        transaccion=tipo,
+        descripcion=desc,
+        proyecto_id=mov.proyecto_id,
+        status_pago=None,
+    )
+    db.session.add(gasto)
+    db.session.flush()
+    mov.gasto_cesion_id = gasto.id
+
+
+def _desvincular_gasto_cesion_si_aplica(mov: Movimiento) -> None:
+    """Al borrar un movimiento, elimina el gasto de cesión o limpia el vínculo del EP."""
+    if mov.gasto_cesion_id:
+        _eliminar_gasto_cesion(mov)
+        return
+    eps = Movimiento.query.filter_by(
+        empresa_id=mov.empresa_id, gasto_cesion_id=mov.id,
+    ).all()
+    for ep in eps:
+        ep.gasto_cesion_id = None
 
 
 def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimiento:
@@ -2455,12 +2602,14 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         template_html=data.get('template_html') or None,
     )
     db.session.add(mov)
+    db.session.flush()
     # Nuevo EP: si tiene UF y status flotante (o ya viene fijado), sincronizar pesos.
     if mov.monto_uf is not None:
         if _ep_pesos_flotantes(mov.status_pago):
             _sincronizar_pesos_estado_pago(mov)
         else:
             _sincronizar_pesos_estado_pago(mov, forzar_fijacion=True)
+    _sincronizar_gasto_cesion(mov, data, None)
     return mov
 
 
@@ -2786,6 +2935,7 @@ __all__ = [
     'NOMBRE_CUENTA_BANCO_SANTANDER',
     'NOMBRE_CUENTA_CLIENTES',
     'NOMBRE_CUENTA_GASTO_BANCO',
+    'NOMBRE_CUENTA_COMISION_CESION',
     'NOMBRE_CUENTA_REMUNERACIONES_POR_PAGAR',
     'PROYECTO_SORT_FIELDS',
     'SECRET_MASK',
@@ -2812,6 +2962,8 @@ __all__ = [
     '_cargar_env_local',
     '_crear_estado_pago',
     '_crear_gasto',
+    '_desvincular_gasto_cesion_si_aplica',
+    '_sincronizar_gasto_cesion',
     '_crear_movimiento_desde_banco',
     '_cuenta_a_dict',
     '_cuenta_en_uso',

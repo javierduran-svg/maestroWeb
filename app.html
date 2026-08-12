@@ -3488,7 +3488,12 @@
                                 <div class="prop-field span-2 prop-subheading">Montos</div>
                                 <div class="prop-field"><label>Monto UF</label><input type="number" step="any" class="form-control" id="epMontoUf" oninput="onEpMontoUfChange()"></div>
                                 <div class="prop-field"><label>UF del día</label><input type="number" step="any" class="form-control bg-light" id="epValorUf" readonly title="UF de la fecha del estado de pago; se fija al enviar"></div>
-                                <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate()" title="Sigue la UF actual hasta Enviado; luego queda fijo"></div>
+                                <div class="prop-field"><label>Monto ($)</label><input type="number" step="1" class="form-control" id="epMonto" required oninput="onEpCampoTemplate(); actualizarHintCesionEp()" title="Sigue la UF actual hasta Enviado; luego queda fijo"></div>
+                                <div class="prop-field d-none" id="epMontoCesionWrap">
+                                    <label>Monto ingresado (cesión)</label>
+                                    <input type="number" step="1" class="form-control" id="epMontoCesion" min="1" oninput="actualizarHintCesionEp()">
+                                    <small class="text-muted" id="epCesionHint">Diferencia = gasto comisión factoring</small>
+                                </div>
                                 <div class="prop-field"><label>N° Factura</label><input type="text" class="form-control" id="epNumFact" oninput="onEpCampoTemplate()"></div>
                                 <div class="prop-field span-2">
                                     <label class="d-flex align-items-center gap-2 mt-1" style="font-weight:600">
@@ -3666,6 +3671,26 @@
             </div>
         </div>
         <div class="modal-footer border-0"><button class="btn btn-dark px-5" onclick="guardarMovimiento()">REGISTRAR</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalCesionMonto" tabindex="-1">
+    <div class="modal-dialog modal-sm"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title">Cesión (factoring)</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4">
+            <p class="small text-muted mb-2" id="cesionMontoFacturado"></p>
+            <label class="form-label small fw-bold" for="cesionMontoIngreso">Monto real que ingresa a la cuenta ($)</label>
+            <input type="number" class="form-control" id="cesionMontoIngreso" min="1" step="1" required>
+            <small class="text-muted" id="cesionMontoDiff">La diferencia se registra como gasto (comisión factoring)</small>
+            <div id="cesionMontoMsg" class="alert alert-danger d-none py-2 small mt-2"></div>
+        </div>
+        <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-dark" id="cesionMontoOk">Confirmar</button>
+        </div>
     </div></div>
 </div>
 
@@ -4661,6 +4686,106 @@
     function selectStatusPagoHtml(selected, onchange) {
         const cls = claseStatusPagoSelect(selected || 'Por enviar');
         return `<select class="form-select cell-edit cell-edit-sm ${cls}" onchange="actualizarClaseStatusPagoSelect(this); ${onchange}">${optsStatusPago(selected || 'Por enviar')}</select>`;
+    }
+
+    let _cesionMontoResolver = null;
+
+    function fmtCesionDiff(facturado, recibido) {
+        const diff = Math.max(0, Math.round(Number(facturado) || 0) - Math.round(Number(recibido) || 0));
+        return 'Gasto comisión: ' + fmtMontoMov(diff);
+    }
+
+    function pedirMontoIngresoCesion(facturado, previo) {
+        return new Promise(resolve => {
+            const modalEl = document.getElementById('modalCesionMonto');
+            const inp = document.getElementById('cesionMontoIngreso');
+            const msg = document.getElementById('cesionMontoMsg');
+            const factTxt = document.getElementById('cesionMontoFacturado');
+            const diffTxt = document.getElementById('cesionMontoDiff');
+            const fact = Math.round(Number(facturado) || 0);
+            factTxt.textContent = 'Monto facturado: ' + fmtMontoMov(fact);
+            inp.value = previo != null && previo !== '' ? Math.round(Number(previo)) : '';
+            msg.classList.add('d-none');
+            msg.textContent = '';
+            const refreshDiff = () => { diffTxt.textContent = fmtCesionDiff(fact, inp.value); };
+            refreshDiff();
+            inp.oninput = refreshDiff;
+            if (_cesionMontoResolver) {
+                _cesionMontoResolver(null);
+                _cesionMontoResolver = null;
+            }
+            _cesionMontoResolver = resolve;
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            const onHidden = () => {
+                modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                if (_cesionMontoResolver) {
+                    const r = _cesionMontoResolver;
+                    _cesionMontoResolver = null;
+                    r(null);
+                }
+            };
+            modalEl.addEventListener('hidden.bs.modal', onHidden);
+            document.getElementById('cesionMontoOk').onclick = () => {
+                const n = Math.round(Number(inp.value));
+                if (!n || n <= 0) {
+                    msg.textContent = 'Indique el monto real que ingresa';
+                    msg.classList.remove('d-none');
+                    return;
+                }
+                if (n > fact) {
+                    msg.textContent = 'El monto ingresado no puede superar lo facturado';
+                    msg.classList.remove('d-none');
+                    return;
+                }
+                const r = _cesionMontoResolver;
+                _cesionMontoResolver = null;
+                modal.hide();
+                if (r) r(n);
+            };
+            modal.show();
+            setTimeout(() => inp.focus(), 200);
+        });
+    }
+
+    async function asegurarMontoCesionEnPayload(payload, cached, onCancel) {
+        if (!payload || payload.status_pago !== 'Cedida') return payload;
+        const yaEra = cached && cached.status_pago === 'Cedida';
+        if (yaEra && cached.monto_ingreso_cesion != null && payload.monto_ingreso_cesion == null) {
+            payload.monto_ingreso_cesion = cached.monto_ingreso_cesion;
+            return payload;
+        }
+        if (payload.monto_ingreso_cesion != null && yaEra) return payload;
+        const facturado = payload.monto != null ? payload.monto : cached?.monto;
+        const recibido = await pedirMontoIngresoCesion(facturado, cached?.monto_ingreso_cesion);
+        if (recibido == null) {
+            if (onCancel) onCancel();
+            return null;
+        }
+        payload.monto_ingreso_cesion = recibido;
+        return payload;
+    }
+
+    function revertirStatusPagoFila(row, cached) {
+        const sel = row?.querySelector('[data-field="status_pago"] select');
+        if (!sel || !cached) return;
+        sel.value = cached.status_pago || 'Por enviar';
+        actualizarClaseStatusPagoSelect(sel);
+    }
+
+    function toggleEpCesionUI() {
+        const wrap = document.getElementById('epMontoCesionWrap');
+        if (!wrap) return;
+        const show = document.getElementById('epStatusPago')?.value === 'Cedida';
+        wrap.classList.toggle('d-none', !show);
+        if (show) actualizarHintCesionEp();
+    }
+
+    function actualizarHintCesionEp() {
+        const hint = document.getElementById('epCesionHint');
+        if (!hint) return;
+        const fact = Number(document.getElementById('epMonto')?.value || 0);
+        const rec = Number(document.getElementById('epMontoCesion')?.value || 0);
+        hint.textContent = rec > 0 ? fmtCesionDiff(fact, rec) : 'Diferencia = gasto comisión factoring';
     }
 
     function optsStatusPago(selected, vacio) {
@@ -7121,9 +7246,13 @@
     }
 
     async function guardarFilaProyectoMovimiento(id, proyectoId) {
-        const payload = leerFilaProyectoMovimiento(id, proyectoId);
+        let payload = leerFilaProyectoMovimiento(id, proyectoId);
         if (!payload) return;
         const row = document.querySelector(`tr.proy-mov-row[data-id="${id}"]`);
+        const cached = (_proyDetalleCache.movs || []).find(m => m.id === id)
+            || (_epListaCache || []).find(m => m.id === id);
+        payload = await asegurarMontoCesionEnPayload(payload, cached, () => revertirStatusPagoFila(row, cached));
+        if (!payload) return;
         setFilaGuardando(row, true);
         try {
             const res = await apiFetch(`/api/movimientos/${id}`, {
@@ -11398,7 +11527,19 @@
         } else {
             aplicarBloqueoPesosEp();
         }
-        _epStatusPrev = status;
+        toggleEpCesionUI();
+        if (status === 'Cedida' && !document.getElementById('epMontoCesion').value) {
+            const fact = Number(document.getElementById('epMonto').value || 0);
+            const recibido = await pedirMontoIngresoCesion(fact, null);
+            if (recibido == null) {
+                document.getElementById('epStatusPago').value = _epStatusPrev || 'Facturado';
+                toggleEpCesionUI();
+                return;
+            }
+            document.getElementById('epMontoCesion').value = recibido;
+            actualizarHintCesionEp();
+        }
+        _epStatusPrev = document.getElementById('epStatusPago').value;
         onEpCampoTemplate();
     }
 
@@ -11545,6 +11686,8 @@
         document.getElementById('epFechaPago').value = new Date().toISOString().slice(0, 10);
         document.getElementById('epStatusPago').value = 'Por enviar';
         _epStatusPrev = 'Por enviar';
+        document.getElementById('epMontoCesion').value = '';
+        toggleEpCesionUI();
         document.getElementById('epCondicionPago').value = '30';
         document.getElementById('epIncluirIva').checked = false;
         document.getElementById('epAtencion').value = p.cliente || '';
@@ -11580,6 +11723,8 @@
             document.getElementById('epDesc').value = m.descripcion || '';
             document.getElementById('epStatusPago').value = m.status_pago || 'Por enviar';
             _epStatusPrev = document.getElementById('epStatusPago').value;
+            document.getElementById('epMontoCesion').value = m.monto_ingreso_cesion ?? '';
+            toggleEpCesionUI();
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
             document.getElementById('epNumero').value = correlativoEpDesdeLista(movId, _epListaCache);
             document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
@@ -11654,6 +11799,14 @@
             incluir_iva: document.getElementById('epIncluirIva').checked,
             template_html: leerHtmlEditor(document.getElementById('epTemplate')) || null,
         };
+        if (payload.status_pago === 'Cedida') {
+            const rec = Number(document.getElementById('epMontoCesion').value || 0);
+            if (!rec) {
+                alert('Indique el monto real que ingresa a la cuenta por la cesión');
+                return;
+            }
+            payload.monto_ingreso_cesion = rec;
+        }
         const res = await apiFetch(movId ? `/api/movimientos/${movId}` : `/api/proyectos/${proyectoId}/estados-pago`, {
             method: movId ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
         });
@@ -12081,9 +12234,12 @@
     }
 
     async function guardarFilaMovimiento(id) {
-        const payload = leerFilaMovimiento(id);
+        let payload = leerFilaMovimiento(id);
         if (!payload) return;
         const row = document.querySelector(`#tabla-movimientos tr.mov-row[data-id="${id}"]`);
+        const cached = _movItems.find(m => m.id === id);
+        payload = await asegurarMontoCesionEnPayload(payload, cached, () => revertirStatusPagoFila(row, cached));
+        if (!payload) return;
         setFilaGuardando(row, true);
         try {
             const res = await apiFetch(`/api/movimientos/${id}`, {
@@ -12096,6 +12252,8 @@
                 aplicarMontosProyectosEnTabla(data.proyectos);
                 if (data.movimiento) {
                     const m = data.movimiento;
+                    const idx = _movItems.findIndex(x => x.id === m.id);
+                    if (idx >= 0) _movItems[idx] = { ..._movItems[idx], ...m };
                     const r = document.querySelector(`#tabla-movimientos tr.mov-row[data-id="${id}"]`);
                     if (r) {
                         const montoInp = r.querySelector('[data-field="monto"] input');

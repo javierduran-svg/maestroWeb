@@ -533,6 +533,7 @@ def manejar_movimiento(mov_id):
 
     if request.method == 'DELETE':
         proyecto_id = mov.proyecto_id
+        _desvincular_gasto_cesion_si_aplica(mov)
         db.session.delete(mov)
         db.session.commit()
         proyectos = _recalcular_proyectos(eid, proyecto_id)
@@ -584,8 +585,14 @@ def duplicar_movimiento(mov_id):
         intro_ep=original.intro_ep,
         incluir_iva=original.incluir_iva,
         template_html=original.template_html,
+        monto_ingreso_cesion=original.monto_ingreso_cesion,
     )
     db.session.add(copia)
+    db.session.flush()
+    if copia.status_pago == 'Cedida':
+        _sincronizar_gasto_cesion(copia, {
+            'monto_ingreso_cesion': copia.monto_ingreso_cesion,
+        }, None)
     db.session.commit()
     proyectos = _recalcular_proyectos(eid, copia.proyecto_id)
     return jsonify({

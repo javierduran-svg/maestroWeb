@@ -166,9 +166,18 @@ class Movimiento(db.Model):
     intro_ep = db.Column(db.Text, nullable=True)
     incluir_iva = db.Column(db.Boolean, default=False, nullable=True)
     template_html = db.Column(db.Text, nullable=True)
+    # Cesión (factoring): monto real que ingresa a banco; el resto es gasto de comisión.
+    monto_ingreso_cesion = db.Column(db.Float, nullable=True)
+    gasto_cesion_id = db.Column(db.Integer, db.ForeignKey('movimientos.id'), nullable=True)
 
     cta_origen = db.relationship('Cuenta', foreign_keys=[cta_origen_id])
     cta_destino = db.relationship('Cuenta', foreign_keys=[cta_destino_id])
+    gasto_cesion = db.relationship(
+        'Movimiento',
+        remote_side='Movimiento.id',
+        foreign_keys=[gasto_cesion_id],
+        post_update=True,
+    )
 
 
 class PlantillaEstadoPago(db.Model):
