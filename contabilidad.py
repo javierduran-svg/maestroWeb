@@ -213,6 +213,8 @@ def calcular_kpis(cuentas, proyectos, movimientos) -> dict:
         if m.estado == 'Activo'
         and m.clase == 'estado_pago'
         and getattr(m, 'status_pago', None) == 'Facturado'
+        and getattr(m, 'gasto_cesion_id', None) is None
+        and getattr(m, 'monto_ingreso_cesion', None) is None
     )
     total_ep_enviados = sum(
         m.monto_pesos for m in movimientos

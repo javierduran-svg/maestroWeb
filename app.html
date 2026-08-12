@@ -673,6 +673,21 @@
         #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-actual td {
             background: #e8f5f2 !important;
         }
+        #modalEstadoPago #epTemplate table.ep-tabla tr.ep-fila-en-cobro:not(.ep-fila-actual) td {
+            background: #eef6f4 !important;
+        }
+        #modalEstadoPago .ep-cobro-lista {
+            max-height: 9.5rem; overflow-y: auto; border: 1px solid var(--border-color);
+            border-radius: 4px; padding: 0.35rem 0.45rem; background: #fff;
+        }
+        #modalEstadoPago .ep-cobro-item {
+            display: flex; align-items: flex-start; gap: 0.4rem;
+            font-size: 0.72rem; line-height: 1.25; padding: 0.2rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        #modalEstadoPago .ep-cobro-item:last-child { border-bottom: none; }
+        #modalEstadoPago .ep-cobro-item input { margin-top: 0.1rem; flex-shrink: 0; }
+        #modalEstadoPago .ep-cobro-item .ep-cobro-meta { color: #6c757d; }
         #modalEstadoPago #epTemplate table.ep-tabla td[align="right"],
         #modalEstadoPago #epTemplate table.ep-tabla th[align="right"] { text-align: right !important; }
         #modalEstadoPago #epTemplate table.ep-tabla td[align="center"],
@@ -2219,7 +2234,7 @@
                     <div class="panel-header flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">Estados de pago Facturados</h5>
-                            <small class="text-muted">EP con status Facturado — por cobrar</small>
+                            <small class="text-muted">EP con status Facturado — por cobrar (sin cedidos ni pagados)</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 ms-auto">
                             <small class="text-muted" id="epFactContador"></small>
@@ -3499,6 +3514,12 @@
                                     <label class="d-flex align-items-center gap-2 mt-1" style="font-weight:600">
                                         <input type="checkbox" class="form-check-input m-0" id="epIncluirIva" onchange="onEpCampoTemplate()"> Incluir IVA 19%
                                     </label>
+                                </div>
+                                <div class="prop-field span-2 prop-subheading">Documento de cobro</div>
+                                <div class="prop-field span-2">
+                                    <label>Sumar EP en totales</label>
+                                    <div id="epCobroLista" class="ep-cobro-lista"></div>
+                                    <small class="text-muted">Marque varios EP para sumarlos en subtotal, IVA y total del documento.</small>
                                 </div>
                                 <div class="prop-field span-2"><label>Notas</label><textarea class="form-control" id="epNotas" rows="2" oninput="onEpCampoTemplate()"></textarea></div>
                                 <div class="prop-field span-2 prop-subheading">Proyecto</div>
@@ -5751,7 +5772,15 @@
         const cfg = EP_DASH_TABLES[key];
         if (!cfg) return [];
         const allow = new Set(cfg.statuses);
-        return _epDashCache.filter(f => allow.has(f.status_pago));
+        return _epDashCache.filter(f => {
+            const status = String(f.status_pago || '').trim();
+            if (key === 'facturados') {
+                if (status !== 'Facturado') return false;
+                if (f.gasto_cesion_id || f.monto_ingreso_cesion != null) return false;
+                return true;
+            }
+            return allow.has(status);
+        });
     }
 
     function poblarFiltrosEpDash(key) {
@@ -11074,9 +11103,91 @@
     let _epProyectoCtx = null;
     let _epListaCache = [];
     let _epStatusPrev = null;
+    /** Keys de EP incluidos en los totales del documento (`id` o `'nuevo'`). */
+    let _epIdsEnCobro = new Set();
 
     function toggleEpSideBlock(id) {
         document.getElementById(id)?.classList.toggle('collapsed');
+    }
+
+    function epKeyCobro(m) {
+        if (m == null) return 'nuevo';
+        if (m._actual && (m.id == null || m.id === '')) return 'nuevo';
+        if (m.id != null && m.id !== '') return String(m.id);
+        return 'nuevo';
+    }
+
+    function epKeyCobroActual() {
+        const movId = document.getElementById('epMovId')?.value;
+        return movId ? String(movId) : 'nuevo';
+    }
+
+    function initEpCobroSeleccion() {
+        _epIdsEnCobro = new Set([epKeyCobroActual()]);
+        renderEpCobroLista();
+    }
+
+    function montoPesosEpFila(m) {
+        let pesos = m.monto;
+        if ((pesos == null || pesos === '') && m.monto_uf && m.valor_uf) {
+            pesos = Number(m.monto_uf) * Number(m.valor_uf);
+        }
+        return Number(pesos) || 0;
+    }
+
+    function renderEpCobroLista() {
+        const wrap = document.getElementById('epCobroLista');
+        if (!wrap) return;
+        const rows = epFilasParaTabla();
+        if (!rows.length) {
+            wrap.innerHTML = '<div class="text-muted">Sin EP en el proyecto</div>';
+            return;
+        }
+        wrap.innerHTML = rows.map((m, idx) => {
+            const key = epKeyCobro(m);
+            const n = numeroEpDeFila(m, idx);
+            const checked = _epIdsEnCobro.has(key) ? 'checked' : '';
+            const desc = (m.descripcion || 'Sin descripción').slice(0, 42);
+            const montoTxt = fmtPesosEp(montoPesosEpFila(m));
+            const actualTag = m._actual ? ' · actual' : '';
+            return `<label class="ep-cobro-item">
+                <input type="checkbox" class="form-check-input m-0" value="${esc(key)}" ${checked}
+                    onchange="toggleEpEnCobro(this.value, this.checked)">
+                <span><strong>N° ${esc(String(n))}</strong> ${esc(desc)}
+                    <span class="ep-cobro-meta"> · ${esc(montoTxt)}${actualTag}</span></span>
+            </label>`;
+        }).join('');
+    }
+
+    function toggleEpEnCobro(key, checked) {
+        const k = String(key);
+        if (checked) _epIdsEnCobro.add(k);
+        else {
+            // Mantener al menos el EP actual en el documento.
+            if (k === epKeyCobroActual() && _epIdsEnCobro.size <= 1) {
+                renderEpCobroLista();
+                return;
+            }
+            _epIdsEnCobro.delete(k);
+            if (!_epIdsEnCobro.size) _epIdsEnCobro.add(epKeyCobroActual());
+        }
+        onEpCampoTemplate();
+    }
+
+    function numerosEpEnCobroTexto() {
+        const rows = epFilasParaTabla();
+        const nums = rows
+            .map((m, idx) => ({ m, idx, key: epKeyCobro(m) }))
+            .filter(x => _epIdsEnCobro.has(x.key))
+            .map(x => numeroEpDeFila(x.m, x.idx))
+            .filter(n => n != null && !Number.isNaN(Number(n)))
+            .map(n => Number(n));
+        const uniq = [...new Set(nums)].sort((a, b) => a - b);
+        if (!uniq.length) return document.getElementById('epNumero')?.value || '1';
+        if (uniq.length === 1) return String(uniq[0]);
+        const consec = uniq.every((n, i) => i === 0 || n === uniq[i - 1] + 1);
+        if (consec && uniq.length > 2) return `${uniq[0]}–${uniq[uniq.length - 1]}`;
+        return uniq.join(', ');
     }
 
     function startEpModalSplitDrag(ev) {
@@ -11230,10 +11341,13 @@
         const body = rows.map((m, idx) => {
             const uf = m.monto_uf;
             const valor = m.valor_uf;
-            let pesos = m.monto;
-            if ((pesos == null || pesos === '') && uf && valor) pesos = Number(uf) * Number(valor);
-            const bg = m._actual ? '#e8f5f2' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff');
-            const rowClass = m._actual ? 'ep-fila-actual' : (idx % 2 === 1 ? 'ep-fila-alt' : '');
+            const pesos = montoPesosEpFila(m);
+            const enCobro = _epIdsEnCobro.has(epKeyCobro(m));
+            const bg = m._actual ? '#e8f5f2' : (enCobro ? '#eef6f4' : (idx % 2 === 1 ? '#f2f2f2' : '#ffffff'));
+            const rowClass = [
+                m._actual ? 'ep-fila-actual' : (idx % 2 === 1 ? 'ep-fila-alt' : ''),
+                enCobro ? 'ep-fila-en-cobro' : '',
+            ].filter(Boolean).join(' ');
             const cells = [
                 { html: esc(String(numeroEpDeFila(m, idx))), align: 'center' },
                 { html: esc(m.descripcion || '-'), align: 'left' },
@@ -11277,7 +11391,16 @@
     }
 
     function totalesEpDocumento() {
-        const subtotal = Number(document.getElementById('epMonto').value) || 0;
+        const rows = epFilasParaTabla();
+        let subtotal = 0;
+        for (const m of rows) {
+            if (!_epIdsEnCobro.has(epKeyCobro(m))) continue;
+            subtotal += montoPesosEpFila(m);
+        }
+        if (!_epIdsEnCobro.size) {
+            subtotal = Number(document.getElementById('epMonto').value) || 0;
+        }
+        subtotal = Math.round(subtotal);
         const iva = document.getElementById('epIncluirIva').checked ? Math.round(subtotal * 0.19) : 0;
         const total = subtotal + iva;
         return { subtotal, iva, total };
@@ -11306,7 +11429,7 @@
             '{{RUT}}': emp.rut || '',
             '{{DIRECCION}}': emp.direccion || '',
             '{{INTRO}}': document.getElementById('epIntro').value || INTRO_EP_DEFAULT,
-            '{{NUMERO_EP}}': document.getElementById('epNumero').value || '1',
+            '{{NUMERO_EP}}': numerosEpEnCobroTexto(),
             '{{FECHA}}': fmtFechaEpDoc(fecha),
             '{{ATENCION}}': document.getElementById('epAtencion').value || '',
             '{{PROYECTO}}': document.getElementById('epProyectoNombre').value || '',
@@ -11448,6 +11571,7 @@
     }
 
     function onEpCampoTemplate() {
+        renderEpCobroLista();
         const editor = document.getElementById('epTemplate');
         if (editor?.dataset.editado === '1') sincronizarDatosEnTemplateEp();
         else actualizarTemplateEstadoPago(false);
@@ -11587,16 +11711,17 @@
             alert('No hay contenido de estado de pago para exportar.');
             return;
         }
-        const numero = document.getElementById('epNumero').value || '1';
+        const numero = numerosEpEnCobroTexto();
         const proyecto = (document.getElementById('epProyectoNombre').value || 'proyecto').trim();
         const titulo = `Estado de Pago N°${numero} — ${proyecto}`;
+        const nombreArchivo = `EP${String(numero).replace(/[^\w.–,-]+/g, '_')}_${proyecto}`;
         const res = await apiFetch(`/api/estados-pago/exportar/${formato}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 titulo,
                 contenido,
-                nombre_archivo: `EP${numero}_${proyecto}`,
+                nombre_archivo: nombreArchivo,
             }),
         });
         if (!res.ok) {
@@ -11609,7 +11734,7 @@
         const blob = await res.blob();
         const disp = res.headers.get('content-disposition') || '';
         const match = disp.match(/filename="?([^";]+)"?/i);
-        const filename = match ? match[1] : `EP${numero}_${proyecto}.${formato === 'pdf' ? 'pdf' : 'doc'}`;
+        const filename = match ? match[1] : `${nombreArchivo}.${formato === 'pdf' ? 'pdf' : 'doc'}`;
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -11760,6 +11885,8 @@
             }
             aplicarBloqueoPesosEp();
         }
+
+        initEpCobroSeleccion();
 
         if (guardarTemplateViejo) {
             await sincronizarDatosEnTemplateEp();
