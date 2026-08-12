@@ -2295,28 +2295,40 @@ def _fecha_referencia_uf_ep(mov: Movimiento) -> date:
     return mov.fecha_estado_pago or mov.fecha_movimiento or date.today()
 
 
-def _resolver_uf_actual(fecha: date | None = None) -> float | None:
-    """UF para una fecha (por defecto hoy). Auto-fetch si no está en BD."""
-    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(fecha or date.today(), auto_fetch=True)
+def _resolver_uf_actual(fecha: date | None = None, *, auto_fetch: bool = True) -> float | None:
+    """UF para una fecha (por defecto hoy).
+
+    auto_fetch=False en listados/GET: usa BD o último valor disponible, sin
+    bloquear en mindicador/SII (eso puede sumar minutos si hay muchas fechas).
+    """
+    valor, _fecha_usada, _fuente = _obtener_uf_para_fecha(
+        fecha or date.today(), auto_fetch=auto_fetch,
+    )
     if valor is None:
         return None
     return float(valor)
 
 
-def _sincronizar_pesos_estado_pago(mov: Movimiento, *, forzar_fijacion: bool = False) -> bool:
+def _sincronizar_pesos_estado_pago(
+    mov: Movimiento,
+    *,
+    forzar_fijacion: bool = False,
+    auto_fetch: bool = True,
+) -> bool:
     """Actualiza valor_uf y monto_pesos desde monto_uf × UF del día del EP.
 
     - Status flotante (Por enviar / Programado): siempre recalcula con la UF
       de fecha_estado_pago (o fecha_movimiento).
     - forzar_fijacion: al pasar a Enviado+, congela con esa UF una vez.
     - Si el EP ya está fijado pero no tiene valor_uf, lo rellena sin tocar pesos.
+    - auto_fetch: solo True al crear/editar un EP; False en GET de listados.
     Devuelve True si modificó el movimiento.
     """
     if not _es_movimiento_estado_pago(mov):
         return False
     if mov.monto_uf is None:
         return False
-    uf = _resolver_uf_actual(_fecha_referencia_uf_ep(mov))
+    uf = _resolver_uf_actual(_fecha_referencia_uf_ep(mov), auto_fetch=auto_fetch)
     if uf is None:
         return False
     flotante = _ep_pesos_flotantes(mov.status_pago)

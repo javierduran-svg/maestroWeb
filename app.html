@@ -5575,11 +5575,14 @@
     }
 
     let _refrescoSecundarioTimer = null;
-    function programarRefrescoSecundarioTrasEdicion() {
+    function programarRefrescoSecundarioTrasEdicion(opts = {}) {
+        const { recargarMovimientos = false } = opts;
         clearTimeout(_refrescoSecundarioTimer);
         _refrescoSecundarioTimer = setTimeout(() => {
             refrescarDashboardsActivos();
-            if (_vistaActual === 'movimientos') listarMovimientos();
+            // Tras editar una fila ya se actualiza el cache local; no re-listar
+            // toda la tabla (puede tardar mucho) salvo que se pida explícito.
+            if (recargarMovimientos && _vistaActual === 'movimientos') listarMovimientos();
             if (_vistaActual === 'cuentas') listarCuentasTabla();
         }, 900);
     }
@@ -5673,17 +5676,20 @@
     }
 
     async function cargarDashboardFinanzas() {
-        const uf = await apiFetch('/api/uf/hoy').then(r => r.json());
-        await cargarFinanzasResumen();
+        // Paralelizar: antes cada await esperaba al anterior (UF + resumen + chart + EP + calendario).
+        const ufP = apiFetch('/api/uf/hoy').then(r => r.json()).catch(() => ({}));
+        const resumenP = cargarFinanzasResumen();
+        initDashboardAnioSelect();
+        const chartP = cargarDashboardChart();
+        const epP = cargarSeguimientoEstadosPago();
+        const calP = cargarCalendarioContable();
+        const uf = await ufP;
         if (uf.valor != null) {
             document.getElementById('kpi-uf-valor').innerText = '$' + Math.round(uf.valor).toLocaleString('es-CL');
             const fechaTxt = uf.fecha ? new Date(uf.fecha + 'T12:00:00').toLocaleDateString('es-CL') : '';
             document.getElementById('kpi-uf-fecha').textContent = uf.es_hoy ? fechaTxt : `Último: ${fechaTxt}`;
         }
-        initDashboardAnioSelect();
-        await cargarDashboardChart();
-        await cargarSeguimientoEstadosPago();
-        await cargarCalendarioContable();
+        await Promise.all([resumenP, chartP, epP, calP]);
     }
 
     const EP_DASH_TABLES = {
@@ -11970,14 +11976,24 @@
         const data = await res.json().catch(() => ({}));
         bootstrap.Modal.getInstance(document.getElementById('modalEstadoPago')).hide();
         aplicarMontosProyectosEnTabla(data.proyectos);
-        if (proyectoId) {
-            const movs = await (await apiFetch(`/api/proyectos/${proyectoId}/movimientos`)).json();
+        if (proyectoId && data.movimiento) {
+            upsertMovimientoEnDetalleCache(data.movimiento);
             if (_proyDetalleCache.proyectoId === Number(proyectoId)) {
-                _proyDetalleCache.movs = movs || [];
                 renderSoloTablasMovimientosDetalle(proyectoId);
-            } else {
-                await mostrarDetalleProyecto(Number(proyectoId), { soloDatos: true });
+                // Números EP / hermanos: refresco en background (no bloquea el cierre).
+                apiFetch(`/api/proyectos/${proyectoId}/movimientos`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(movs => {
+                        if (!movs || _proyDetalleCache.proyectoId !== Number(proyectoId)) return;
+                        _proyDetalleCache.movs = movs;
+                        renderSoloTablasMovimientosDetalle(proyectoId);
+                    })
+                    .catch(() => {});
             }
+        } else if (proyectoId && _proyDetalleCache.proyectoId === Number(proyectoId)) {
+            const movs = await (await apiFetch(`/api/proyectos/${proyectoId}/movimientos`)).json();
+            _proyDetalleCache.movs = movs || [];
+            renderSoloTablasMovimientosDetalle(proyectoId);
         }
         programarRefrescoSecundarioTrasEdicion();
     }

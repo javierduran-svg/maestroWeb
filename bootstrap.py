@@ -159,11 +159,36 @@ def cuentas_remuneracion(empresa_id: int):
     ).order_by(Cuenta.nombre).all()
 
 
-_UF_FETCH_TIMEOUT = 10
+# Timeout corto: en listados no debe bloquear; mindicador/SII caídos no deben
+# sumar 20s × N fechas. (connect, read) en segundos.
+_UF_FETCH_TIMEOUT = (3, 5)
 _UF_MESES_SII = (
     'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 )
+# Caché en proceso: evita reconsultar BD/red por la misma fecha en un request
+# (p. ej. sync de muchos EPs) o requests consecutivos.
+_UF_MEM_CACHE: dict[date, tuple[float, date, str]] = {}
+_UF_SII_HTML_CACHE: dict[int, str] = {}
+
+
+def _uf_cache_set(fecha: date, valor: float, fecha_usada: date, fuente: str) -> None:
+    _UF_MEM_CACHE[fecha] = (float(valor), fecha_usada, fuente)
+
+
+def _uf_fallidos_request() -> set:
+    """Fechas cuyo fetch externo falló en este request (no reintentar en el mismo loop)."""
+    try:
+        from flask import g, has_request_context
+        if has_request_context():
+            fallidos = getattr(g, '_uf_fetch_fallidos', None)
+            if fallidos is None:
+                fallidos = set()
+                g._uf_fetch_fallidos = fallidos
+            return fallidos
+    except Exception:
+        pass
+    return set()
 
 
 def _fetch_uf_mindicador(fecha: date) -> float | None:
@@ -206,29 +231,49 @@ def _parse_uf_sii_html(html: str, fecha: date) -> float | None:
     return None
 
 
-def _fetch_uf_sii(fecha: date) -> float | None:
-    """Obtiene UF desde tablas HTML del SII (sin API pública JSON)."""
+def _fetch_uf_sii_html_anio(anio: int) -> str | None:
+    """HTML anual del SII (cacheado en proceso para no re-descargar por cada día)."""
+    cached = _UF_SII_HTML_CACHE.get(anio)
+    if cached is not None:
+        return cached
     try:
-        url = f'https://www.sii.cl/valores_y_fechas/uf/uf{fecha.year}.htm'
+        url = f'https://www.sii.cl/valores_y_fechas/uf/uf{anio}.htm'
         resp = requests.get(
             url,
             timeout=_UF_FETCH_TIMEOUT,
             headers={'User-Agent': 'MaestroWeb/1.0'},
         )
         resp.raise_for_status()
-        return _parse_uf_sii_html(resp.text, fecha)
+        _UF_SII_HTML_CACHE[anio] = resp.text
+        return resp.text
     except Exception as exc:
-        logger.debug('UF SII falló para %s: %s', fecha, exc)
+        logger.debug('UF SII HTML falló para %s: %s', anio, exc)
+    return None
+
+
+def _fetch_uf_sii(fecha: date) -> float | None:
+    """Obtiene UF desde tablas HTML del SII (sin API pública JSON)."""
+    html = _fetch_uf_sii_html_anio(fecha.year)
+    if not html:
+        return None
+    try:
+        return _parse_uf_sii_html(html, fecha)
+    except Exception as exc:
+        logger.debug('UF SII parse falló para %s: %s', fecha, exc)
     return None
 
 
 def _fetch_uf_externa(fecha: date) -> tuple[float | None, str | None]:
+    fallidos = _uf_fallidos_request()
+    if fecha in fallidos:
+        return None, None
     valor = _fetch_uf_mindicador(fecha)
     if valor is not None:
         return valor, 'mindicador'
     valor = _fetch_uf_sii(fecha)
     if valor is not None:
         return valor, 'sii'
+    fallidos.add(fecha)
     return None, None
 
 
@@ -240,6 +285,7 @@ def _guardar_uf(fecha: date, valor: float) -> ValorUF:
         reg = ValorUF(fecha=fecha, valor=float(valor))
         db.session.add(reg)
     db.session.commit()
+    _uf_cache_set(fecha, float(valor), fecha, 'bd')
     return reg
 
 
@@ -247,8 +293,14 @@ def _obtener_uf_para_fecha(
     fecha: date,
     auto_fetch: bool = True,
 ) -> tuple[float | None, date | None, str | None]:
+    cached = _UF_MEM_CACHE.get(fecha)
+    if cached is not None:
+        valor, fecha_usada, fuente = cached
+        return valor, fecha_usada, fuente
+
     reg = ValorUF.query.filter_by(fecha=fecha).first()
     if reg:
+        _uf_cache_set(fecha, reg.valor, reg.fecha, 'bd')
         return reg.valor, reg.fecha, 'bd'
 
     if auto_fetch:
@@ -264,6 +316,7 @@ def _obtener_uf_para_fecha(
         .first()
     )
     if anterior:
+        _uf_cache_set(fecha, anterior.valor, anterior.fecha, 'ultimo_disponible')
         return anterior.valor, anterior.fecha, 'ultimo_disponible'
     return None, None, None
 

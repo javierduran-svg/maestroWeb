@@ -273,11 +273,11 @@ def movimientos_proyecto(proyecto_id):
     if clase:
         query = query.filter_by(clase=clase)
     movimientos = query.order_by(Movimiento.fecha_movimiento.desc()).all()
-    # EP en Por enviar / Programado: refrescar pesos a la UF del día.
+    # EP en Por enviar / Programado: refrescar pesos con UF ya en BD (sin red).
     # N° EP: correlativo por fecha del EP (antiguo → reciente).
     cambiado = False
     for m in movimientos:
-        if m.clase == 'estado_pago' and _sincronizar_pesos_estado_pago(m):
+        if m.clase == 'estado_pago' and _sincronizar_pesos_estado_pago(m, auto_fetch=False):
             cambiado = True
     if renumerar_eps_proyecto(proyecto_id, eid):
         cambiado = True
@@ -298,6 +298,7 @@ def crear_estado_pago(proyecto_id):
     return jsonify({
         'mensaje': 'Estado de pago registrado',
         'id': mov.id,
+        'movimiento': _movimiento_a_dict(mov),
         'proyectos': [_proyecto_montos_dict(p) for p in proyectos],
     }), 201
 
@@ -580,7 +581,7 @@ def gantt_datos():
         empresa_id=eid, clase='estado_pago', estado='Activo',
     ).filter(Movimiento.proyecto_id.isnot(None)).order_by(Movimiento.fecha_movimiento).all()
     for m in estados_pago:
-        _sincronizar_pesos_estado_pago(m)
+        _sincronizar_pesos_estado_pago(m, auto_fetch=False)
 
     proyecto_ids = {p.id for p in proyectos}
     entregas = EntregaProgramada.query.filter_by(empresa_id=eid).filter(

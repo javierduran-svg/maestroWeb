@@ -163,7 +163,8 @@ def get_dashboard_estados_pago():
         movs = query.order_by(Movimiento.fecha_movimiento.desc(), Movimiento.id.desc()).all()
         cambiado = False
         for m in movs:
-            if _sincronizar_pesos_estado_pago(m):
+            # Sin auto_fetch: no bloquear el dashboard en APIs externas de UF.
+            if _sincronizar_pesos_estado_pago(m, auto_fetch=False):
                 cambiado = True
         from estados_pago_service import renumerar_eps_proyecto
         for pid in {m.proyecto_id for m in movs if m.proyecto_id}:
