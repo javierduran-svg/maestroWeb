@@ -119,8 +119,15 @@ def _es_movimiento_ingreso(m) -> bool:
 
 
 def _fecha_movimiento_ingreso(m) -> date:
-    if m.clase == 'estado_pago' and m.fecha_estado_pago:
-        return m.fecha_estado_pago
+    """Fecha en que el ingreso impacta el dashboard.
+
+    Cedida usa fecha_movimiento (ingreso al ceder). Pagado usa fecha_estado_pago.
+    """
+    if m.clase == 'estado_pago':
+        if getattr(m, 'status_pago', None) == 'Cedida':
+            return m.fecha_movimiento
+        if m.fecha_estado_pago:
+            return m.fecha_estado_pago
     return m.fecha_movimiento
 
 
