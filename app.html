@@ -3475,7 +3475,7 @@
                         <div class="prop-side-body">
                             <p class="small text-muted mb-2" style="font-size:0.68rem"><i class="fa-solid fa-arrow-right"></i> Clientes → banco (automático)</p>
                             <div class="prop-compact-grid">
-                                <div class="prop-field"><label>N° EP</label><input type="number" class="form-control bg-light" id="epNumero" min="1" readonly title="Correlativo automático del proyecto"></div>
+                                <div class="prop-field"><label>N° EP</label><input type="number" class="form-control bg-light" id="epNumero" min="1" readonly title="Correlativo por fecha del EP (antiguo → reciente)"></div>
                                 <div class="prop-field"><label>Status</label>
                                     <select class="form-select" id="epStatusPago" onchange="onEpStatusChange()">
                                         <option value="Por enviar">Por enviar</option>
@@ -11304,6 +11304,17 @@
         return Number(n).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
     }
 
+    function fechaOrdenEp(m) {
+        return String(m?.fecha_estado_pago || m?.fecha_movimiento || '');
+    }
+
+    function compararEpPorFecha(a, b) {
+        const fa = fechaOrdenEp(a);
+        const fb = fechaOrdenEp(b);
+        if (fa !== fb) return fa.localeCompare(fb);
+        return (Number(a?.id) || 0) - (Number(b?.id) || 0);
+    }
+
     function epFilasParaTabla() {
         const movId = document.getElementById('epMovId').value;
         const actual = {
@@ -11315,22 +11326,17 @@
             monto: document.getElementById('epMonto').value,
             status_pago: document.getElementById('epStatusPago').value,
             numero_factura: document.getElementById('epNumFact').value || '',
-            numero_ep: document.getElementById('epNumero').value || null,
+            numero_ep: null,
             _actual: true,
         };
         const others = (_epListaCache || []).filter(m => !movId || Number(m.id) !== Number(movId));
         const rows = [...others.map(m => ({ ...m, _actual: false })), actual];
-        rows.sort((a, b) => String(a.fecha_estado_pago || a.fecha_movimiento || '').localeCompare(String(b.fecha_estado_pago || b.fecha_movimiento || '')));
+        rows.sort(compararEpPorFecha);
         return rows;
     }
 
     function numeroEpDeFila(m, idx) {
-        if (m.numero_ep != null && m.numero_ep !== '') return Number(m.numero_ep);
-        if (m._actual) {
-            const n = document.getElementById('epNumero').value;
-            if (n != null && n !== '') return Number(n);
-        }
-        if (m.id != null) return correlativoEpDesdeLista(m.id, _epListaCache);
+        // Correlativo = posición por fecha del EP (ya ordenada en epFilasParaTabla).
         return idx + 1;
     }
 
@@ -11373,21 +11379,42 @@
             `<thead><tr>${head}</tr></thead><tbody>${body || empty}</tbody></table>`;
     }
 
-    function correlativoEpDesdeLista(movId, lista) {
-        const eps = [...(lista || [])].sort((a, b) => {
-            const fa = String(a.fecha_movimiento || a.fecha_estado_pago || '');
-            const fb = String(b.fecha_movimiento || b.fecha_estado_pago || '');
-            if (fa !== fb) return fa.localeCompare(fb);
-            return (Number(a.id) || 0) - (Number(b.id) || 0);
-        });
-        if (!movId) return eps.length + 1;
-        const idx = eps.findIndex(m => Number(m.id) === Number(movId));
-        if (idx >= 0) {
-            const n = eps[idx].numero_ep;
-            if (n != null && n !== '') return Number(n);
-            return idx + 1;
+    function correlativoEpDesdeLista(movId, lista, fechaOverride = null) {
+        const eps = [...(lista || [])].map(m => ({ ...m }));
+        const fecha = fechaOverride
+            || document.getElementById('epFechaPago')?.value
+            || document.getElementById('epFecha')?.value
+            || '';
+        if (movId) {
+            const found = eps.find(m => Number(m.id) === Number(movId));
+            if (found) {
+                found.fecha_estado_pago = fecha || found.fecha_estado_pago;
+            }
+        } else {
+            eps.push({
+                id: null,
+                fecha_estado_pago: fecha,
+                fecha_movimiento: fecha,
+                _nuevo: true,
+            });
         }
-        return eps.length + 1;
+        eps.sort(compararEpPorFecha);
+        if (!movId) {
+            const idx = eps.findIndex(m => m._nuevo);
+            return idx >= 0 ? idx + 1 : eps.length;
+        }
+        const idx = eps.findIndex(m => Number(m.id) === Number(movId));
+        return idx >= 0 ? idx + 1 : eps.length + 1;
+    }
+
+    function actualizarNumeroEpPorFecha() {
+        const numEl = document.getElementById('epNumero');
+        if (!numEl) return;
+        const movId = document.getElementById('epMovId')?.value || null;
+        const fecha = document.getElementById('epFechaPago')?.value
+            || document.getElementById('epFecha')?.value
+            || '';
+        numEl.value = correlativoEpDesdeLista(movId, _epListaCache, fecha);
     }
 
     function totalesEpDocumento() {
@@ -11668,7 +11695,9 @@
     }
 
     async function onEpFechaPagoChange() {
-        // Al cambiar la fecha del EP, recargar la UF de ese día (si sigue flotante).
+        // Al cambiar la fecha del EP, recargar la UF de ese día (si sigue flotante)
+        // y recalcular el N° según orden cronológico.
+        actualizarNumeroEpPorFecha();
         if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {
             await sincronizarPesosEpSegunEstado();
         }
@@ -11818,10 +11847,9 @@
         document.getElementById('epAtencion').value = p.cliente || '';
         document.getElementById('epIntro').value = INTRO_EP_DEFAULT;
 
-        const [plantillaRes, movsRes, numRes] = await Promise.all([
+        const [plantillaRes, movsRes] = await Promise.all([
             apiFetch('/api/estados-pago/plantilla'),
             apiFetch(`/api/proyectos/${proyectoId}/movimientos`),
-            movId ? Promise.resolve(null) : apiFetch(`/api/proyectos/${proyectoId}/estados-pago/siguiente-numero`),
         ]);
         const plantilla = plantillaRes.ok ? await plantillaRes.json() : {};
         _epTemplateBase = plantilla.contenido_html || '';
@@ -11851,11 +11879,11 @@
             document.getElementById('epMontoCesion').value = m.monto_ingreso_cesion ?? '';
             toggleEpCesionUI();
             document.getElementById('epCondicionPago').value = String(m.condicion_pago_dias || 30);
-            document.getElementById('epNumero').value = correlativoEpDesdeLista(movId, _epListaCache);
             document.getElementById('epAtencion').value = m.atencion_de || p.cliente || '';
             document.getElementById('epIntro').value = m.intro_ep || INTRO_EP_DEFAULT;
             document.getElementById('epNotas').value = m.notas_ep || '';
             document.getElementById('epIncluirIva').checked = !!m.incluir_iva;
+            actualizarNumeroEpPorFecha();
             // Plantillas/HTML antiguos: regenerar si no traen la estructura nueva.
             const htmlGuardado = m.template_html || '';
             const estructuraOk = htmlGuardado.includes('ep-bloque-tabla')
@@ -11867,11 +11895,8 @@
                 editor.dataset.editado = '1';
                 guardarTemplateViejo = true;
             }
-        } else if (numRes && numRes.ok) {
-            const numData = await numRes.json();
-            document.getElementById('epNumero').value = numData.numero_ep || correlativoEpDesdeLista(null, _epListaCache);
         } else {
-            document.getElementById('epNumero').value = correlativoEpDesdeLista(null, _epListaCache);
+            actualizarNumeroEpPorFecha();
         }
 
         if (epPesosFlotantes(document.getElementById('epStatusPago').value)) {

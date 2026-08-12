@@ -2273,7 +2273,7 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
 
 
 def _numero_ep_efectivo(m: Movimiento) -> int | None:
-    """Correlativo visible del EP (asigna orden si falta numero_ep)."""
+    """Correlativo visible del EP (persistido por renumerar según fecha del EP)."""
     if m.clase != 'estado_pago':
         return m.numero_ep
     if m.numero_ep:
@@ -2349,6 +2349,7 @@ def _aplicar_regla_pesos_ep(mov: Movimiento, status_prev: str | None = None) -> 
 
 def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
     status_prev = mov.status_pago
+    proyecto_prev = mov.proyecto_id
     if 'fecha' in data or 'fecha_movimiento' in data:
         fecha = _parse_fecha(data.get('fecha') or data.get('fecha_movimiento'))
         if fecha:
@@ -2369,9 +2370,7 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
         mov.descripcion = data.get('descripcion')
     if 'numero_factura' in data:
         mov.numero_factura = data.get('numero_factura')
-    if 'numero_ep' in data:
-        raw_num = data.get('numero_ep')
-        mov.numero_ep = int(raw_num) if raw_num not in (None, '') else None
+    # numero_ep lo define renumerar_eps_proyecto (orden por fecha del EP).
     if 'atencion_de' in data:
         atencion = (data.get('atencion_de') or '').strip()
         mov.atencion_de = atencion[:150] or None
@@ -2422,6 +2421,12 @@ def _aplicar_datos_movimiento(mov: Movimiento, data: dict):
                 mov.centro_costo = 'Administración'
     _aplicar_regla_pesos_ep(mov, status_prev)
     _sincronizar_gasto_cesion(mov, data, status_prev)
+    if _es_movimiento_estado_pago(mov):
+        from estados_pago_service import renumerar_eps_proyecto
+        if mov.proyecto_id:
+            renumerar_eps_proyecto(mov.proyecto_id, mov.empresa_id)
+        if proyecto_prev and proyecto_prev != mov.proyecto_id:
+            renumerar_eps_proyecto(proyecto_prev, mov.empresa_id)
 
 
 def _cuenta_comision_cesion(empresa_id: int) -> Cuenta:
@@ -2563,16 +2568,15 @@ def _desvincular_gasto_cesion_si_aplica(mov: Movimiento) -> None:
 
 
 def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimiento:
-    from estados_pago_service import siguiente_numero_ep
+    from estados_pago_service import renumerar_eps_proyecto, siguiente_numero_ep
 
     proyecto = Proyecto.query.filter_by(empresa_id=empresa_id, id=proyecto_id).first_or_404()
     origen = _cuenta_por_nombre(NOMBRE_CUENTA_CLIENTES, empresa_id)
     destino = _cuenta_por_nombre(NOMBRE_CUENTA_BANCO_PESOS, empresa_id)
     monto_uf = data.get('monto_uf')
     valor_uf = data.get('valor_uf')
-    numero_ep = data.get('numero_ep')
-    if numero_ep in (None, ''):
-        numero_ep = siguiente_numero_ep(proyecto.id, empresa_id)
+    # Tentativo; se corrige con renumerar_eps_proyecto según fecha del EP.
+    numero_ep = siguiente_numero_ep(proyecto.id, empresa_id)
     atencion = (data.get('atencion_de') or '').strip()
     mov = Movimiento(
         empresa_id=empresa_id,
@@ -2594,7 +2598,7 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         status_pago=data.get('status_pago', 'Por enviar'),
         condicion_pago_dias=_parse_condicion_pago(data.get('condicion_pago_dias', 30)),
         proyecto_id=proyecto.id,
-        numero_ep=int(numero_ep) if numero_ep not in (None, '') else None,
+        numero_ep=numero_ep,
         atencion_de=atencion[:150] or None,
         notas_ep=data.get('notas_ep') or None,
         intro_ep=data.get('intro_ep') or None,
@@ -2610,6 +2614,7 @@ def _crear_estado_pago(proyecto_id: int, data: dict, empresa_id: int) -> Movimie
         else:
             _sincronizar_pesos_estado_pago(mov, forzar_fijacion=True)
     _sincronizar_gasto_cesion(mov, data, None)
+    renumerar_eps_proyecto(proyecto.id, empresa_id)
     return mov
 
 
@@ -2681,7 +2686,7 @@ def _estado_pago_gantt_dict(m: Movimiento) -> dict:
         'estado': _status_pago_a_estado_gantt(m.status_pago),
         'fecha_pago_real': m.fecha_estado_pago.strftime('%Y-%m-%d') if m.fecha_estado_pago else None,
         'status_pago': m.status_pago,
-        'numero_ep': m.numero_ep,
+        'numero_ep': _numero_ep_efectivo(m),
     }
 
 

@@ -19,6 +19,7 @@ from estados_pago_service import (
     obtener_plantilla_ep,
     plantilla_default,
     plantilla_ep_a_dict,
+    renumerar_eps_proyecto,
     siguiente_numero_ep,
 )
 from propuestas_service import (
@@ -273,10 +274,13 @@ def movimientos_proyecto(proyecto_id):
         query = query.filter_by(clase=clase)
     movimientos = query.order_by(Movimiento.fecha_movimiento.desc()).all()
     # EP en Por enviar / Programado: refrescar pesos a la UF del día.
+    # N° EP: correlativo por fecha del EP (antiguo → reciente).
     cambiado = False
     for m in movimientos:
         if m.clase == 'estado_pago' and _sincronizar_pesos_estado_pago(m):
             cambiado = True
+    if renumerar_eps_proyecto(proyecto_id, eid):
+        cambiado = True
     if cambiado:
         db.session.commit()
         _recalcular_proyectos(eid, proyecto_id)
@@ -553,6 +557,8 @@ def manejar_estado_pago_gantt(ep_id):
         mov.descripcion = data.get('descripcion')
     if 'monto' in data:
         mov.monto_pesos = float(data['monto'])
+    if mov.proyecto_id:
+        renumerar_eps_proyecto(mov.proyecto_id, eid)
     db.session.commit()
     _recalcular_proyectos(eid, mov.proyecto_id)
     return jsonify({'mensaje': 'Estado de pago actualizado', 'estado_pago': _estado_pago_gantt_dict(mov)})

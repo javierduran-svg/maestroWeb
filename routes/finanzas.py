@@ -165,6 +165,10 @@ def get_dashboard_estados_pago():
         for m in movs:
             if _sincronizar_pesos_estado_pago(m):
                 cambiado = True
+        from estados_pago_service import renumerar_eps_proyecto
+        for pid in {m.proyecto_id for m in movs if m.proyecto_id}:
+            if renumerar_eps_proyecto(pid, eid):
+                cambiado = True
         if cambiado:
             db.session.commit()
         filas = [_movimiento_a_dict(m) for m in movs]
@@ -533,8 +537,12 @@ def manejar_movimiento(mov_id):
 
     if request.method == 'DELETE':
         proyecto_id = mov.proyecto_id
+        era_ep = mov.clase == 'estado_pago'
         _desvincular_gasto_cesion_si_aplica(mov)
         db.session.delete(mov)
+        if era_ep and proyecto_id:
+            from estados_pago_service import renumerar_eps_proyecto
+            renumerar_eps_proyecto(proyecto_id, eid)
         db.session.commit()
         proyectos = _recalcular_proyectos(eid, proyecto_id)
         return jsonify({
@@ -593,6 +601,9 @@ def duplicar_movimiento(mov_id):
         _sincronizar_gasto_cesion(copia, {
             'monto_ingreso_cesion': copia.monto_ingreso_cesion,
         }, None)
+    if copia.clase == 'estado_pago' and copia.proyecto_id:
+        from estados_pago_service import renumerar_eps_proyecto
+        renumerar_eps_proyecto(copia.proyecto_id, eid)
     db.session.commit()
     proyectos = _recalcular_proyectos(eid, copia.proyecto_id)
     return jsonify({

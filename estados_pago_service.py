@@ -176,43 +176,60 @@ def plantilla_ep_a_dict(row: PlantillaEstadoPago | None, empresa_id: int) -> dic
     }
 
 
-def siguiente_numero_ep(proyecto_id: int, empresa_id: int) -> int:
-    """Correlativo del próximo EP del proyecto (1, 2, 3…).
+def _fecha_orden_ep(mov: Movimiento):
+    """Fecha que define el correlativo: fecha del EP, o movimiento como respaldo."""
+    return mov.fecha_estado_pago or mov.fecha_movimiento
 
-    Considera tanto el máximo ``numero_ep`` ya asignado como la cantidad de
-    estados de pago existentes (por si hay filas antiguas sin número).
-    """
-    rows = (
+
+def ordenar_eps_por_fecha(eps: list[Movimiento]) -> list[Movimiento]:
+    """Ordena EP de más antiguo a más reciente según fecha del EP."""
+    return sorted(
+        eps,
+        key=lambda m: (
+            _fecha_orden_ep(m) or datetime.min.date(),
+            m.id or 0,
+        ),
+    )
+
+
+def _eps_proyecto(proyecto_id: int, empresa_id: int) -> list[Movimiento]:
+    return (
         Movimiento.query.filter_by(
             empresa_id=empresa_id,
             proyecto_id=proyecto_id,
             clase='estado_pago',
-        )
-        .with_entities(Movimiento.numero_ep)
-        .all()
+            estado='Activo',
+        ).all()
     )
-    nums = [n for (n,) in rows if n is not None]
-    max_num = max(nums) if nums else 0
-    return max(max_num, len(rows)) + 1
+
+
+def renumerar_eps_proyecto(proyecto_id: int | None, empresa_id: int) -> bool:
+    """Asigna N° EP 1..N por fecha del EP (antiguo → reciente).
+
+    Devuelve True si algún ``numero_ep`` cambió.
+    """
+    if not proyecto_id:
+        return False
+    ordered = ordenar_eps_por_fecha(_eps_proyecto(proyecto_id, empresa_id))
+    cambiado = False
+    for i, ep in enumerate(ordered, start=1):
+        if ep.numero_ep != i:
+            ep.numero_ep = i
+            cambiado = True
+    return cambiado
+
+
+def siguiente_numero_ep(proyecto_id: int, empresa_id: int) -> int:
+    """Correlativo tentativo del próximo EP (antes de renumerar por fecha)."""
+    return len(_eps_proyecto(proyecto_id, empresa_id)) + 1
 
 
 def correlativo_ep_para_movimiento(mov: Movimiento) -> int:
-    """Número correlativo del EP dentro del proyecto (por fecha/id)."""
-    if mov.numero_ep:
-        return int(mov.numero_ep)
-    eps = (
-        Movimiento.query.filter_by(
-            empresa_id=mov.empresa_id,
-            proyecto_id=mov.proyecto_id,
-            clase='estado_pago',
-        )
-        .order_by(
-            Movimiento.fecha_movimiento.asc(),
-            Movimiento.id.asc(),
-        )
-        .all()
-    )
-    for i, ep in enumerate(eps, start=1):
+    """Número correlativo del EP dentro del proyecto (por fecha EP antigua→reciente)."""
+    if not mov.proyecto_id:
+        return int(mov.numero_ep) if mov.numero_ep else 1
+    ordered = ordenar_eps_por_fecha(_eps_proyecto(mov.proyecto_id, mov.empresa_id))
+    for i, ep in enumerate(ordered, start=1):
         if ep.id == mov.id:
             return i
     return siguiente_numero_ep(mov.proyecto_id, mov.empresa_id)
