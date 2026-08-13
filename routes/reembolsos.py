@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request, send_file
 from werkzeug.utils import secure_filename
 
 from common import *
+from contabilidad import calcular_transaccion
 from extensions import db
 from models import Cuenta, Movimiento, Proyecto, Reembolso, Trabajador
 
@@ -121,10 +122,7 @@ def _eliminar_movimiento_reembolso(r: Reembolso) -> None:
         db.session.delete(mov)
         db.session.flush()
     if proyecto_id:
-        proy = Proyecto.query.filter_by(empresa_id=empresa_id, id=proyecto_id).first()
-        if proy:
-            movs = Movimiento.query.filter_by(empresa_id=empresa_id, proyecto_id=proyecto_id).all()
-            recalcular_proyecto(proy, movs)
+        _recalcular_proyectos(empresa_id, proyecto_id)
 
 
 def _crear_movimiento_reembolso(r: Reembolso, fecha_pago: date) -> Movimiento:
@@ -154,12 +152,7 @@ def _crear_movimiento_reembolso(r: Reembolso, fecha_pago: date) -> Movimiento:
     db.session.flush()
     r.movimiento_id = mov.id
     if r.proyecto_id:
-        proy = Proyecto.query.filter_by(empresa_id=r.empresa_id, id=r.proyecto_id).first()
-        if proy:
-            movs = Movimiento.query.filter_by(
-                empresa_id=r.empresa_id, proyecto_id=r.proyecto_id,
-            ).all()
-            recalcular_proyecto(proy, movs)
+        _recalcular_proyectos(r.empresa_id, r.proyecto_id)
     return mov
 
 
@@ -367,7 +360,7 @@ def crear_reembolso():
     if not usuario:
         return jsonify({'error': 'No autenticado'}), 401
 
-    data = request.form.to_dict() if request.form else (request.get_json(silent=True) or {})
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
     fecha = _parse_fecha(data.get('fecha_gasto'))
     if not fecha:
         return jsonify({'error': 'fecha_gasto requerida (YYYY-MM-DD)'}), 400
@@ -453,13 +446,21 @@ def actualizar_reembolso(rid):
     usuario = _usuario_sesion()
     if not usuario:
         return jsonify({'error': 'No autenticado'}), 401
+    try:
+        return _actualizar_reembolso_inner(eid, rid, usuario)
+    except Exception as exc:
+        db.session.rollback()
+        return jsonify({'error': str(exc)}), 500
+
+
+def _actualizar_reembolso_inner(eid, rid, usuario):
     r = _obtener_reembolso(eid, rid)
     if not r:
         return jsonify({'error': 'Reembolso no encontrado'}), 404
     if not _puede_editar_campos(r, usuario):
         return jsonify({'error': 'Sin permiso para editar este reembolso'}), 403
 
-    data = request.form.to_dict() if request.form else (request.get_json(silent=True) or {})
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
     fecha_pago = _fecha_reembolso_desde_data(data)
 
     keys = set(data.keys())
