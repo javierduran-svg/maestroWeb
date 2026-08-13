@@ -1251,6 +1251,8 @@
         .table-proyectos .mov-filtro:focus,
         .table-proyectos .mov-filtro.form-select:focus { background: #fff; box-shadow: inset 0 0 0 1px var(--teal-green); outline: none; }
         .table-proyectos td, .table-proyectos th { box-shadow: none !important; }
+        #tabla-proyectos-grid th.proy-col-id,
+        #tabla-proyectos-grid td.proy-col-id { width: 3.25rem; max-width: 4rem; }
         .cell-edit { font-size: 0.8rem; padding: 0.2rem 0.35rem; min-width: 90px; }
         .cell-edit-sm { min-width: 70px; }
         tr.fila-guardando { opacity: 0.55; pointer-events: none; }
@@ -2390,6 +2392,7 @@
                             <table id="tabla-proyectos-grid" class="table table-hover table-panel table-compact table-proyectos mb-0">
                                 <thead>
                                     <tr>
+                                        <th class="mov-th-sort text-end proy-col-id" data-col="id" onclick="ordenarProyectos('id')">ID <i class="fa-solid fa-sort sort-icon"></i></th>
                                         <th class="mov-th-sort" data-col="nombre" onclick="ordenarProyectos('nombre')">Nombre <i class="fa-solid fa-sort sort-icon"></i></th>
                                         <th class="mov-th-sort" data-col="cliente" onclick="ordenarProyectos('cliente')">Cliente <i class="fa-solid fa-sort sort-icon"></i></th>
                                         <th class="mov-th-sort" data-col="servicio" onclick="ordenarProyectos('servicio')">Servicio <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -2401,6 +2404,7 @@
                                         <th class="text-end" style="width:88px"></th>
                                     </tr>
                                     <tr class="mov-filtros">
+                                        <th><input type="text" class="form-control mov-filtro text-end" id="filtroProyId" placeholder="N°" oninput="debounceRenderProyectos()"></th>
                                         <th><input type="text" class="form-control mov-filtro" id="filtroProyNombre" placeholder="Buscar…" oninput="debounceRenderProyectos()"></th>
                                         <th><select class="form-select mov-filtro" id="filtroProyCliente" onchange="renderProyectos(true)"><option value="">Todos</option></select></th>
                                         <th><select class="form-select mov-filtro" id="filtroProyServicio" onchange="renderProyectos(true)"><option value="">Todos</option></select></th>
@@ -7722,7 +7726,7 @@
 
     function proyFiltrosActivos() {
         const f = leerFiltrosProyectos();
-        return !!(f.nombre || f.cliente_id || f.servicio || f.superficie || f.status
+        return !!(f.id || f.nombre || f.cliente_id || f.servicio || f.superficie || f.status
             || f.monto_contrato || f.monto_pagado || f.monto_gastos);
     }
 
@@ -7733,6 +7737,7 @@
         p.set('per_page', String(_proyPerPage));
         p.set('sort', _proyOrdenCol);
         p.set('order', _proyOrdenDir);
+        if (f.id) p.set('id', f.id);
         if (f.nombre) p.set('search', f.nombre);
         if (f.cliente_id) p.set('cliente_id', f.cliente_id);
         if (f.servicio) p.set('servicio', f.servicio);
@@ -7790,6 +7795,7 @@
 
     function leerFiltrosProyectos() {
         return {
+            id: document.getElementById('filtroProyId').value.trim(),
             nombre: document.getElementById('filtroProyNombre').value.trim().toLowerCase(),
             cliente_id: document.getElementById('filtroProyCliente').value,
             servicio: document.getElementById('filtroProyServicio').value,
@@ -7820,7 +7826,7 @@
     }
 
     function limpiarFiltrosProyectos() {
-        ['filtroProyNombre','filtroProySuperficie','filtroProyContrato','filtroProyPagado','filtroProyGastos'].forEach(id => document.getElementById(id).value = '');
+        ['filtroProyId','filtroProyNombre','filtroProySuperficie','filtroProyContrato','filtroProyPagado','filtroProyGastos'].forEach(id => document.getElementById(id).value = '');
         ['filtroProyCliente','filtroProyServicio','filtroProyStatus'].forEach(id => document.getElementById(id).value = '');
         renderProyectos(true);
     }
@@ -8459,7 +8465,7 @@
         if (seq !== _proyFetchSeq) return;
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            document.getElementById('tabla-proyectos').innerHTML = `<tr><td colspan="9" class="text-center text-danger py-4">${esc(err.error || 'Error al cargar proyectos')}</td></tr>`;
+            document.getElementById('tabla-proyectos').innerHTML = `<tr><td colspan="10" class="text-center text-danger py-4">${esc(err.error || 'Error al cargar proyectos')}</td></tr>`;
             return;
         }
         const data = await res.json();
@@ -8489,6 +8495,7 @@
         const expandido = _proyectoExpandido;
         document.getElementById('tabla-proyectos').innerHTML = lista.length
             ? lista.map(p => `<tr class="proyecto-row" data-id="${p.id}">
+                <td class="proy-col-id text-end text-muted text-nowrap" style="font-size:0.75rem">${p.id}</td>
                 <td class="fw-medium text-truncate" style="max-width:200px" title="${esc(p.nombre)}">${esc(p.nombre)}</td>
                 <td class="text-truncate" style="max-width:180px" title="${esc(p.cliente)}">${esc(p.cliente)}</td>
                 <td class="text-muted text-truncate" style="max-width:120px;font-size:0.75rem" title="${esc(p.servicio)}">${esc(p.servicio)}</td>
@@ -8504,7 +8511,7 @@
                     </span>
                 </td>
             </tr>`).join('')
-            : `<tr><td colspan="9" class="text-center text-muted py-4">${_proyTotal ? 'Ningún proyecto coincide con los filtros' : 'Sin proyectos registrados'}</td></tr>`;
+            : `<tr><td colspan="10" class="text-center text-muted py-4">${_proyTotal ? 'Ningún proyecto coincide con los filtros' : 'Sin proyectos registrados'}</td></tr>`;
         actualizarSeleccionProyUI();
         if (expandido) {
             if (lista.some(p => p.id === expandido)) {

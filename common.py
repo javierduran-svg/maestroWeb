@@ -1842,6 +1842,7 @@ ADMIN_PER_PAGE = 500
 FETCH_ALL_PER_PAGE = 0
 
 PROYECTO_SORT_FIELDS = {
+    'id': Proyecto.id,
     'nombre': Proyecto.nombre,
     'servicio': Proyecto.servicio,
     'superficie': Proyecto.superficie,
@@ -1908,6 +1909,9 @@ def _paginate_query(query, page: int, per_page: int):
 
 
 def _filtrar_proyectos_query(query, args):
+    id_needle = _solo_digitos(args.get('id'))
+    if id_needle:
+        query = query.filter(cast(Proyecto.id, String).like(f'%{id_needle}%'))
     search = (args.get('search') or args.get('nombre') or '').strip()
     if search:
         query = query.filter(Proyecto.nombre.ilike(f'%{search}%'))
