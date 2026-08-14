@@ -900,12 +900,9 @@
             margin-bottom: 0.75rem;
             color: var(--teal-green);
         }
-        .table-proyectos tbody tr.proyecto-row-active {
-            --bs-table-bg-state: #d6ecec;
-            background-color: #d6ecec !important;
-            box-shadow: inset 3px 0 0 var(--teal-green);
-        }
-        .table-proyectos tbody tr.proyecto-row-active:hover { background-color: #c9e5e5 !important; }
+        .table-proyectos tbody tr.proyecto-row-active > td { background-color: #cfe9e9 !important; }
+        .table-proyectos tbody tr.proyecto-row-active:hover > td { background-color: #bfe1e1 !important; }
+        .table-proyectos tbody tr.proyecto-row-active > td:first-child { box-shadow: inset 3px 0 0 var(--teal-green) !important; }
         .subseccion-proyecto .table:not(.table-proy-detalle) { font-size: 0.8125rem; }
         .subseccion-proyecto h6 { font-size: 0.8125rem; }
         .table-proy-detalle .cell-edit,
@@ -1114,8 +1111,11 @@
         .mov-filtro-rango .mov-filtro { min-width: 0; }
         .mov-filtro-rango-lbl { font-size: 0.58rem; color: #6c757d; line-height: 1; margin: 0; font-weight: 600; }
         .table-movimientos tbody tr.mov-row { cursor: pointer; }
-        .table-movimientos tbody tr.mov-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
-        .table-movimientos tbody tr.mov-row-selected:hover { background-color: #d6ecec !important; }
+        /* El fondo va en las celdas: el td de Bootstrap 5.3 es opaco y tapa el fondo del tr */
+        .table-movimientos tbody tr.mov-row:hover > td:not([class*="status-pago-"]) { background-color: #f2f6f6 !important; }
+        .table-movimientos tbody tr.mov-row-selected > td:not([class*="status-pago-"]) { background-color: #cfe9e9 !important; }
+        .table-movimientos tbody tr.mov-row-selected:hover > td:not([class*="status-pago-"]) { background-color: #bfe1e1 !important; }
+        .table-movimientos tbody tr.mov-row-selected > td:first-child { box-shadow: inset 3px 0 0 var(--teal-green) !important; }
         .table-movimientos .cell-edit,
         .table-movimientos .cell-edit.form-select:not([class*="status-pago-"]),
         .table-movimientos .mov-filtro,
@@ -1244,8 +1244,10 @@
         .tabla-dashboard-ep-grid tbody tr td.ep-track-col-proyecto { font-weight: 600; color: var(--teal-green); }
         .mov-sel-hint { font-size: 0.75rem; color: #868e96; }
         .table-proyectos tbody tr.proyecto-row { cursor: pointer; }
-        .table-proyectos tbody tr.proyecto-row-selected { --bs-table-bg-state: #e3f2f2; --bs-table-color-state: inherit; background-color: #e3f2f2 !important; }
-        .table-proyectos tbody tr.proyecto-row-selected:hover { background-color: #d6ecec !important; }
+        .table-proyectos tbody tr.proyecto-row:hover > td { background-color: #f2f6f6 !important; }
+        .table-proyectos tbody tr.proyecto-row-selected > td { background-color: #cfe9e9 !important; }
+        .table-proyectos tbody tr.proyecto-row-selected:hover > td { background-color: #bfe1e1 !important; }
+        .table-proyectos tbody tr.proyecto-row-selected > td:first-child { box-shadow: inset 3px 0 0 var(--teal-green) !important; }
         .table-proyectos .mov-filtro,
         .table-proyectos .mov-filtro.form-select { border: none; box-shadow: none; background: transparent; border-radius: 0; }
         .table-proyectos .mov-filtro:focus,
@@ -7656,6 +7658,7 @@
         const tbody = document.getElementById('tabla-proyectos');
         if (!tbody || tbody.dataset.init) return;
         tbody.dataset.init = '1';
+        tbody.addEventListener('mousedown', evitarSeleccionTextoEnMultiseleccion);
         tbody.addEventListener('click', manejarClickFilaProy);
     }
 
@@ -12087,7 +12090,16 @@
         const tbody = document.getElementById('tabla-movimientos');
         if (!tbody || tbody.dataset.init) return;
         tbody.dataset.init = '1';
+        tbody.addEventListener('mousedown', evitarSeleccionTextoEnMultiseleccion);
         tbody.addEventListener('click', manejarClickFilaMov);
+    }
+
+    // Sin esto, Shift/Ctrl + clic en una fila deja el texto de la página seleccionado
+    function evitarSeleccionTextoEnMultiseleccion(e) {
+        if (e.button !== 0 || (!e.shiftKey && !e.ctrlKey && !e.metaKey)) return;
+        if (e.target.closest('input, select, textarea, button, a, label')) return;
+        e.preventDefault();
+        window.getSelection()?.removeAllRanges();
     }
 
     function manejarClickFilaMov(e) {
