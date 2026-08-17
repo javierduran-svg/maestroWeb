@@ -5654,15 +5654,18 @@
                 if (p.monto_gastos != null) item.monto_gastos = p.monto_gastos;
             }
             const tr = document.querySelector(`#tabla-proyectos tr.proyecto-row[data-id="${p.id}"]`);
-            if (!tr || tr.children.length < 8) return;
-            if (p.monto_contrato != null) tr.children[5].textContent = fmt(p.monto_contrato);
-            if (p.monto_pagado != null) {
-                tr.children[6].textContent = fmt(p.monto_pagado);
-                tr.children[6].className = 'text-end text-nowrap saldo-positivo';
+            if (!tr) return;
+            const cellContrato = tr.querySelector('[data-field="monto_contrato"]');
+            const cellPagado = tr.querySelector('[data-field="monto_pagado"]');
+            const cellGastos = tr.querySelector('[data-field="monto_gastos"]');
+            if (p.monto_contrato != null && cellContrato) cellContrato.textContent = fmt(p.monto_contrato);
+            if (p.monto_pagado != null && cellPagado) {
+                cellPagado.textContent = fmt(p.monto_pagado);
+                cellPagado.className = 'text-end text-nowrap saldo-positivo';
             }
-            if (p.monto_gastos != null) {
-                tr.children[7].textContent = fmt(p.monto_gastos);
-                tr.children[7].className = 'text-end text-nowrap saldo-negativo';
+            if (p.monto_gastos != null && cellGastos) {
+                cellGastos.textContent = fmt(p.monto_gastos);
+                cellGastos.className = 'text-end text-nowrap saldo-negativo';
             }
         });
     }
@@ -8558,10 +8561,10 @@
                 <td class="text-truncate" style="max-width:180px" title="${esc(p.cliente)}">${esc(p.cliente)}</td>
                 <td class="text-muted text-truncate" style="max-width:120px;font-size:0.75rem" title="${esc(p.servicio)}">${esc(p.servicio)}</td>
                 <td class="text-end text-muted text-nowrap" style="font-size:0.75rem">${(p.superficie ?? 0).toLocaleString('es-CL')}</td>
-                <td>${badgeStatus(p.status)}</td>
-                <td class="text-end fw-medium text-nowrap">${fmt(p.monto_contrato)}</td>
-                <td class="text-end text-nowrap saldo-positivo">${fmt(p.monto_pagado)}</td>
-                <td class="text-end text-nowrap saldo-negativo">${fmt(p.monto_gastos)}</td>
+                <td data-field="status">${badgeStatus(p.status)}</td>
+                <td class="text-end fw-medium text-nowrap" data-field="monto_contrato">${fmt(p.monto_contrato)}</td>
+                <td class="text-end text-nowrap saldo-positivo" data-field="monto_pagado">${fmt(p.monto_pagado)}</td>
+                <td class="text-end text-nowrap saldo-negativo" data-field="monto_gastos">${fmt(p.monto_gastos)}</td>
                 <td class="text-end">
                     <span class="acciones-inline">
                         <button class="btn btn-outline-secondary btn-accion" onclick="event.stopPropagation(); abrirProyectoModal(${p.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
