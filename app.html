@@ -1170,33 +1170,40 @@
         #view-reembolsos .tabla-scroll-wrap { --tabla-scroll-max: min(52vh, 480px); }
         #view-reembolsos .reemb-kpi small { font-size: 0.75rem; }
         .tabla-dashboard-ep-grid {
-            width: max-content !important; /* no estirar al 100% de .table */
+            width: 100%;
             max-width: none;
+            table-layout: fixed; /* los anchos los reparte ajustarAnchosTablaEpDash() */
+        }
+        /* Estado transitorio: deja que el navegador mida el ancho natural de cada columna */
+        .tabla-dashboard-ep-grid.ep-grid-midiendo {
+            width: max-content;
             table-layout: auto;
         }
         .tabla-dashboard-ep-grid th,
         .tabla-dashboard-ep-grid td {
-            width: 1%;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             vertical-align: middle;
             padding-left: 0.55rem;
             padding-right: 0.55rem;
         }
-        .tabla-dashboard-ep-grid th.ep-track-col-proyecto,
-        .tabla-dashboard-ep-grid td.ep-track-col-proyecto {
-            width: 1%;
-            max-width: 16rem;
+        table.tabla-dashboard-ep-grid thead tr:first-child th {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .tabla-dashboard-ep-grid .ep-proyecto-cell {
             display: block;
-            max-width: 16rem;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        /* Al medir, un nombre muy largo no debe pedir una columna enorme */
+        .tabla-dashboard-ep-grid.ep-grid-midiendo .ep-proyecto-cell { max-width: 16rem; }
         .tabla-dashboard-ep-grid th.ep-track-col-proyecto .mov-filtro {
             width: 14rem;
-            max-width: 14rem;
+            max-width: 100%;
         }
         .tabla-dashboard-ep-grid th.ep-col-num,
         .tabla-dashboard-ep-grid td.ep-col-num {
@@ -1216,23 +1223,23 @@
         }
         .tabla-dashboard-ep-grid th.ep-col-num .mov-filtro {
             width: 3.25rem;
-            max-width: 3.25rem;
+            max-width: 100%;
         }
         .tabla-dashboard-ep-grid th.ep-col-uf .mov-filtro {
             width: 4.5rem;
-            max-width: 4.5rem;
+            max-width: 100%;
             margin-left: auto;
             display: block;
         }
         .tabla-dashboard-ep-grid th.ep-col-monto .mov-filtro {
             width: 5.5rem;
-            max-width: 5.5rem;
+            max-width: 100%;
             margin-left: auto;
             display: block;
         }
         .tabla-dashboard-ep-grid th.ep-col-fecha .mov-filtro {
             width: 7rem;
-            max-width: 7rem;
+            max-width: 100%;
         }
         .tabla-dashboard-ep-grid .mov-filtro:focus,
         .tabla-dashboard-ep-grid .mov-filtro.form-select:focus {
@@ -5071,6 +5078,7 @@
 
         const tableId = obtenerIdTabla(table);
         const skipSaved = table.id === 'tabla-movimientos-grid'
+            || /^tabla-dashboard-ep-/.test(table.id)
             || /^ep-tabla-/.test(table.id)
             || /^g-tabla-/.test(table.id)
             || /^ent-tabla-/.test(table.id)
@@ -5091,6 +5099,7 @@
             saved.forEach((w, i) => { if (w) cg.children[i].style.width = w; });
         } else {
             ths.forEach((th, i) => {
+                if (cg.children[i].style.width) return; // ya lo fijó un auto-ajuste previo
                 cg.children[i].style.width = anchoInicialColumna(th, i, ths.length) + 'px';
             });
         }
@@ -5113,6 +5122,7 @@
         initTablasScrollSticky(root);
         const scope = root instanceof Element ? root : document;
         scope.querySelectorAll('table.table').forEach(initTablaRedimensionable);
+        scope.querySelectorAll('table.tabla-dashboard-ep-grid').forEach(ajustarAnchosTablaEpDash);
     }
 
     function mostrarVista(vista, el) {
@@ -5902,6 +5912,7 @@
             tbody.innerHTML = `<tr><td colspan="${cfg.cols}" class="text-center text-muted py-3">${
                 base.length ? 'Sin coincidencias con los filtros' : cfg.emptyMsg
             }</td></tr>`;
+            ajustarAnchosTablaEpDash(document.getElementById(cfg.tableId));
             return;
         }
         let proyectoAnterior = null;
@@ -5925,6 +5936,50 @@
                 <td class="ep-col-fecha">${fmtFechaMov(f[dateField]) || '—'}</td>
             </tr>`;
         }).join('');
+        ajustarAnchosTablaEpDash(document.getElementById(cfg.tableId));
+    }
+
+    const EP_DASH_COL_MIN_PX = 44;
+
+    // Da a cada columna el ancho que pide su contenido y reparte el total al 100% de la tabla
+    function ajustarAnchosTablaEpDash(table) {
+        if (!table || !table.offsetWidth) return;
+        const headerRow = table.querySelector('thead tr:first-child');
+        if (!headerRow) return;
+        const ths = [...headerRow.children].filter(el => el.tagName === 'TH');
+        if (!ths.length) return;
+
+        const cg = asegurarColgroup(table, ths.length);
+        [...cg.children].forEach(col => { col.style.width = ''; });
+        const disponible = table.parentElement?.clientWidth || table.offsetWidth;
+
+        table.classList.add('ep-grid-midiendo');
+        const filas = [...table.querySelectorAll('thead tr, tbody tr')]
+            .filter(tr => tr.children.length === ths.length);
+        const naturales = ths.map((_, i) => {
+            let w = 0;
+            filas.forEach(tr => { w = Math.max(w, tr.children[i].scrollWidth); });
+            return Math.max(EP_DASH_COL_MIN_PX, Math.ceil(w) + 8);
+        });
+        table.classList.remove('ep-grid-midiendo');
+
+        // El espacio que sobra se lo queda la columna de texto largo; si falta, todas encogen a prorrata
+        const totalNatural = naturales.reduce((a, b) => a + b, 0) || 1;
+        const elastica = ths.findIndex(th => th.classList.contains('ep-track-col-proyecto'));
+        const finales = naturales.slice();
+        if (elastica >= 0 && disponible > totalNatural) {
+            finales[elastica] += disponible - totalNatural;
+        }
+        const total = finales.reduce((a, b) => a + b, 0) || 1;
+        finales.forEach((w, i) => {
+            cg.children[i].style.width = ((w / total) * 100).toFixed(3) + '%';
+        });
+    }
+
+    function ajustarAnchosTablasEpDash() {
+        Object.values(EP_DASH_TABLES).forEach(cfg => {
+            ajustarAnchosTablaEpDash(document.getElementById(cfg.tableId));
+        });
     }
 
     function debounceRenderEpDash(key) {
