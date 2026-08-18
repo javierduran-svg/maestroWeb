@@ -2790,6 +2790,7 @@
                             <th>RUT</th>
                             <th class="text-end">Sueldo Base</th>
                             <th class="text-end">Descuentos</th>
+                            <th class="text-end">Aportes empleador</th>
                             <th class="text-end">Líquido a Pagar</th>
                             <th>Estado</th>
                             <th class="text-end" style="width:48px"></th>
@@ -2799,6 +2800,7 @@
                             <tr class="table-light fw-bold">
                                 <td colspan="3" class="text-end">Totales</td>
                                 <td class="text-end saldo-negativo" id="liqTotalDesc"></td>
+                                <td class="text-end" id="liqTotalAportes"></td>
                                 <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
                                 <td colspan="2"></td>
                             </tr>
@@ -13573,7 +13575,7 @@
         const tbody = document.getElementById('tabla-liquidaciones');
         const tfoot = document.getElementById('tabla-liquidaciones-tfoot');
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
             tfoot.classList.add('d-none');
             return;
         }
@@ -13582,6 +13584,7 @@
             <td class="text-nowrap">${esc(l.rut)}</td>
             <td class="text-end" title="${fmtUf(l.sueldo_base_uf || 0)}">${fmt(l.sueldo_base_proporcional)}</td>
             <td class="text-end saldo-negativo">${fmt(l.total_descuentos)}</td>
+            <td class="text-end">${fmt(l.total_aportes_empleador || 0)}</td>
             <td class="text-end fw-bold saldo-positivo">${fmt(l.alcance_liquido)}</td>
             <td><span class="badge ${l.estado === 'Pagado' ? 'badge-activo' : 'bg-light text-dark border'}">${esc(l.estado)}</span></td>
             <td class="text-end">
@@ -13590,9 +13593,11 @@
         </tr>`).join('');
         const totales = data.totales || {
             descuentos: items.reduce((s, l) => s + (l.total_descuentos || 0), 0),
+            aportes_empleador: items.reduce((s, l) => s + (l.total_aportes_empleador || 0), 0),
             liquido: items.reduce((s, l) => s + (l.alcance_liquido || 0), 0),
         };
         document.getElementById('liqTotalDesc').textContent = fmt(totales.descuentos || 0);
+        document.getElementById('liqTotalAportes').textContent = fmt(totales.aportes_empleador || 0);
         document.getElementById('liqTotalLiq').textContent = fmt(totales.liquido || 0);
         tfoot.classList.remove('d-none');
     }

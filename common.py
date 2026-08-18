@@ -197,6 +197,16 @@ TASA_FONASA = 0.07
 DIAS_MES_REF = 30
 ESTADOS_LIQUIDACION = ['Borrador', 'Pagado']
 
+# Ley 21.735 — cotizaciones de cargo del empleador (afiliados AFP).
+# Oficio Ordinario SP N° 15295 (18-08-2026): la tasa SIS del Seguro Social
+# Previsional es 1,78%; Expectativa de Vida se ajusta para que SIS + EV = 2,5%.
+TASA_COTIZ_ADICIONAL_AFP = 0.0010  # 0,10% a cuenta individual (desde ago-2025)
+TASA_EXPECTATIVA_VIDA_ETAPA1 = 0.0090  # 0,90% (ago-2025 a jul-2026)
+TASA_RENTABILIDAD_PROTEGIDA_ETAPA2 = 0.0090  # 0,90% (ago-2026 a jul-2027)
+TASA_RENTABILIDAD_PROTEGIDA_ETAPA3 = 0.0150  # 1,50% (desde ago-2027, NCG 361)
+TASA_SIS_SSP = 0.0178  # 1,78% trabajador activo (Oficio SP N° 15295)
+TASA_SIS_MAS_EXPECTATIVA_VIDA = 0.0250  # 2,50%
+
 CATEGORIAS_CUENTA = [
     'activo_cliente',
     'activo_banco',
@@ -1510,12 +1520,13 @@ def _aplicar_datos_trabajador(trabajador: Trabajador, campos: dict):
 def _detalle_calculo_desde_liq(liq: Liquidacion) -> dict:
     if liq.detalle_calculo:
         try:
-            return json.loads(liq.detalle_calculo)
+            det = json.loads(liq.detalle_calculo)
+            return _asegurar_aportes_empleador(det, liq.mes, liq.anio, liq.total_imponible)
         except Exception:
             pass
     t = liq.trabajador_rel
     uf = liq.uf_valor or _uf_hoy()['valor']
-    return _calcular_montos_liquidacion(t, liq.dias_trabajados, uf)['detalle']
+    return _calcular_montos_liquidacion(t, liq.dias_trabajados, uf, mes=liq.mes, anio=liq.anio)['detalle']
 
 
 def _liquidacion_a_dict(liq: Liquidacion) -> dict:
@@ -1539,6 +1550,11 @@ def _liquidacion_a_dict(liq: Liquidacion) -> dict:
         'total_haberes': liq.total_haberes,
         'total_descuentos': liq.total_descuentos,
         'alcance_liquido': liq.alcance_liquido,
+        'total_aportes_empleador': float(
+            (detalle.get('aportes_empleador') or {}).get('total')
+            or detalle.get('total_aportes_empleador')
+            or 0
+        ),
         'estado': liq.estado,
         'uf_valor': liq.uf_valor,
         'uf_fecha': detalle.get('uf_fecha'),
@@ -1642,6 +1658,85 @@ def _desglose_salud_desde_monto(
     return monto, 0.0
 
 
+def _tasas_aportes_empleador(mes: int | None, anio: int | None) -> dict:
+    """Tasas Ley 21.735 de cargo del empleador según el mes de remuneración."""
+    vacio = {
+        'cotizacion_adicional_afp': 0.0,
+        'rentabilidad_protegida': 0.0,
+        'expectativa_vida': 0.0,
+        'sis': 0.0,
+        'sis_en_seguro_social': False,
+    }
+    if not mes or not anio:
+        return vacio
+    periodo = (int(anio), int(mes))
+    if periodo < (2025, 8):
+        return vacio
+    tasas = dict(vacio)
+    tasas['cotizacion_adicional_afp'] = TASA_COTIZ_ADICIONAL_AFP
+    if periodo < (2026, 8):
+        tasas['expectativa_vida'] = TASA_EXPECTATIVA_VIDA_ETAPA1
+        return tasas
+    tasas['sis'] = TASA_SIS_SSP
+    tasas['expectativa_vida'] = round(TASA_SIS_MAS_EXPECTATIVA_VIDA - TASA_SIS_SSP, 4)
+    tasas['sis_en_seguro_social'] = True
+    if periodo >= (2027, 8):
+        tasas['rentabilidad_protegida'] = TASA_RENTABILIDAD_PROTEGIDA_ETAPA3
+    else:
+        tasas['rentabilidad_protegida'] = TASA_RENTABILIDAD_PROTEGIDA_ETAPA2
+    return tasas
+
+
+def _calcular_aportes_empleador(
+    total_imponible: float, mes: int | None, anio: int | None,
+) -> dict:
+    """Montos de cargo del empleador. No descuentan el alcance líquido."""
+    tasas = _tasas_aportes_empleador(mes, anio)
+    imponible = float(total_imponible or 0)
+    adicional = round(imponible * tasas['cotizacion_adicional_afp'])
+    crp = round(imponible * tasas['rentabilidad_protegida'])
+    sis = round(imponible * tasas['sis'])
+    if tasas['sis'] > 0:
+        ev = round(imponible * TASA_SIS_MAS_EXPECTATIVA_VIDA) - sis
+    else:
+        ev = round(imponible * tasas['expectativa_vida'])
+    return {
+        'cotizacion_adicional_afp_pct': round(tasas['cotizacion_adicional_afp'] * 100, 2),
+        'cotizacion_adicional_afp': float(adicional),
+        'rentabilidad_protegida_pct': round(tasas['rentabilidad_protegida'] * 100, 2),
+        'rentabilidad_protegida': float(crp),
+        'expectativa_vida_pct': round(tasas['expectativa_vida'] * 100, 2),
+        'expectativa_vida': float(ev),
+        'sis_pct': round(tasas['sis'] * 100, 2),
+        'sis': float(sis),
+        'total': float(adicional + crp + ev + sis),
+        'sis_en_seguro_social': tasas['sis_en_seguro_social'],
+    }
+
+
+def _aportes_empleador_vacio() -> dict:
+    return _calcular_aportes_empleador(0, None, None)
+
+
+def _asegurar_aportes_empleador(
+    detalle: dict,
+    mes: int | None,
+    anio: int | None,
+    total_imponible: float | None = None,
+) -> dict:
+    """Completa aportes del empleador si el detalle no los trae (registros antiguos)."""
+    det = detalle
+    aportes = det.get('aportes_empleador')
+    if isinstance(aportes, dict) and 'total' in aportes:
+        return det
+    imponible = float(
+        total_imponible if total_imponible is not None
+        else det.get('total_imponible') or 0
+    )
+    det['aportes_empleador'] = _calcular_aportes_empleador(imponible, mes, anio)
+    return det
+
+
 def _enriquecer_detalle_pdf(detalle: dict, trabajador: Trabajador | None, liq: Liquidacion) -> dict:
     """Completa campos del detalle para el PDF (compatibilidad con registros antiguos)."""
     det = dict(detalle or {})
@@ -1694,12 +1789,22 @@ def _enriquecer_detalle_pdf(detalle: dict, trabajador: Trabajador | None, liq: L
     det.setdefault('unidad_negocio', os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ'))
     if t:
         det.setdefault('valor_plan_uf', float(t.valor_plan_isapre_uf or 0))
+    _asegurar_aportes_empleador(det, liq.mes, liq.anio, liq.total_imponible)
     return det
 
 
-def _calcular_montos_liquidacion(trabajador: Trabajador, dias_trabajados: int, uf_clp: float) -> dict:
+def _calcular_montos_liquidacion(
+    trabajador: Trabajador,
+    dias_trabajados: int,
+    uf_clp: float,
+    mes: int | None = None,
+    anio: int | None = None,
+) -> dict:
     hoy = date.today()
     uf_fecha = hoy.strftime('%Y-%m-%d')
+    mes_liq = mes or hoy.month
+    anio_liq = anio or hoy.year
+    aportes_cero = _aportes_empleador_vacio()
     vacio = {
         'dias_trabajados': 0,
         'sueldo_base_proporcional': 0.0,
@@ -1732,6 +1837,7 @@ def _calcular_montos_liquidacion(trabajador: Trabajador, dias_trabajados: int, u
             'total_descuentos': 0.0,
             'total_tributable': 0.0,
             'alcance_liquido': 0.0,
+            'aportes_empleador': aportes_cero,
             'unidad_negocio': os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ'),
         },
     }
@@ -1752,6 +1858,7 @@ def _calcular_montos_liquidacion(trabajador: Trabajador, dias_trabajados: int, u
     total_descuentos = float(descuento_afp + descuento_salud + impuesto_unico)
     liquido = total_haberes - total_descuentos
     total_tributable = round(total_imponible - descuento_afp - cotiz_salud)
+    aportes = _calcular_aportes_empleador(total_imponible, mes_liq, anio_liq)
 
     detalle = {
         'uf_valor': uf_clp,
@@ -1780,6 +1887,7 @@ def _calcular_montos_liquidacion(trabajador: Trabajador, dias_trabajados: int, u
         'total_descuentos': total_descuentos,
         'total_tributable': total_tributable,
         'alcance_liquido': liquido,
+        'aportes_empleador': aportes,
         'unidad_negocio': os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ'),
     }
 
@@ -2967,6 +3075,15 @@ __all__ = [
     '_ep_pesos_flotantes',
     '_sincronizar_pesos_estado_pago',
     'TASA_AFP',
+    'TASA_COTIZ_ADICIONAL_AFP',
+    'TASA_EXPECTATIVA_VIDA_ETAPA1',
+    'TASA_RENTABILIDAD_PROTEGIDA_ETAPA2',
+    'TASA_RENTABILIDAD_PROTEGIDA_ETAPA3',
+    'TASA_SIS_SSP',
+    'TASA_SIS_MAS_EXPECTATIVA_VIDA',
+    '_tasas_aportes_empleador',
+    '_calcular_aportes_empleador',
+    '_asegurar_aportes_empleador',
     'TRABAJADORES_FOTOS_DIR',
     'FIRMAS_DIR',
     '_aplicar_campos_secretos',

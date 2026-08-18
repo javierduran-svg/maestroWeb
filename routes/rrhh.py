@@ -312,7 +312,7 @@ def generar_liquidaciones():
             if dias <= 0:
                 continue
 
-            montos = _calcular_montos_liquidacion(t, dias, uf_clp)
+            montos = _calcular_montos_liquidacion(t, dias, uf_clp, mes=mes, anio=anio)
             detalle_json = json.dumps(montos['detalle'], ensure_ascii=False)
             campos_extra = {
                 'detalle_calculo': detalle_json,
@@ -356,6 +356,12 @@ def generar_liquidaciones():
             'mes': mes,
             'anio': anio,
             'liquidaciones': generadas,
+            'totales': {
+                'haberes': sum(d['total_haberes'] for d in generadas),
+                'descuentos': sum(d['total_descuentos'] for d in generadas),
+                'liquido': sum(d['alcance_liquido'] for d in generadas),
+                'aportes_empleador': sum(d.get('total_aportes_empleador') or 0 for d in generadas),
+            },
             'uf_clp': uf_clp,
             'uf_fecha': fecha_uf_usada.strftime('%Y-%m-%d'),
             'uf_fecha_referencia': fecha_uf.strftime('%Y-%m-%d'),
@@ -382,15 +388,17 @@ def obtener_liquidaciones(mes, anio):
             l.trabajador_rel.apellido_paterno if l.trabajador_rel else '',
             l.trabajador_rel.nombres if l.trabajador_rel else '',
         ))
+        payload = [_liquidacion_a_dict(l) for l in liquidaciones]
         uf_info = _uf_hoy()
         return jsonify({
             'mes': mes,
             'anio': anio,
-            'liquidaciones': [_liquidacion_a_dict(l) for l in liquidaciones],
+            'liquidaciones': payload,
             'totales': {
-                'haberes': sum(l.total_haberes for l in liquidaciones),
-                'descuentos': sum(l.total_descuentos for l in liquidaciones),
-                'liquido': sum(l.alcance_liquido for l in liquidaciones),
+                'haberes': sum(d['total_haberes'] for d in payload),
+                'descuentos': sum(d['total_descuentos'] for d in payload),
+                'liquido': sum(d['alcance_liquido'] for d in payload),
+                'aportes_empleador': sum(d.get('total_aportes_empleador') or 0 for d in payload),
             },
             'uf_clp': uf_info['valor'],
             'uf_fecha': uf_info['fecha'],

@@ -123,6 +123,14 @@ def _linea_trabajador(liq, mes: int, anio: int) -> str:
     cotiz_afp = int(round(float(det.get('descuento_afp') or imponible * 0.11)))
     cotiz_salud_7 = int(round(float(det.get('descuento_salud_cotizacion') or 0)))
     cotiz_adicional = int(round(float(det.get('descuento_adicional_salud') or 0)))
+    aportes = det.get('aportes_empleador')
+    if not isinstance(aportes, dict) or 'total' not in aportes:
+        from common import _calcular_aportes_empleador
+        aportes = _calcular_aportes_empleador(imponible, mes, anio)
+    cotiz_adicional_afp = int(round(float(aportes.get('cotizacion_adicional_afp') or 0)))
+    cotiz_sis = int(round(float(aportes.get('sis') or 0)))
+    cotiz_ev = int(round(float(aportes.get('expectativa_vida') or 0)))
+    cotiz_crp = int(round(float(aportes.get('rentabilidad_protegida') or 0)))
     plan_uf = float(det.get('valor_plan_uf') or t.valor_plan_isapre_uf or 0)
     es_isapre = _normalizar(t.sistema_salud) == 'isapre'
     cod_salud = _codigo_salud(t)
@@ -156,9 +164,12 @@ def _linea_trabajador(liq, mes: int, anio: int) -> str:
     # 2- Datos AFP (26-39)
     campos[25] = _codigo_afp(t.afp)
     campos[26] = _campo_num(imponible)
-    campos[27] = _campo_num(cotiz_afp)
+    # Campo 28: 10% + comisión AFP + 0,10% adicional de cargo del empleador
+    campos[27] = _campo_num(cotiz_afp + cotiz_adicional_afp)
     for i in range(28, 39):
         campos[i] = '0'
+    # Campo 29: SIS (desde ago-2026 lo recauda el Seguro Social Previsional)
+    campos[28] = _campo_num(cotiz_sis)
 
     # 3-5 APVI/APVC/Afiliado voluntario (40-61)
     for i in range(39, 61):
@@ -196,6 +207,9 @@ def _linea_trabajador(liq, mes: int, anio: int) -> str:
     # 8-12 CCAF, Mutual, Cesantía, Subsidios, Centro costos (83-105)
     for i in range(82, 104):
         campos[i] = '0'
+    campos[92] = '1'  # Campo 93: jornada completa
+    campos[93] = _campo_num(cotiz_ev)  # Campo 94: Expectativa de vida
+    campos[94] = _campo_num(cotiz_crp)  # Campo 95: Rentabilidad Protegida
     campos[104] = ''  # centro de costos alfanumérico
 
     return ';'.join(campos)

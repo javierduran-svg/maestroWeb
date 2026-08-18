@@ -314,6 +314,25 @@ def _descuentos_desde_detalle(det: dict, t: dict) -> list[tuple[str, float]]:
     return items
 
 
+def _aportes_empleador_desde_detalle(det: dict) -> list[tuple[str, float]]:
+    ap = det.get('aportes_empleador') or {}
+    items: list[tuple[str, float]] = []
+    sis_label = 'SIS SEGURO SOCIAL PREVISIONAL' if ap.get('sis_en_seguro_social') else 'SIS'
+    filas = (
+        ('COTIZACION ADICIONAL AFP', 'cotizacion_adicional_afp_pct', 'cotizacion_adicional_afp'),
+        ('RENTABILIDAD PROTEGIDA', 'rentabilidad_protegida_pct', 'rentabilidad_protegida'),
+        ('EXPECTATIVA DE VIDA', 'expectativa_vida_pct', 'expectativa_vida'),
+        (sis_label, 'sis_pct', 'sis'),
+    )
+    for nombre, pct_k, mon_k in filas:
+        monto = float(ap.get(mon_k) or 0)
+        if not monto:
+            continue
+        pct = float(ap.get(pct_k) or 0)
+        items.append((f'{nombre} {pct:.2f} %'.replace('.', ','), monto))
+    return items
+
+
 def _render_tabla_montos(
     pdf: LiquidacionPDF,
     filas: list[tuple[str, float]],
@@ -462,7 +481,7 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
         ('TOTAL HABERES', 130, 'R'),
         (_fmt_clp(total_haberes), 52, 'R'),
     ], negrita=True, fondo=HEADER_BG)
-    pdf.ln(3)
+    pdf.ln(1)
 
     # Descuentos
     _seccion_header(pdf, 'Descuentos')
@@ -474,8 +493,22 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
         float(det.get('total_descuentos') or datos.get('total_descuentos') or 0),
     )
 
+    aportes_filas = _aportes_empleador_desde_detalle(det)
+    total_aportes = float((det.get('aportes_empleador') or {}).get('total') or 0)
+    if aportes_filas or total_aportes:
+        _seccion_header(pdf, 'Aportes del empleador')
+        pdf._set_font('', 6.5)
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(
+            0, 3.5,
+            _texto_seguro('De cargo del empleador. No se descuentan del liquido a pago.'),
+            new_x='LMARGIN', new_y='NEXT',
+        )
+        pdf.set_text_color(0, 0, 0)
+        _render_tabla_montos(pdf, aportes_filas, 'TOTAL APORTES EMPLEADOR', total_aportes)
+
     # Resumen líquido
-    pdf.ln(3)
+    pdf.ln(2)
     liquido = float(det.get('alcance_liquido') or datos.get('alcance_liquido') or 0)
     tributable = float(det.get('total_tributable') or 0)
     y = pdf.get_y()
@@ -512,12 +545,12 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
         pdf.set_y(y_dep + len(filas_dep) * 5 + 9)
 
     # Monto en palabras y conformidad
-    pdf.ln(4)
+    pdf.ln(2)
     pdf._set_font('', 8)
     pdf.set_text_color(*TEXT_MUTED)
     letras = _numero_a_letras(int(round(liquido)))
     pdf.multi_cell(0, 4, _texto_seguro(f'SON: {letras} PESOS'))
-    pdf.ln(2)
+    pdf.ln(1)
     pdf.multi_cell(
         0, 4,
         _texto_seguro(
@@ -525,7 +558,7 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
             'NO TENIENDO CARGO O COBRO ALGUNO QUE HACER POR NINGUN CONCEPTO'
         ),
     )
-    pdf.ln(8)
+    pdf.ln(5)
     pdf.set_draw_color(*TEAL)
     pdf.set_line_width(0.4)
     pdf.line(70, pdf.get_y(), 140, pdf.get_y())
