@@ -449,6 +449,33 @@ def listar_movimientos_banco():
         return jsonify({'error': str(e)}), 500
 
 
+@bp.route('/api/banco/movimientos', methods=['DELETE'])
+def limpiar_movimientos_banco():
+    """Elimina el extracto bancario (banco_movimientos). Conciliación queda vacía hasta reimportar/sincronizar."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        banco_id = request.args.get('banco_id', type=int)
+        if request.is_json and request.json and banco_id is None:
+            banco_id = request.json.get('banco_id')
+            if banco_id is not None:
+                banco_id = int(banco_id)
+        query = BancoMovimiento.query.filter_by(empresa_id=eid)
+        if banco_id:
+            conn = EmpresaBancoConexion.query.filter_by(id=banco_id, empresa_id=eid).first_or_404()
+            query = query.filter_by(conexion_id=conn.id)
+        eliminados = query.delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({
+            'mensaje': f'Se eliminaron {eliminados} movimiento(s) del extracto',
+            'eliminados': eliminados,
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/cuentas', methods=['GET', 'POST'])
 def manejar_cuentas():
     try:

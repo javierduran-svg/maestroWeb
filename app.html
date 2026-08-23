@@ -2838,7 +2838,12 @@
                 <div id="bancoSyncMsg" class="px-3 pt-2 small"></div>
                 <div class="p-3 pt-2">
                     <div id="listaBancosConexiones" class="row g-3 mb-4"></div>
-                    <h6 class="text-muted small mb-2">Extracto Fintoc (últimos movimientos)</h6>
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                        <h6 class="text-muted small mb-0">Extracto bancario (últimos movimientos)</h6>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="limpiarTablaBanco()">
+                            <i class="fa-solid fa-trash"></i> Limpiar tabla
+                        </button>
+                    </div>
                     <div class="table-responsive tabla-scroll-wrap">
                         <table id="tabla-banco-grid" class="table table-hover table-panel table-compact mb-0">
                             <thead><tr><th>Fecha</th><th>Descripción</th><th>Tipo</th><th class="text-end">Monto</th></tr></thead>
@@ -13476,6 +13481,34 @@
                 : '<tr><td colspan="4" class="text-center text-muted py-4">Sin movimientos bancarios</td></tr>';
         } catch (e) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-danger py-3">Error al cargar movimientos</td></tr>';
+        }
+    }
+
+    async function limpiarTablaBanco() {
+        const msg = document.getElementById('bancoSyncMsg');
+        if (!confirm('¿Eliminar todos los movimientos del extracto bancario?\n\nConciliación bancaria quedará vacía hasta que vuelva a sincronizar o importar una cartola. Los movimientos contables del libro no se borran.')) {
+            return;
+        }
+        if (msg) {
+            msg.textContent = 'Limpiando extracto…';
+            msg.className = 'px-3 pt-2 small text-muted';
+        }
+        try {
+            const res = await apiFetch('/api/banco/movimientos', { method: 'DELETE' });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'No se pudo limpiar');
+            if (msg) {
+                msg.textContent = data.mensaje || 'Extracto limpiado';
+                msg.className = 'px-3 pt-2 small text-success';
+            }
+            await listarMovimientosBanco();
+        } catch (e) {
+            if (msg) {
+                msg.textContent = e.message;
+                msg.className = 'px-3 pt-2 small text-danger';
+            } else {
+                alert(e.message);
+            }
         }
     }
 
