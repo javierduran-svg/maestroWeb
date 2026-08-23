@@ -2889,8 +2889,8 @@
                     <p class="small text-muted mb-2">
                         <i class="fa-solid fa-circle-info"></i>
                         Importe la cartola Excel del banco (Santander y similares), luego use «Conciliar auto» para emparejar
-                        <strong>depósitos/transferencias</strong> con <strong>estados de pago Facturado</strong> (por monto y fecha).
-                        Al conciliar un EP Facturado, pasa a <strong>Pagado</strong>. Revise candidatos ambiguos; use <strong>+</strong> para crear un asiento desde una línea solo en banco.
+                        <strong>depósitos/transferencias</strong> con EP <strong>Facturado</strong>, <strong>Pagado</strong> o <strong>Cedida</strong>
+                        (en Cedida se usa el monto de cesión). Facturado → Pagado al conciliar; en Pagado/Cedida se completa la fecha de cobro si falta.
                     </p>
                 </div>
                 <div class="row g-0 border-top">
@@ -2904,7 +2904,7 @@
                         </div>
                     </div>
                     <div class="col-lg-6 p-3">
-                        <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco + EP Facturado)</h6>
+                        <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco + EP Facturado/Pagado/Cedida)</h6>
                         <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
                             <table class="table table-hover table-panel table-compact mb-0">
                                 <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
@@ -12977,7 +12977,11 @@
             } else {
                 if (b.candidatos && b.candidatos.length) {
                     acciones.push(b.candidatos.slice(0, 3).map(c => {
-                        const epLabel = c.es_ep_facturado ? 'EP✓' : `#${c.movimiento_id}`;
+                        let epLabel = `#${c.movimiento_id}`;
+                        if (c.es_ep_cobro || c.es_ep_facturado) {
+                            const st = (c.status_pago || '').slice(0, 3);
+                            epLabel = st ? `EP·${st}` : 'EP✓';
+                        }
                         return `<button class="btn btn-link btn-sm p-0 me-1" onclick="vincularConciliacion(${b.id}, ${c.movimiento_id})" title="${esc(c.descripcion)}">${epLabel}</button>`;
                     }).join(''));
                 }
@@ -12999,6 +13003,8 @@
             let badge;
             if (m.conciliado) badge = '<span class="badge bg-success">Conciliado</span>';
             else if (m.clase === 'estado_pago' && m.status_pago === 'Facturado') badge = '<span class="badge bg-warning text-dark">EP Facturado</span>';
+            else if (m.clase === 'estado_pago' && m.status_pago === 'Pagado') badge = '<span class="badge bg-primary">EP Pagado</span>';
+            else if (m.clase === 'estado_pago' && m.status_pago === 'Cedida') badge = '<span class="badge bg-secondary">EP Cedida</span>';
             else badge = '<span class="badge bg-info text-dark">Solo libro</span>';
             const epInfo = m.clase === 'estado_pago' && m.numero_ep ? ` EP#${m.numero_ep}` : '';
             return `<tr>

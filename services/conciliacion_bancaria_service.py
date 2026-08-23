@@ -261,25 +261,26 @@ def _movimientos_libro_en_periodo(
     cuenta_banco_id: int,
     fecha_desde: date | None,
     fecha_hasta: date | None,
-    incluir_ep_facturados: bool = True,
+    incluir_ep_cobros: bool = True,
 ) -> list[Movimiento]:
     """Movimientos del libro candidatos a conciliar con el extracto.
 
     Incluye:
     - Asientos que tocan la cuenta banco de la conexión
-    - EP con status Facturado (ingresos por cobrar → depósito esperado), aunque
+    - EP Facturado / Pagado / Cedida (ingresos a cruzar con depósitos), aunque
       el destino contable sea otra cuenta banco (p.ej. «Banco pesos» vs Santander)
     """
+    status_ep = ('Facturado', 'Pagado', 'Cedida')
     filtros_cuenta = or_(
         Movimiento.cta_origen_id == cuenta_banco_id,
         Movimiento.cta_destino_id == cuenta_banco_id,
     )
-    if incluir_ep_facturados:
+    if incluir_ep_cobros:
         filtros_cuenta = or_(
             filtros_cuenta,
             and_(
                 Movimiento.clase == 'estado_pago',
-                Movimiento.status_pago == 'Facturado',
+                Movimiento.status_pago.in_(status_ep),
                 Movimiento.transaccion == 'Ingreso',
             ),
         )
@@ -291,14 +292,13 @@ def _movimientos_libro_en_periodo(
     )
     if fecha_desde or fecha_hasta:
         fecha_ref = func.coalesce(
-            Movimiento.fecha_facturacion,
             Movimiento.fecha_estado_pago,
+            Movimiento.fecha_facturacion,
             Movimiento.fecha_movimiento,
         )
         if fecha_desde:
             q = q.filter(fecha_ref >= fecha_desde)
         if fecha_hasta:
-            # Incluye EP facturados antes del periodo cuyo cobro puede caer en el extracto
             q = q.filter(or_(
                 Movimiento.fecha_movimiento <= fecha_hasta,
                 fecha_ref <= fecha_hasta,
@@ -308,6 +308,8 @@ def _movimientos_libro_en_periodo(
 
 def _fecha_referencia_mov(m: Movimiento) -> date:
     if m.clase == 'estado_pago':
+        if m.status_pago in ('Pagado', 'Cedida'):
+            return m.fecha_estado_pago or m.fecha_facturacion or m.fecha_movimiento
         return m.fecha_facturacion or m.fecha_estado_pago or m.fecha_movimiento
     return m.fecha_movimiento
 
@@ -342,6 +344,14 @@ def _ids_movimientos_vinculados(empresa_id: int, conexion_id: int | None = None)
     return {row.movimiento_id for row in q.with_entities(BancoMovimiento.movimiento_id).all()}
 
 
+def _es_ep_cobro_bancario(mov: Movimiento, banco: BancoMovimiento) -> bool:
+    return (
+        mov.clase == 'estado_pago'
+        and mov.status_pago in ('Facturado', 'Pagado', 'Cedida')
+        and banco.tipo == 'ingreso'
+    )
+
+
 def _buscar_candidatos(
     banco: BancoMovimiento,
     movimientos_libro: list[Movimiento],
@@ -361,20 +371,20 @@ def _buscar_candidatos(
             continue
 
         fecha_ref = _fecha_referencia_mov(mov)
-        es_ep_facturado = (
-            mov.clase == 'estado_pago'
-            and mov.status_pago == 'Facturado'
-            and banco.tipo == 'ingreso'
-        )
-        # Depósitos vs EP facturado: el cobro suele llegar días/semanas después.
-        if es_ep_facturado:
-            dias_antes = (fecha_ref - banco.fecha).days  # >0 si banco es anterior a factura
+        es_ep_cobro = _es_ep_cobro_bancario(mov, banco)
+        # Depósitos vs EP Facturado/Pagado/Cedida: cobro puede diferir de la factura
+        if es_ep_cobro:
+            dias_antes = (fecha_ref - banco.fecha).days
             dias_despues = (banco.fecha - fecha_ref).days
-            if dias_antes > 3 or dias_despues > max(90, tolerancia_dias):
+            if dias_antes > 5 or dias_despues > max(90, tolerancia_dias):
                 continue
             diff_dias = abs((banco.fecha - fecha_ref).days)
             score = 120 - min(diff_dias, 60) - (0 if abs(monto - banco.monto) < 0.01 else 5)
-            if mov.numero_factura and mov.numero_factura in (banco.descripcion or ''):
+            if mov.status_pago == 'Pagado':
+                score += 10
+            elif mov.status_pago == 'Cedida':
+                score += 8
+            if mov.numero_factura and str(mov.numero_factura) in (banco.descripcion or ''):
                 score += 25
         else:
             diff_dias = abs((fecha_ref - banco.fecha).days)
@@ -400,21 +410,32 @@ def _buscar_candidatos(
             'status_pago': mov.status_pago,
             'diff_dias': diff_dias,
             'score': score,
-            'es_ep_facturado': es_ep_facturado,
+            'es_ep_facturado': mov.status_pago == 'Facturado' and es_ep_cobro,
+            'es_ep_cobro': es_ep_cobro,
         })
     candidatos.sort(key=lambda c: (-c['score'], c['diff_dias']))
     return candidatos[:5]
 
 
-def _aplicar_cobro_ep_si_corresponde(mov: Movimiento, fecha_banco: date) -> None:
-    """Al conciliar un depósito con EP Facturado, marca el cobro en el libro."""
+def _actualizar_ep_al_conciliar(mov: Movimiento, fecha_banco: date) -> str | None:
+    """Actualiza datos del EP al vincular con depósito. Retorna etiqueta de cambio o None."""
     if mov.clase != 'estado_pago':
-        return
-    if mov.status_pago != 'Facturado':
-        return
-    mov.status_pago = 'Pagado'
-    if not mov.fecha_estado_pago:
+        return None
+    if mov.status_pago == 'Facturado':
+        mov.status_pago = 'Pagado'
         mov.fecha_estado_pago = fecha_banco
+        return 'Facturado → Pagado'
+    if mov.status_pago == 'Pagado':
+        if not mov.fecha_estado_pago:
+            mov.fecha_estado_pago = fecha_banco
+            return 'Pagado · fecha cobro actualizada'
+        return 'Pagado · vinculado'
+    if mov.status_pago == 'Cedida':
+        if not mov.fecha_estado_pago:
+            mov.fecha_estado_pago = fecha_banco
+            return 'Cedida · fecha cobro actualizada'
+        return 'Cedida · vinculado'
+    return None
 
 
 def ejecutar_conciliacion_automatica(
@@ -437,7 +458,6 @@ def ejecutar_conciliacion_automatica(
         return {'conciliados': 0, 'sugerencias': 0, 'mensaje': 'No hay movimientos bancarios pendientes'}
 
     fechas = [b.fecha for b in pendientes]
-    # Ventana amplia para EP Facturado (cobro posterior a facturación)
     fecha_desde = min(fechas) - timedelta(days=max(tolerancia_dias, 5))
     fecha_hasta = max(fechas) + timedelta(days=max(tolerancia_dias, 5))
     libro = _movimientos_libro_en_periodo(
@@ -446,7 +466,7 @@ def ejecutar_conciliacion_automatica(
     vinculados = _ids_movimientos_vinculados(empresa_id, conexion_id)
 
     conciliados = 0
-    ep_marcados_pagados = 0
+    ep_actualizados = 0
     sugerencias = 0
     proyectos_a_recalcular = set()
     for banco in pendientes:
@@ -460,7 +480,7 @@ def ejecutar_conciliacion_automatica(
         auto_ok = (
             len(candidatos) == 1
             or (mejor['diff_dias'] == 0 and mejor['score'] >= 95)
-            or (mejor.get('es_ep_facturado') and mejor['score'] >= 110 and (
+            or (mejor.get('es_ep_cobro') and mejor['score'] >= 110 and (
                 len(candidatos) == 1 or candidatos[1]['score'] < mejor['score'] - 15
             ))
         )
@@ -469,10 +489,9 @@ def ejecutar_conciliacion_automatica(
             banco.estado_conciliacion = 'conciliado'
             vinculados.add(mejor['movimiento_id'])
             if mov:
-                antes = mov.status_pago
-                _aplicar_cobro_ep_si_corresponde(mov, banco.fecha)
-                if antes == 'Facturado' and mov.status_pago == 'Pagado':
-                    ep_marcados_pagados += 1
+                cambio = _actualizar_ep_al_conciliar(mov, banco.fecha)
+                if cambio:
+                    ep_actualizados += 1
                     if mov.proyecto_id:
                         proyectos_a_recalcular.add(mov.proyecto_id)
             conciliados += 1
@@ -484,12 +503,12 @@ def ejecutar_conciliacion_automatica(
         _recalcular_proyectos(empresa_id, *proyectos_a_recalcular)
 
     partes = [f'{conciliados} vinculados', f'{sugerencias} con candidatos ambiguos']
-    if ep_marcados_pagados:
-        partes.append(f'{ep_marcados_pagados} EP Facturado → Pagado')
+    if ep_actualizados:
+        partes.append(f'{ep_actualizados} EP actualizados')
     return {
         'conciliados': conciliados,
         'sugerencias': sugerencias,
-        'ep_marcados_pagados': ep_marcados_pagados,
+        'ep_actualizados': ep_actualizados,
         'pendientes': len(pendientes) - conciliados,
         'mensaje': 'Conciliación automática: ' + ', '.join(partes),
     }
@@ -514,11 +533,10 @@ def vincular_movimiento(banco_mov_id: int, movimiento_id: int, empresa_id: int) 
 
     banco.movimiento_id = movimiento_id
     banco.estado_conciliacion = 'conciliado'
-    antes = mov.status_pago
-    _aplicar_cobro_ep_si_corresponde(mov, banco.fecha)
+    cambio = _actualizar_ep_al_conciliar(mov, banco.fecha)
     msg = 'Movimientos vinculados'
-    if antes == 'Facturado' and mov.status_pago == 'Pagado':
-        msg += ' · EP marcado como Pagado'
+    if cambio:
+        msg += f' · {cambio}'
         if mov.proyecto_id:
             from common import _recalcular_proyectos
             _recalcular_proyectos(empresa_id, mov.proyecto_id)
@@ -674,7 +692,12 @@ def obtener_estado_conciliacion(
     if not fecha_hasta and banco_rows:
         fecha_hasta = max(b.fecha for b in banco_rows)
 
-    libro_rows = _movimientos_libro_en_periodo(empresa_id, cuenta_banco_id, fecha_desde, fecha_hasta)
+    libro_rows = _movimientos_libro_en_periodo(
+        empresa_id,
+        cuenta_banco_id,
+        (fecha_desde - timedelta(days=90)) if fecha_desde else None,
+        fecha_hasta,
+    )
     vinculados = _ids_movimientos_vinculados(empresa_id, conexion_id)
 
     banco_out = []
