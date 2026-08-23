@@ -2905,6 +2905,7 @@
                     </div>
                     <div class="col-lg-6 p-3">
                         <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco + EP Facturado/Pagado/Cedida)</h6>
+                        <p class="small text-muted mb-2">Doble clic en una fila para editar</p>
                         <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
                             <table class="table table-hover table-panel table-compact mb-0">
                                 <thead><tr><th>Estado</th><th>Fecha</th><th>Proyecto</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
@@ -3389,6 +3390,34 @@
             <div id="concCrearMsg" class="small text-danger d-none"></div>
         </div>
         <div class="modal-footer border-0"><button class="btn btn-teal px-4" onclick="guardarConcCrearMovimiento()">CREAR Y CONCILIAR</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalConcEditarLibro" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Editar movimiento del libro</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+            <input type="hidden" id="concEditMovId">
+            <input type="hidden" id="concEditClase">
+            <div class="row g-2">
+                <div class="col-md-6"><label class="form-label small fw-bold">Fecha movimiento</label><input type="date" class="form-control form-control-sm" id="concEditFecha"></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Monto ($)</label><input type="number" class="form-control form-control-sm" id="concEditMonto" step="1"></div>
+                <div class="col-md-6" id="wrapConcEditFechaPago"><label class="form-label small fw-bold">Fecha estado de pago</label><input type="date" class="form-control form-control-sm" id="concEditFechaPago"></div>
+                <div class="col-md-6" id="wrapConcEditFechaFact"><label class="form-label small fw-bold">Fecha facturación</label><input type="date" class="form-control form-control-sm" id="concEditFechaFact"></div>
+                <div class="col-md-6" id="wrapConcEditStatus"><label class="form-label small fw-bold">Status pago</label><select class="form-select form-select-sm" id="concEditStatus" onchange="toggleConcEditCesion()"></select></div>
+                <div class="col-md-6 d-none" id="wrapConcEditCesion"><label class="form-label small fw-bold">Monto cesión ($)</label><input type="number" class="form-control form-control-sm" id="concEditCesion" step="1"></div>
+                <div class="col-12"><label class="form-label small fw-bold">Proyecto</label><select class="form-select form-select-sm" id="concEditProyecto"><option value="">— Admin —</option></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Cta. Origen</label><select class="form-select form-select-sm" id="concEditOrigen"></select></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">Cta. Destino</label><select class="form-select form-select-sm" id="concEditDestino"></select></div>
+                <div class="col-12"><label class="form-label small fw-bold">Descripción</label><input type="text" class="form-control form-control-sm" id="concEditDescripcion" maxlength="255"></div>
+                <div class="col-md-6"><label class="form-label small fw-bold">N° Factura</label><input type="text" class="form-control form-control-sm" id="concEditFactura"></div>
+            </div>
+            <div id="concEditMsg" class="small text-danger d-none mt-2"></div>
+        </div>
+        <div class="modal-footer border-0">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-teal px-4" onclick="guardarConcEditarLibro()">GUARDAR</button>
+        </div>
     </div></div>
 </div>
 
@@ -5694,6 +5723,7 @@
             // toda la tabla (puede tardar mucho) salvo que se pida explícito.
             if (recargarMovimientos && _vistaActual === 'movimientos') listarMovimientos();
             if (_vistaActual === 'cuentas') listarCuentasTabla();
+            if (_vistaActual === 'conciliacion-bancaria') cargarConciliacionBancaria();
         }, 900);
     }
 
@@ -13008,7 +13038,7 @@
             else badge = '<span class="badge bg-info text-dark">Solo libro</span>';
             const epInfo = m.clase === 'estado_pago' && m.numero_ep ? ` EP#${m.numero_ep}` : '';
             const proyecto = m.proyecto || (m.proyecto_id ? `#${m.proyecto_id}` : '— Admin —');
-            return `<tr>
+            return `<tr class="conc-libro-row" data-id="${m.id}" style="cursor:pointer" title="Doble clic para editar" ondblclick="editarConcLibroMovimiento(${m.id})">
                 <td>${badge}</td>
                 <td class="text-nowrap">${esc(fmtFecha(m.fecha_movimiento))}</td>
                 <td class="small">${esc(proyecto)}</td>
@@ -13238,6 +13268,132 @@
             document.getElementById('concMsg').textContent = data.mensaje || `Movimiento #${data.movimiento_id} creado`;
             document.getElementById('concMsg').className = 'px-3 pt-2 small text-success';
             refrescarDashboardsActivos();
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            msg.textContent = e.message;
+            msg.classList.remove('d-none');
+        }
+    }
+
+    async function editarConcLibroMovimiento(movId) {
+        let m = (_concEstado?.libro || []).find(x => x.id === movId);
+        if (!m) {
+            try {
+                const res = await apiFetch(`/api/movimientos/${movId}`);
+                m = await res.json();
+                if (!res.ok) throw new Error(m.error || 'No se pudo cargar');
+            } catch (e) {
+                document.getElementById('concMsg').textContent = e.message;
+                document.getElementById('concMsg').className = 'px-3 pt-2 small text-danger';
+                return;
+            }
+        }
+        if (m.clase === 'estado_pago' && m.proyecto_id) {
+            await abrirEstadoPago(m.proyecto_id, movId);
+            return;
+        }
+        if (m.clase === 'gasto' && m.proyecto_id) {
+            await abrirGasto(m.proyecto_id, movId);
+            return;
+        }
+        await abrirConcEditarLibro(m);
+    }
+
+    function toggleConcEditCesion() {
+        const st = document.getElementById('concEditStatus')?.value;
+        document.getElementById('wrapConcEditCesion')?.classList.toggle('d-none', st !== 'Cedida');
+    }
+
+    async function abrirConcEditarLibro(m) {
+        if (!_statusPagoCache.length) {
+            try {
+                _statusPagoCache = await (await apiFetch('/api/status-pago')).json();
+            } catch (_) { /* keep empty */ }
+        }
+        await recargarCuentasCache();
+        const proys = await fetchProyectosSelect();
+        const esEp = m.clase === 'estado_pago' || !!m.status_pago;
+
+        document.getElementById('concEditMovId').value = m.id;
+        document.getElementById('concEditClase').value = m.clase || 'general';
+        document.getElementById('concEditFecha').value = m.fecha_movimiento || '';
+        document.getElementById('concEditMonto').value = m.monto ?? '';
+        document.getElementById('concEditFechaPago').value = m.fecha_estado_pago || '';
+        document.getElementById('concEditFechaFact').value = m.fecha_facturacion || '';
+        document.getElementById('concEditDescripcion').value = m.descripcion || '';
+        document.getElementById('concEditFactura').value = m.numero_factura || '';
+        document.getElementById('concEditCesion').value = m.monto_ingreso_cesion ?? '';
+
+        document.getElementById('concEditStatus').innerHTML = optsStatusPago(m.status_pago || 'Por enviar');
+        document.getElementById('wrapConcEditStatus').classList.toggle('d-none', !esEp && m.clase !== 'estado_pago');
+        document.getElementById('wrapConcEditFechaPago').classList.toggle('d-none', !esEp);
+        document.getElementById('wrapConcEditFechaFact').classList.toggle('d-none', !esEp);
+        toggleConcEditCesion();
+
+        document.getElementById('concEditProyecto').innerHTML = '<option value="">— Admin —</option>'
+            + proys.map(p => `<option value="${p.id}"${p.id === m.proyecto_id ? ' selected' : ''}>${esc(p.nombre)}</option>`).join('');
+        document.getElementById('concEditOrigen').innerHTML = _cuentasCache.map(c =>
+            `<option value="${c.id}"${c.id === m.origen_id ? ' selected' : ''}>${esc(c.nombre)}</option>`
+        ).join('');
+        document.getElementById('concEditDestino').innerHTML = _cuentasCache.map(c =>
+            `<option value="${c.id}"${c.id === m.destino_id ? ' selected' : ''}>${esc(c.nombre)}</option>`
+        ).join('');
+
+        const msg = document.getElementById('concEditMsg');
+        msg.classList.add('d-none');
+        msg.textContent = '';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConcEditarLibro')).show();
+    }
+
+    async function guardarConcEditarLibro() {
+        const msg = document.getElementById('concEditMsg');
+        const movId = parseInt(document.getElementById('concEditMovId').value, 10);
+        const clase = document.getElementById('concEditClase').value;
+        const esEp = clase === 'estado_pago';
+        const status = document.getElementById('concEditStatus').value;
+        const proyVal = document.getElementById('concEditProyecto').value;
+        const payload = {
+            fecha: document.getElementById('concEditFecha').value,
+            monto: document.getElementById('concEditMonto').value,
+            descripcion: document.getElementById('concEditDescripcion').value.trim(),
+            numero_factura: document.getElementById('concEditFactura').value.trim() || null,
+            origen_id: parseInt(document.getElementById('concEditOrigen').value, 10),
+            destino_id: parseInt(document.getElementById('concEditDestino').value, 10),
+            proyecto_id: proyVal ? parseInt(proyVal, 10) : null,
+            centro_costo: proyVal ? 'Proyecto' : 'Administración',
+        };
+        if (esEp || status) {
+            payload.status_pago = status;
+            payload.fecha_estado_pago = document.getElementById('concEditFechaPago').value || null;
+            payload.fecha_facturacion = document.getElementById('concEditFechaFact').value || null;
+            if (status === 'Cedida') {
+                const cesion = Number(document.getElementById('concEditCesion').value || 0);
+                if (!cesion) {
+                    msg.textContent = 'Indique el monto de cesión';
+                    msg.classList.remove('d-none');
+                    return;
+                }
+                payload.monto_ingreso_cesion = cesion;
+            }
+        }
+        if (!payload.fecha || !payload.monto) {
+            msg.textContent = 'Fecha y monto son obligatorios';
+            msg.classList.remove('d-none');
+            return;
+        }
+        msg.classList.add('d-none');
+        try {
+            const res = await apiFetch(`/api/movimientos/${movId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
+            bootstrap.Modal.getInstance(document.getElementById('modalConcEditarLibro')).hide();
+            document.getElementById('concMsg').textContent = data.mensaje || 'Movimiento actualizado';
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-success';
+            programarRefrescoSecundarioTrasEdicion();
             await cargarConciliacionBancaria();
         } catch (e) {
             msg.textContent = e.message;
