@@ -149,35 +149,81 @@ class LiquidacionPDF(FPDF):
         pass
 
 
+_MARGEN_X = 14
+_ANCHO_CONTENIDO = 182
+_HEADER_H = 16
+_LOGO_MAX_W = 40
+_LOGO_MAX_H = 12
+_LOGO_PAD = 1.2
+
+
 def _dibujar_borde(pdf: FPDF, x: float, y: float, w: float, h: float):
     pdf.set_draw_color(*BORDER)
     pdf.set_line_width(0.2)
     pdf.rect(x, y, w, h)
 
 
+def _tamano_logo(path: str, max_w: float, max_h: float) -> tuple[float, float]:
+    """Escala el logo para que quepa en max_w x max_h sin deformar."""
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            w_px, h_px = im.size
+        if w_px <= 0 or h_px <= 0:
+            return max_w, max_h
+        ratio = w_px / h_px
+        w, h = max_h * ratio, max_h
+        if w > max_w:
+            w, h = max_w, max_w / ratio
+        return w, h
+    except Exception:
+        return max_w, max_h
+
+
+def _colocar_logo_barra(pdf: LiquidacionPDF, logo_path: str, y: float) -> float:
+    """Dibuja el logo en un recuadro blanco dentro de la barra. Devuelve el x izquierdo del recuadro."""
+    logo_w, logo_h = _tamano_logo(logo_path, _LOGO_MAX_W, _LOGO_MAX_H)
+    box_w = logo_w + 2 * _LOGO_PAD
+    box_h = min(logo_h + 2 * _LOGO_PAD, _HEADER_H - 2)
+    box_x = _MARGEN_X + _ANCHO_CONTENIDO - box_w - 2
+    box_y = y + (_HEADER_H - box_h) / 2
+    pdf.set_fill_color(*WHITE)
+    pdf.rect(box_x, box_y, box_w, box_h, style='F')
+    pdf.image(
+        logo_path,
+        x=box_x + _LOGO_PAD,
+        y=box_y + (box_h - logo_h) / 2,
+        w=logo_w,
+        h=logo_h,
+    )
+    return box_x
+
+
 def _barra_titulo(pdf: LiquidacionPDF, titulo: str, subtitulo: str = '', logo_path: str | None = None):
-    """Barra superior oscura con acento teal, estilo navbar de la app."""
+    """Barra superior oscura con acento teal; títulos a la izquierda, logo a la derecha."""
     y = pdf.get_y()
     pdf.set_fill_color(*DARK)
-    pdf.rect(14, y, 182, 14, style='F')
+    pdf.rect(_MARGEN_X, y, _ANCHO_CONTENIDO, _HEADER_H, style='F')
     pdf.set_fill_color(*TEAL)
-    pdf.rect(14, y, 3, 14, style='F')
+    pdf.rect(_MARGEN_X, y, 3, _HEADER_H, style='F')
+    logo_x = _MARGEN_X + _ANCHO_CONTENIDO
     if logo_path and Path(logo_path).is_file():
         try:
-            pdf.image(logo_path, x=165, y=y + 1, h=12)
+            logo_x = _colocar_logo_barra(pdf, logo_path, y)
         except Exception:
-            pass
-    pdf.set_xy(20, y + 2)
+            logo_x = _MARGEN_X + _ANCHO_CONTENIDO
+    titulo_w = max(60, logo_x - 24)
+    pdf.set_xy(20, y + 3)
     pdf._set_font('B', 11)
     pdf.set_text_color(*WHITE)
-    pdf.cell(0, 5, _texto_seguro(titulo), new_x='LMARGIN', new_y='NEXT')
+    pdf.cell(titulo_w, 5, _texto_seguro(titulo), new_x='LMARGIN', new_y='NEXT')
     if subtitulo:
-        pdf.set_x(20)
+        pdf.set_xy(20, y + 8.5)
         pdf._set_font('', 8)
         pdf.set_text_color(200, 200, 200)
-        pdf.cell(0, 4, _texto_seguro(subtitulo), new_x='LMARGIN', new_y='NEXT')
+        pdf.cell(titulo_w, 4, _texto_seguro(subtitulo), new_x='LMARGIN', new_y='NEXT')
     pdf.set_text_color(0, 0, 0)
-    pdf.set_y(y + 16)
+    pdf.set_y(y + _HEADER_H + 3)
 
 
 def _seccion_header(pdf: LiquidacionPDF, titulo: str):
@@ -375,25 +421,26 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
         logo_path=empresa.get('logo_path'),
     )
 
-    # Empleador
+    # Empleador: títulos a la izquierda, sin ocupar la franja del logo (~40 mm)
+    etq_w = 26
     pdf._set_font('B', 7.5)
     pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(22, 4, _texto_seguro('Razon Social'))
+    pdf.cell(etq_w, 4, _texto_seguro('Razon Social'))
     pdf._set_font('', 8)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(78, 4, _texto_seguro(empresa.get('razon_social', '')))
+    pdf.cell(72, 4, _texto_seguro(empresa.get('razon_social', '')))
     pdf._set_font('B', 7.5)
     pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(10, 4, _texto_seguro('RUT'))
+    pdf.cell(12, 4, _texto_seguro('RUT'))
     pdf._set_font('', 8)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(28, 4, _texto_seguro(_fmt_rut(empresa.get('rut', ''))))
+    pdf.cell(28, 4, _texto_seguro(_fmt_rut(empresa.get('rut', ''))), new_x='LMARGIN', new_y='NEXT')
     pdf._set_font('B', 7.5)
     pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(18, 4, _texto_seguro('Direccion'))
+    pdf.cell(etq_w, 4, _texto_seguro('Direccion'))
     pdf._set_font('', 8)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 4, _texto_seguro(empresa.get('direccion', '')), new_x='LMARGIN', new_y='NEXT')
+    pdf.cell(112, 4, _texto_seguro(empresa.get('direccion', '')), new_x='LMARGIN', new_y='NEXT')
     pdf.ln(3)
 
     # Datos trabajador en dos bloques

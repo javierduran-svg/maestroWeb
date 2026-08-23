@@ -1,6 +1,9 @@
+import tempfile
 from datetime import date, datetime
+from pathlib import Path
 
 from flask import Blueprint, jsonify, request
+from werkzeug.utils import secure_filename
 from sqlalchemy import cast, func, String
 from sqlalchemy.orm import aliased
 
@@ -831,4 +834,207 @@ def manejar_uf_id(uf_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+@bp.route('/api/conciliacion-bancaria', methods=['GET'])
+def obtener_conciliacion_bancaria():
+    """Estado de conciliación: extracto bancario vs movimientos contables."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        conexion_id = request.args.get('conexion_id', type=int)
+        if not conexion_id:
+            return jsonify({'error': 'conexion_id es obligatorio'}), 400
+        from services.conciliacion_bancaria_service import obtener_estado_conciliacion
+        estado = obtener_estado_conciliacion(
+            conexion_id,
+            eid,
+            fecha_desde=_parse_fecha(request.args.get('fecha_desde') or ''),
+            fecha_hasta=_parse_fecha(request.args.get('fecha_hasta') or ''),
+            tolerancia_dias=request.args.get('tolerancia_dias', 5, type=int),
+        )
+        return jsonify(estado)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/conciliacion-bancaria/importar', methods=['POST'])
+def importar_conciliacion_cartola():
+    """Importa cartola bancaria desde Excel (.xlsx)."""
+    tmp_path = None
+    uploaded = False
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        conexion_id = request.form.get('conexion_id', type=int) or (
+            (request.json or {}).get('conexion_id') if request.is_json else None
+        )
+        if not conexion_id:
+            return jsonify({'error': 'conexion_id es obligatorio'}), 400
+
+        archivo = request.files.get('archivo') or request.files.get('file')
+        if archivo and archivo.filename:
+            nombre = secure_filename(archivo.filename)
+            if not nombre.lower().endswith(('.xlsx', '.xls')):
+                return jsonify({'error': 'El archivo debe ser Excel (.xlsx o .xls)'}), 400
+            suffix = Path(nombre).suffix or '.xlsx'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                archivo.save(tmp.name)
+                tmp_path = tmp.name
+                uploaded = True
+        elif request.is_json and request.json:
+            path = (request.json.get('archivo') or '').strip()
+            if not path or not Path(path).is_file():
+                return jsonify({'error': 'Debe enviar un archivo Excel o la ruta archivo en JSON'}), 400
+            tmp_path = path
+        else:
+            return jsonify({'error': 'Debe adjuntar el archivo Excel de la cartola'}), 400
+
+        from services.conciliacion_bancaria_service import importar_cartola_desde_excel
+        stats = importar_cartola_desde_excel(tmp_path, conexion_id, eid)
+        db.session.commit()
+        return jsonify(stats)
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except FileNotFoundError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if uploaded and tmp_path:
+            try:
+                Path(tmp_path).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+
+@bp.route('/api/conciliacion-bancaria/ejecutar', methods=['POST'])
+def ejecutar_conciliacion_bancaria():
+    """Emparejamiento automático por monto y fecha."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        data = request.json or {}
+        conexion_id = data.get('conexion_id')
+        if not conexion_id:
+            return jsonify({'error': 'conexion_id es obligatorio'}), 400
+        from services.conciliacion_bancaria_service import ejecutar_conciliacion_automatica
+        stats = ejecutar_conciliacion_automatica(
+            int(conexion_id),
+            eid,
+            tolerancia_dias=int(data.get('tolerancia_dias', 3)),
+            solo_exactos=bool(data.get('solo_exactos', True)),
+        )
+        db.session.commit()
+        return jsonify(stats)
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/conciliacion-bancaria/vincular', methods=['POST'])
+def vincular_conciliacion_bancaria():
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        data = request.json or {}
+        banco_id = data.get('banco_id')
+        movimiento_id = data.get('movimiento_id')
+        if not banco_id or not movimiento_id:
+            return jsonify({'error': 'banco_id y movimiento_id son obligatorios'}), 400
+        from services.conciliacion_bancaria_service import vincular_movimiento
+        result = vincular_movimiento(int(banco_id), int(movimiento_id), eid)
+        db.session.commit()
+        return jsonify(result)
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/conciliacion-bancaria/desvincular', methods=['POST'])
+def desvincular_conciliacion_bancaria():
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        data = request.json or {}
+        banco_id = data.get('banco_id')
+        if not banco_id:
+            return jsonify({'error': 'banco_id es obligatorio'}), 400
+        from services.conciliacion_bancaria_service import desvincular_movimiento
+        result = desvincular_movimiento(int(banco_id), eid)
+        db.session.commit()
+        return jsonify(result)
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/conciliacion-bancaria/ignorar', methods=['POST'])
+def ignorar_conciliacion_bancaria():
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        data = request.json or {}
+        banco_id = data.get('banco_id')
+        if not banco_id:
+            return jsonify({'error': 'banco_id es obligatorio'}), 400
+        from services.conciliacion_bancaria_service import ignorar_movimiento_banco
+        result = ignorar_movimiento_banco(int(banco_id), eid, ignorar=bool(data.get('ignorar', True)))
+        db.session.commit()
+        return jsonify(result)
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/api/conciliacion-bancaria/crear-movimiento', methods=['POST'])
+def crear_movimiento_conciliacion_bancaria():
+    """Crea movimiento contable desde línea bancaria pendiente y la concilia."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        data = request.json or {}
+        banco_id = data.get('banco_id')
+        if not banco_id:
+            return jsonify({'error': 'banco_id es obligatorio'}), 400
+        from services.conciliacion_bancaria_service import crear_movimiento_desde_linea_banco
+        result = crear_movimiento_desde_linea_banco(
+            int(banco_id),
+            eid,
+            contraparte_cuenta_id=int(data['contraparte_cuenta_id']) if data.get('contraparte_cuenta_id') else None,
+            descripcion=(data.get('descripcion') or '').strip() or None,
+            centro_costo=(data.get('centro_costo') or 'Administración').strip(),
+            proyecto_id=int(data['proyecto_id']) if data.get('proyecto_id') else None,
+        )
+        db.session.commit()
+        return jsonify(result), 201
+    except ValueError as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 

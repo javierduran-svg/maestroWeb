@@ -1915,6 +1915,7 @@
             <a href="#" class="sidebar-link sub" data-vista="dashboard-finanzas" onclick="return mostrarVista('dashboard-finanzas', this)"><i class="fa-solid fa-chart-line"></i><span>Dashboard financiero</span></a>
             <a href="#" class="sidebar-link" data-vista="movimientos" onclick="return mostrarVista('movimientos', this)"><i class="fa-solid fa-right-left"></i><span>Movimientos</span></a>
             <a href="#" class="sidebar-link" data-vista="banco" onclick="return mostrarVista('banco', this)"><i class="fa-solid fa-building-columns"></i><span>Bancos</span></a>
+            <a href="#" class="sidebar-link" data-vista="conciliacion-bancaria" onclick="return mostrarVista('conciliacion-bancaria', this)"><i class="fa-solid fa-scale-balanced"></i><span>Conciliación bancaria</span></a>
             <a href="#" class="sidebar-link" data-vista="personal" onclick="return mostrarVista('personal', this)"><i class="fa-solid fa-id-card"></i><span>Personas</span></a>
             <a href="#" class="sidebar-link" data-vista="simulador-utilidades" onclick="return mostrarVista('simulador-utilidades', this)"><i class="fa-solid fa-hand-holding-dollar"></i><span>Simulador Utilidades</span></a>
             <a href="#" class="sidebar-link" data-vista="sii" onclick="return mostrarVista('sii', this)"><i class="fa-solid fa-file-invoice"></i><span>SII</span></a>
@@ -2847,6 +2848,63 @@
                 </div>
             </section>
 
+            <!-- CONCILIACIÓN BANCARIA -->
+            <section id="view-conciliacion-bancaria" class="vista-panel panel-card d-none">
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <h5 class="mb-0">Conciliación bancaria</h5>
+                        <small class="text-muted">Cruce extracto bancario (cartola) vs movimientos contables</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <select class="form-select form-select-sm" id="concBancoSelect" style="min-width:12rem" onchange="cargarConciliacionBancaria()"></select>
+                        <input type="date" class="form-control form-control-sm" id="concFechaDesde" style="width:auto" onchange="cargarConciliacionBancaria()">
+                        <input type="date" class="form-control form-control-sm" id="concFechaHasta" style="width:auto" onchange="cargarConciliacionBancaria()">
+                        <label class="btn btn-sm btn-outline-secondary mb-0">
+                            <i class="fa-solid fa-file-excel"></i> Importar cartola
+                            <input type="file" class="d-none" id="concArchivoExcel" accept=".xlsx,.xls" onchange="importarCartolaConciliacion(this)">
+                        </label>
+                        <button type="button" class="btn btn-sm btn-teal" onclick="ejecutarConciliacionAutomatica()">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Conciliar auto
+                        </button>
+                    </div>
+                </div>
+                <div id="concMsg" class="px-3 pt-2 small"></div>
+                <div class="px-3 pt-2">
+                    <div class="row g-2 mb-3" id="concResumenCards">
+                        <div class="col-6 col-md-3"><div class="card p-2 border-success"><small class="text-muted">Conciliados</small><div class="fw-semibold" id="concKpiConciliados">—</div></div></div>
+                        <div class="col-6 col-md-3"><div class="card p-2 border-warning"><small class="text-muted">Pend. banco</small><div class="fw-semibold" id="concKpiPendBanco">—</div></div></div>
+                        <div class="col-6 col-md-3"><div class="card p-2 border-info"><small class="text-muted">Pend. libro</small><div class="fw-semibold" id="concKpiPendLibro">—</div></div></div>
+                        <div class="col-6 col-md-3"><div class="card p-2 border-danger"><small class="text-muted">Diferencia neta</small><div class="fw-semibold" id="concKpiDiferencia">—</div></div></div>
+                    </div>
+                    <p class="small text-muted mb-2">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Importe la cartola Excel del banco (Santander y similares), luego use «Conciliar auto» para emparejar por monto y fecha.
+                        Revise candidatos ambiguos y vincule manualmente. Use <strong>+</strong> para crear un movimiento contable desde una línea solo en banco.
+                        Los movimientos solo en banco suelen ser depósitos o cargos no registrados; los solo en libro pueden ser cheques pendientes de cobro.
+                    </p>
+                </div>
+                <div class="row g-0 border-top">
+                    <div class="col-lg-6 border-end p-3">
+                        <h6 class="text-teal mb-2"><i class="fa-solid fa-building-columns"></i> Extracto bancario</h6>
+                        <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
+                            <table class="table table-hover table-panel table-compact mb-0">
+                                <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th class="text-end">Monto</th><th>Acciones</th></tr></thead>
+                                <tbody id="tablaConcBanco"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 p-3">
+                        <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco)</h6>
+                        <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
+                            <table class="table table-hover table-panel table-compact mb-0">
+                                <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
+                                <tbody id="tablaConcLibro"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- SII -->
             <section id="view-sii" class="vista-panel panel-card d-none">
                 <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -3298,6 +3356,29 @@
             <div id="bancoModalMsg" class="small text-danger mt-2 d-none"></div>
         </div>
         <div class="modal-footer border-0"><button class="btn btn-teal px-4" onclick="guardarBancoConexion()">GUARDAR</button></div>
+    </div></div>
+</div>
+
+<div class="modal fade" id="modalConcCrearMov" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Registrar movimiento contable</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-4">
+            <input type="hidden" id="concCrearBancoId">
+            <p class="small text-muted mb-3">Crea un asiento en el libro y lo concilia con la línea bancaria seleccionada.</p>
+            <div class="row g-2 mb-2">
+                <div class="col-6"><label class="form-label small fw-bold">Fecha</label><input type="text" class="form-control form-control-sm" id="concCrearFecha" readonly></div>
+                <div class="col-6"><label class="form-label small fw-bold">Monto</label><input type="text" class="form-control form-control-sm" id="concCrearMonto" readonly></div>
+            </div>
+            <div class="mb-2"><label class="form-label small fw-bold">Tipo</label><input type="text" class="form-control form-control-sm" id="concCrearTipo" readonly></div>
+            <div class="mb-2"><label class="form-label small fw-bold">Descripción</label><input type="text" class="form-control form-control-sm" id="concCrearDescripcion" maxlength="255"></div>
+            <div class="mb-2"><label class="form-label small fw-bold" id="concCrearLabelContraparte">Cuenta contraparte</label><select class="form-select form-select-sm" id="concCrearContraparte"></select></div>
+            <div class="row g-2 mb-2">
+                <div class="col-6"><label class="form-label small fw-bold">Centro de costo</label><select class="form-select form-select-sm" id="concCrearCentro" onchange="toggleConcCrearProyecto()"><option value="Administración">Administración</option><option value="Proyecto">Proyecto</option></select></div>
+                <div class="col-6 d-none" id="wrapConcCrearProyecto"><label class="form-label small fw-bold">Proyecto</label><select class="form-select form-select-sm" id="concCrearProyecto"><option value="">— Seleccione —</option></select></div>
+            </div>
+            <div id="concCrearMsg" class="small text-danger d-none"></div>
+        </div>
+        <div class="modal-footer border-0"><button class="btn btn-teal px-4" onclick="guardarConcCrearMovimiento()">CREAR Y CONCILIAR</button></div>
     </div></div>
 </div>
 
@@ -3831,7 +3912,7 @@
     let _userRol = 'trabajador';
 
     const VISTAS_SOLO_ADMIN = [
-        'dashboard-finanzas', 'movimientos', 'banco', 'personal', 'simulador-utilidades',
+        'dashboard-finanzas', 'movimientos', 'banco', 'conciliacion-bancaria', 'personal', 'simulador-utilidades',
         'sii', 'cuentas', 'plan-cuentas', 'centros-costo', 'comprobantes', 'analisis-resultados',
     ];
     let _loginNeedsSetup = false;
@@ -5150,6 +5231,7 @@
             propuestas: listarPropuestas,
             movimientos: listarMovimientos,
             banco: initVistaBanco,
+            'conciliacion-bancaria': initVistaConciliacionBancaria,
             sii: initVistaSii,
             cuentas: listarCuentasTabla,
             personal: initVistaPersonal,
@@ -12827,6 +12909,308 @@
     async function initVistaBanco() {
         await cargarConexionesBanco();
         await listarMovimientosBanco();
+    }
+
+    let _concEstado = null;
+
+    async function initVistaConciliacionBancaria() {
+        const sel = document.getElementById('concBancoSelect');
+        if (!sel || !_empresaActivaId) return;
+        try {
+            const bancos = await (await apiFetch(`/api/empresas/${_empresaActivaId}/bancos`)).json();
+            if (bancos.error) {
+                sel.innerHTML = `<option value="">Error</option>`;
+                return;
+            }
+            sel.innerHTML = bancos.length
+                ? bancos.map(b => `<option value="${b.id}">${esc(b.nombre)}${b.cuenta_contable_nombre ? ' · ' + esc(b.cuenta_contable_nombre) : ''}</option>`).join('')
+                : '<option value="">Sin conexión bancaria</option>';
+            if (bancos.length) await cargarConciliacionBancaria();
+        } catch (e) {
+            document.getElementById('concMsg').textContent = 'Error al cargar bancos';
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    function _concEstadoBadge(estado) {
+        const map = {
+            conciliado: '<span class="badge bg-success">Conciliado</span>',
+            pendiente: '<span class="badge bg-warning text-dark">Pendiente</span>',
+            ignorado: '<span class="badge bg-secondary">Ignorado</span>',
+        };
+        return map[estado] || `<span class="badge bg-light text-dark">${esc(estado || '—')}</span>`;
+    }
+
+    function _renderConciliacionTablas(data) {
+        const tbodyB = document.getElementById('tablaConcBanco');
+        const tbodyL = document.getElementById('tablaConcLibro');
+        if (!tbodyB || !tbodyL) return;
+
+        tbodyB.innerHTML = (data.banco || []).length ? data.banco.map(b => {
+            const cls = b.tipo === 'Ingreso' ? 'text-success' : 'text-danger';
+            const acciones = [];
+            if (b.estado_conciliacion === 'conciliado') {
+                acciones.push(`<button class="btn btn-link btn-sm p-0" onclick="desvincularConciliacion(${b.id})" title="Desvincular">↩</button>`);
+            } else if (b.estado_conciliacion === 'ignorado') {
+                acciones.push(`<button class="btn btn-link btn-sm p-0" onclick="ignorarConciliacion(${b.id}, false)" title="Restaurar">↩</button>`);
+            } else {
+                if (b.candidatos && b.candidatos.length) {
+                    acciones.push(b.candidatos.slice(0, 3).map(c =>
+                        `<button class="btn btn-link btn-sm p-0 me-1" onclick="vincularConciliacion(${b.id}, ${c.movimiento_id})" title="${esc(c.descripcion)}">#${c.movimiento_id}</button>`
+                    ).join(''));
+                }
+                acciones.push(`<button class="btn btn-link btn-sm p-0 text-muted" onclick="ignorarConciliacion(${b.id}, true)" title="Ignorar">✕</button>`);
+                acciones.push(`<button class="btn btn-link btn-sm p-0 text-teal ms-1" onclick="abrirConcCrearMovimiento(${b.id})" title="Crear movimiento">+</button>`);
+            }
+            const vinc = b.movimiento ? `<br><small class="text-muted">↔ #${b.movimiento.id} ${esc(b.movimiento.descripcion || '')}</small>` : '';
+            return `<tr>
+                <td>${_concEstadoBadge(b.estado_conciliacion)}</td>
+                <td class="text-nowrap">${esc(fmtFecha(b.fecha))}</td>
+                <td>${esc(b.descripcion || '—')}${vinc}</td>
+                <td class="text-end text-nowrap ${cls}">${fmtMontoMov(b.monto)}</td>
+                <td class="text-nowrap small">${acciones.join('')}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">Sin movimientos bancarios en el periodo</td></tr>';
+
+        tbodyL.innerHTML = (data.libro || []).length ? data.libro.map(m => {
+            const cls = m.tipo === 'Ingreso' ? 'text-success' : (m.tipo === 'Egreso' ? 'text-danger' : '');
+            const badge = m.conciliado
+                ? '<span class="badge bg-success">Conciliado</span>'
+                : '<span class="badge bg-info text-dark">Solo libro</span>';
+            return `<tr>
+                <td>${badge}</td>
+                <td class="text-nowrap">${esc(fmtFecha(m.fecha_movimiento))}</td>
+                <td>${esc(m.descripcion || '—')}<br><small class="text-muted">${esc(m.origen)} → ${esc(m.destino)}</small></td>
+                <td class="text-end text-nowrap ${cls}">${fmtMontoMov(m.monto)}</td>
+                <td class="small">${esc(m.tipo)}</td>
+            </tr>`;
+        }).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">Sin movimientos contables en el periodo</td></tr>';
+
+        const r = data.resumen || {};
+        document.getElementById('concKpiConciliados').textContent = `${r.conciliados || 0} / ${r.total_banco || 0}`;
+        document.getElementById('concKpiPendBanco').textContent = `${r.pendientes_banco || 0} (${fmtMontoMov(r.monto_banco_pendiente || 0)})`;
+        document.getElementById('concKpiPendLibro').textContent = `${r.pendientes_libro || 0} (${fmtMontoMov(r.monto_libro_pendiente || 0)})`;
+        const dif = r.diferencia_neta || 0;
+        const difEl = document.getElementById('concKpiDiferencia');
+        difEl.textContent = fmtMontoMov(dif);
+        difEl.className = 'fw-semibold' + (Math.abs(dif) > 1 ? ' text-danger' : ' text-success');
+    }
+
+    async function cargarConciliacionBancaria() {
+        const msg = document.getElementById('concMsg');
+        const conexionId = document.getElementById('concBancoSelect')?.value;
+        if (!conexionId) {
+            msg.textContent = 'Configure una conexión bancaria en Finanzas → Bancos';
+            msg.className = 'px-3 pt-2 small text-muted';
+            return;
+        }
+        msg.textContent = 'Cargando…';
+        msg.className = 'px-3 pt-2 small text-muted';
+        const params = new URLSearchParams({ conexion_id: conexionId });
+        const desde = document.getElementById('concFechaDesde')?.value;
+        const hasta = document.getElementById('concFechaHasta')?.value;
+        if (desde) params.set('fecha_desde', desde);
+        if (hasta) params.set('fecha_hasta', hasta);
+        try {
+            const res = await apiFetch(`/api/conciliacion-bancaria?${params}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al cargar');
+            _concEstado = data;
+            if (data.periodo?.fecha_desde && !desde) {
+                document.getElementById('concFechaDesde').value = data.periodo.fecha_desde;
+            }
+            if (data.periodo?.fecha_hasta && !hasta) {
+                document.getElementById('concFechaHasta').value = data.periodo.fecha_hasta;
+            }
+            _renderConciliacionTablas(data);
+            msg.textContent = data.conexion?.nombre
+                ? `Cuenta: ${data.conexion.cuenta_contable_nombre || '—'} · ${data.periodo?.fecha_desde || ''} — ${data.periodo?.fecha_hasta || ''}`
+                : '';
+            msg.className = 'px-3 pt-2 small text-muted';
+        } catch (e) {
+            msg.textContent = e.message;
+            msg.className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    async function importarCartolaConciliacion(input) {
+        const msg = document.getElementById('concMsg');
+        const conexionId = document.getElementById('concBancoSelect')?.value;
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file || !conexionId) {
+            msg.textContent = 'Seleccione banco y archivo Excel';
+            msg.className = 'px-3 pt-2 small text-danger';
+            return;
+        }
+        msg.textContent = 'Importando cartola…';
+        msg.className = 'px-3 pt-2 small text-muted';
+        const fd = new FormData();
+        fd.append('archivo', file);
+        fd.append('conexion_id', conexionId);
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/importar', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al importar');
+            msg.textContent = data.mensaje || 'Cartola importada';
+            msg.className = 'px-3 pt-2 small text-success';
+            if (data.meta?.fecha_desde) document.getElementById('concFechaDesde').value = data.meta.fecha_desde;
+            if (data.meta?.fecha_hasta) document.getElementById('concFechaHasta').value = data.meta.fecha_hasta;
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            msg.textContent = e.message;
+            msg.className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    async function ejecutarConciliacionAutomatica() {
+        const msg = document.getElementById('concMsg');
+        const conexionId = document.getElementById('concBancoSelect')?.value;
+        if (!conexionId) return;
+        msg.textContent = 'Conciliando…';
+        msg.className = 'px-3 pt-2 small text-muted';
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/ejecutar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ conexion_id: parseInt(conexionId, 10), tolerancia_dias: 3, solo_exactos: true }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error');
+            msg.textContent = data.mensaje || 'Conciliación completada';
+            msg.className = 'px-3 pt-2 small text-success';
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            msg.textContent = e.message;
+            msg.className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    async function vincularConciliacion(bancoId, movimientoId) {
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/vincular', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ banco_id: bancoId, movimiento_id: movimientoId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error');
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            document.getElementById('concMsg').textContent = e.message;
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    async function desvincularConciliacion(bancoId) {
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/desvincular', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ banco_id: bancoId }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error');
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            document.getElementById('concMsg').textContent = e.message;
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    async function ignorarConciliacion(bancoId, ignorar) {
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/ignorar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ banco_id: bancoId, ignorar }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error');
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            document.getElementById('concMsg').textContent = e.message;
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-danger';
+        }
+    }
+
+    function toggleConcCrearProyecto() {
+        const esProy = document.getElementById('concCrearCentro')?.value === 'Proyecto';
+        document.getElementById('wrapConcCrearProyecto')?.classList.toggle('d-none', !esProy);
+    }
+
+    async function abrirConcCrearMovimiento(bancoId) {
+        const item = (_concEstado?.banco || []).find(b => b.id === bancoId);
+        if (!item) return;
+        await recargarCuentasCache();
+        const cuentaBancoId = _concEstado?.conexion?.cuenta_contable_id;
+        const cuentas = _cuentasCache.filter(c => String(c.id) !== String(cuentaBancoId));
+        const esIngreso = (item.tipo_raw || item.tipo || '').toLowerCase() === 'ingreso' || item.tipo === 'Ingreso';
+        const defaultNombre = esIngreso ? 'Clientes' : 'Otros gastos';
+        const defaultCuenta = cuentas.find(c => c.nombre === defaultNombre) || cuentas[0];
+
+        document.getElementById('concCrearBancoId').value = bancoId;
+        document.getElementById('concCrearFecha').value = fmtFecha(item.fecha);
+        document.getElementById('concCrearMonto').value = fmtMontoMov(item.monto);
+        document.getElementById('concCrearTipo').value = esIngreso ? 'Ingreso (abono banco)' : 'Egreso (cargo banco)';
+        document.getElementById('concCrearDescripcion').value = item.descripcion || '';
+        document.getElementById('concCrearLabelContraparte').textContent = esIngreso
+            ? 'Cuenta origen (de dónde viene el dinero)'
+            : 'Cuenta destino (a dónde va el gasto)';
+        document.getElementById('concCrearContraparte').innerHTML = cuentas.map(c =>
+            `<option value="${c.id}"${defaultCuenta && c.id === defaultCuenta.id ? ' selected' : ''}>${esc(c.nombre)}</option>`
+        ).join('');
+        document.getElementById('concCrearCentro').value = 'Administración';
+        toggleConcCrearProyecto();
+        const proys = await fetchProyectosSelect();
+        document.getElementById('concCrearProyecto').innerHTML = '<option value="">— Seleccione —</option>'
+            + proys.map(p => `<option value="${p.id}">${esc(p.nombre)}</option>`).join('');
+        const msg = document.getElementById('concCrearMsg');
+        msg.classList.add('d-none');
+        msg.textContent = '';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConcCrearMov')).show();
+    }
+
+    async function guardarConcCrearMovimiento() {
+        const msg = document.getElementById('concCrearMsg');
+        const bancoId = parseInt(document.getElementById('concCrearBancoId').value, 10);
+        const contraparte = parseInt(document.getElementById('concCrearContraparte').value, 10);
+        const esProy = document.getElementById('concCrearCentro').value === 'Proyecto';
+        const proyectoId = esProy ? parseInt(document.getElementById('concCrearProyecto').value, 10) : null;
+        if (!bancoId || !contraparte) {
+            msg.textContent = 'Complete los campos obligatorios';
+            msg.classList.remove('d-none');
+            return;
+        }
+        if (esProy && !proyectoId) {
+            msg.textContent = 'Seleccione un proyecto';
+            msg.classList.remove('d-none');
+            return;
+        }
+        msg.classList.add('d-none');
+        try {
+            const res = await apiFetch('/api/conciliacion-bancaria/crear-movimiento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    banco_id: bancoId,
+                    contraparte_cuenta_id: contraparte,
+                    descripcion: document.getElementById('concCrearDescripcion').value.trim(),
+                    centro_costo: esProy ? 'Proyecto' : 'Administración',
+                    proyecto_id: proyectoId,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear');
+            bootstrap.Modal.getInstance(document.getElementById('modalConcCrearMov')).hide();
+            document.getElementById('concMsg').textContent = data.mensaje || `Movimiento #${data.movimiento_id} creado`;
+            document.getElementById('concMsg').className = 'px-3 pt-2 small text-success';
+            refrescarDashboardsActivos();
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            msg.textContent = e.message;
+            msg.classList.remove('d-none');
+        }
     }
 
     async function cargarConexionesBanco() {
