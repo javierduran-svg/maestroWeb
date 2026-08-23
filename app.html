@@ -2908,7 +2908,7 @@
                         <p class="small text-muted mb-2">Doble clic en una fila para editar</p>
                         <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
                             <table class="table table-hover table-panel table-compact mb-0">
-                                <thead><tr><th>Estado</th><th>Fecha</th><th>Proyecto</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
+                                <thead><tr><th>Estado</th><th>Fecha</th><th>Proyecto</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th><th></th></tr></thead>
                                 <tbody id="tablaConcLibro"></tbody>
                             </table>
                         </div>
@@ -13045,8 +13045,11 @@
                 <td>${esc(m.descripcion || '—')}${epInfo}<br><small class="text-muted">${esc(m.origen)} → ${esc(m.destino)}${m.status_pago ? ' · ' + esc(m.status_pago) : ''}</small></td>
                 <td class="text-end text-nowrap ${cls}">${fmtMontoMov(m.monto)}</td>
                 <td class="small">${esc(m.tipo)}</td>
+                <td class="text-end pe-2" onclick="event.stopPropagation()">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-accion" onclick="event.stopPropagation(); eliminarConcLibroMovimiento(${m.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
+                </td>
             </tr>`;
-        }).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">Sin movimientos contables en el periodo</td></tr>';
+        }).join('') : '<tr><td colspan="7" class="text-center text-muted py-3">Sin movimientos contables en el periodo</td></tr>';
 
         const r = data.resumen || {};
         document.getElementById('concKpiConciliados').textContent = `${r.conciliados || 0} / ${r.total_banco || 0}`;
@@ -13272,6 +13275,31 @@
         } catch (e) {
             msg.textContent = e.message;
             msg.classList.remove('d-none');
+        }
+    }
+
+    async function eliminarConcLibroMovimiento(movId) {
+        if (!confirm('¿Eliminar este movimiento del libro contable?\n\nSi estaba conciliado, la línea bancaria quedará pendiente otra vez.')) {
+            return;
+        }
+        const msg = document.getElementById('concMsg');
+        try {
+            const res = await apiFetch(`/api/movimientos/${movId}`, { method: 'DELETE' });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error || 'No se pudo eliminar');
+            if (msg) {
+                msg.textContent = data.mensaje || 'Movimiento eliminado';
+                msg.className = 'px-3 pt-2 small text-success';
+            }
+            programarRefrescoSecundarioTrasEdicion({ recargarMovimientos: true });
+            await cargarConciliacionBancaria();
+        } catch (e) {
+            if (msg) {
+                msg.textContent = e.message;
+                msg.className = 'px-3 pt-2 small text-danger';
+            } else {
+                alert(e.message);
+            }
         }
     }
 

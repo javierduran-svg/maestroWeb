@@ -570,6 +570,14 @@ def manejar_movimiento(mov_id):
         proyecto_id = mov.proyecto_id
         era_ep = mov.clase == 'estado_pago'
         _desvincular_gasto_cesion_si_aplica(mov)
+        # Liberar extracto bancario vinculado (evita fallo de FK)
+        vinculados = BancoMovimiento.query.filter_by(
+            empresa_id=eid, movimiento_id=mov.id,
+        ).all()
+        for bm in vinculados:
+            bm.movimiento_id = None
+            if bm.estado_conciliacion == 'conciliado':
+                bm.estado_conciliacion = 'pendiente'
         db.session.delete(mov)
         if era_ep and proyecto_id:
             from estados_pago_service import renumerar_eps_proyecto
