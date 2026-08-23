@@ -2907,7 +2907,7 @@
                         <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco + EP Facturado/Pagado/Cedida)</h6>
                         <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
                             <table class="table table-hover table-panel table-compact mb-0">
-                                <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
+                                <thead><tr><th>Estado</th><th>Fecha</th><th>Proyecto</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
                                 <tbody id="tablaConcLibro"></tbody>
                             </table>
                         </div>
@@ -13007,14 +13007,16 @@
             else if (m.clase === 'estado_pago' && m.status_pago === 'Cedida') badge = '<span class="badge bg-secondary">EP Cedida</span>';
             else badge = '<span class="badge bg-info text-dark">Solo libro</span>';
             const epInfo = m.clase === 'estado_pago' && m.numero_ep ? ` EP#${m.numero_ep}` : '';
+            const proyecto = m.proyecto || (m.proyecto_id ? `#${m.proyecto_id}` : '— Admin —');
             return `<tr>
                 <td>${badge}</td>
                 <td class="text-nowrap">${esc(fmtFecha(m.fecha_movimiento))}</td>
+                <td class="small">${esc(proyecto)}</td>
                 <td>${esc(m.descripcion || '—')}${epInfo}<br><small class="text-muted">${esc(m.origen)} → ${esc(m.destino)}${m.status_pago ? ' · ' + esc(m.status_pago) : ''}</small></td>
                 <td class="text-end text-nowrap ${cls}">${fmtMontoMov(m.monto)}</td>
                 <td class="small">${esc(m.tipo)}</td>
             </tr>`;
-        }).join('') : '<tr><td colspan="5" class="text-center text-muted py-3">Sin movimientos contables en el periodo</td></tr>';
+        }).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">Sin movimientos contables en el periodo</td></tr>';
 
         const r = data.resumen || {};
         document.getElementById('concKpiConciliados').textContent = `${r.conciliados || 0} / ${r.total_banco || 0}`;
