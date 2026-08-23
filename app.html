@@ -1913,7 +1913,7 @@
             <a href="#" class="sidebar-link" data-vista="analisis-resultados" onclick="return mostrarVista('analisis-resultados', this)"><i class="fa-solid fa-chart-pie"></i><span>Análisis de Resultados</span></a>
             <div class="sidebar-divider">Finanzas</div>
             <a href="#" class="sidebar-link sub" data-vista="dashboard-finanzas" onclick="return mostrarVista('dashboard-finanzas', this)"><i class="fa-solid fa-chart-line"></i><span>Dashboard financiero</span></a>
-            <a href="#" class="sidebar-link" data-vista="movimientos" onclick="return mostrarVista('movimientos', this)"><i class="fa-solid fa-right-left"></i><span>Movimientos</span></a>
+            <a href="#" class="sidebar-link" data-vista="movimientos" onclick="return mostrarVista('movimientos', this)"><i class="fa-solid fa-book"></i><span>Libro contable</span></a>
             <a href="#" class="sidebar-link" data-vista="banco" onclick="return mostrarVista('banco', this)"><i class="fa-solid fa-building-columns"></i><span>Bancos</span></a>
             <a href="#" class="sidebar-link" data-vista="conciliacion-bancaria" onclick="return mostrarVista('conciliacion-bancaria', this)"><i class="fa-solid fa-scale-balanced"></i><span>Conciliación bancaria</span></a>
             <a href="#" class="sidebar-link" data-vista="personal" onclick="return mostrarVista('personal', this)"><i class="fa-solid fa-id-card"></i><span>Personas</span></a>
@@ -2449,16 +2449,19 @@
                 </div>
             </section>
 
-            <!-- MOVIMIENTOS -->
+            <!-- LIBRO CONTABLE -->
             <section id="view-movimientos" class="vista-panel panel-card d-none">
                 <div class="panel-header">
-                    <h5 class="mb-0">Movimientos</h5>
+                    <div>
+                        <h5 class="mb-0">Libro contable</h5>
+                        <small class="text-muted">Asientos y estados de pago · la columna Conciliación refleja el cruce con el extracto bancario</small>
+                    </div>
                     <button class="btn btn-sm btn-dark" data-bs-toggle="modal" data-bs-target="#modalMovimiento" onclick="cargarCuentas()">+ MOVIMIENTO</button>
                 </div>
                 <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
                     <div class="input-group input-group-sm" style="max-width: 280px;">
                         <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                        <input type="text" class="form-control" id="filtroMovBuscar" placeholder="Buscar movimientos…" oninput="debounceRenderMovimientos()">
+                        <input type="text" class="form-control" id="filtroMovBuscar" placeholder="Buscar en el libro…" oninput="debounceRenderMovimientos()">
                     </div>
                     <small class="text-muted" id="movContador">—</small>
                     <small class="text-teal fw-medium d-none" id="movSeleccionInfo"></small>
@@ -2475,6 +2478,7 @@
                                 <th class="mov-th-sort" data-col="proyecto" onclick="ordenarMovimientos('proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="monto" onclick="ordenarMovimientos('monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="status_pago" onclick="ordenarMovimientos('status_pago')">St. pago <i class="fa-solid fa-sort sort-icon"></i></th>
+                                <th title="Cruce con extracto bancario">Conciliación</th>
                                 <th class="mov-th-sort" data-col="fecha_estado_pago" onclick="ordenarMovimientos('fecha_estado_pago')">Fecha estado de pago <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="fecha_facturacion" onclick="ordenarMovimientos('fecha_facturacion')">Facturacion <i class="fa-solid fa-sort sort-icon"></i></th>
                                 <th class="mov-th-sort" data-col="descripcion" onclick="ordenarMovimientos('descripcion')">Descripción <i class="fa-solid fa-sort sort-icon"></i></th>
@@ -2498,6 +2502,7 @@
                                 <th><select class="form-select mov-filtro" id="filtroMovProyecto" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
                                 <th><input type="text" class="form-control mov-filtro" id="filtroMovMonto" placeholder="Monto" oninput="debounceRenderMovimientos()"></th>
                                 <th><select class="form-select mov-filtro" id="filtroMovStatusPago" onchange="renderMovimientos()"><option value="">Todos</option></select></th>
+                                <th><select class="form-select mov-filtro" id="filtroMovConciliacion" onchange="renderMovimientos()"><option value="">Todos</option><option value="conciliado">Conciliado</option><option value="pendiente">Pendiente</option></select></th>
                                 <th>
                                     <div class="mov-filtro-rango">
                                         <label class="mov-filtro-rango-lbl" for="filtroMovFechaPagoDesde">Desde</label>
@@ -2883,9 +2888,9 @@
                     </div>
                     <p class="small text-muted mb-2">
                         <i class="fa-solid fa-circle-info"></i>
-                        Importe la cartola Excel del banco (Santander y similares), luego use «Conciliar auto» para emparejar por monto y fecha.
-                        Revise candidatos ambiguos y vincule manualmente. Use <strong>+</strong> para crear un movimiento contable desde una línea solo en banco.
-                        Los movimientos solo en banco suelen ser depósitos o cargos no registrados; los solo en libro pueden ser cheques pendientes de cobro.
+                        Importe la cartola Excel del banco (Santander y similares), luego use «Conciliar auto» para emparejar
+                        <strong>depósitos/transferencias</strong> con <strong>estados de pago Facturado</strong> (por monto y fecha).
+                        Al conciliar un EP Facturado, pasa a <strong>Pagado</strong>. Revise candidatos ambiguos; use <strong>+</strong> para crear un asiento desde una línea solo en banco.
                     </p>
                 </div>
                 <div class="row g-0 border-top">
@@ -2899,7 +2904,7 @@
                         </div>
                     </div>
                     <div class="col-lg-6 p-3">
-                        <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco)</h6>
+                        <h6 class="text-teal mb-2"><i class="fa-solid fa-book"></i> Libro contable (cuenta banco + EP Facturado)</h6>
                         <div class="table-responsive tabla-scroll-wrap" style="max-height:28rem">
                             <table class="table table-hover table-panel table-compact mb-0">
                                 <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th class="text-end">Monto</th><th>Tipo</th></tr></thead>
@@ -12345,6 +12350,7 @@
             monto: document.getElementById('filtroMovMonto').value.trim(),
             numero_factura: document.getElementById('filtroMovFactura').value.trim().toLowerCase(),
             status_pago: document.getElementById('filtroMovStatusPago').value,
+            conciliacion: document.getElementById('filtroMovConciliacion')?.value || '',
             estado: document.getElementById('filtroMovEstado').value,
             tipo: document.getElementById('filtroMovTipo').value,
         };
@@ -12357,7 +12363,7 @@
             || f.fecha_estado_pago_desde || f.fecha_estado_pago_hasta
             || f.fecha_facturacion_desde || f.fecha_facturacion_hasta
             || f.descripcion || f.origen_id || f.destino_id || f.proyecto_id || f.monto
-            || f.numero_factura || f.status_pago || f.estado || f.tipo || buscar);
+            || f.numero_factura || f.status_pago || f.conciliacion || f.estado || f.tipo || buscar);
     }
 
     function buildMovimientosQueryParams() {
@@ -12417,7 +12423,10 @@
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
-        ['filtroMovOrigen','filtroMovDestino','filtroMovProyecto','filtroMovStatusPago','filtroMovEstado','filtroMovTipo'].forEach(id => document.getElementById(id).value = '');
+        ['filtroMovOrigen','filtroMovDestino','filtroMovProyecto','filtroMovStatusPago','filtroMovConciliacion','filtroMovEstado','filtroMovTipo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         renderMovimientos();
     }
 
@@ -12458,7 +12467,10 @@
         if (seq !== _movFetchSeq) return;
         _movItems = data.items || [];
         _movTotal = data.total || 0;
-        const lista = _movItems;
+        const filtroConc = document.getElementById('filtroMovConciliacion')?.value || '';
+        let lista = _movItems;
+        if (filtroConc === 'conciliado') lista = lista.filter(m => m.conciliado);
+        else if (filtroConc === 'pendiente') lista = lista.filter(m => !m.conciliado);
         actualizarIconosOrdenMov();
         _movVisibleIds = lista.map(m => m.id);
         _movSeleccionados = new Set([..._movSeleccionados].filter(id => _movVisibleIds.includes(id)));
@@ -12466,10 +12478,10 @@
         if (contador) {
             const filtros = movFiltrosActivos();
             contador.textContent = !_movTotal
-                ? 'Sin movimientos'
+                ? 'Sin asientos'
                 : filtros
                     ? `${lista.length} de ${_movTotal} coincidencia${_movTotal !== 1 ? 's' : ''}`
-                    : `${_movTotal} movimiento${_movTotal !== 1 ? 's' : ''}`;
+                    : `${_movTotal} asiento${_movTotal !== 1 ? 's' : ''}`;
         }
 
         document.getElementById('tabla-movimientos').innerHTML = lista.length ? lista.map(m => {
@@ -12481,7 +12493,10 @@
             const gc = `guardarFilaMovimiento(${m.id})`;
             const esEp = esEstadoPagoMov(m);
             const claseRow = esEp ? 'estado_pago' : m.clase;
-            return `<tr class="mov-row${issues.length ? ' mov-row-warning' : ''}" data-id="${m.id}" data-clase="${claseRow}">
+            const concBadge = m.conciliado
+                ? '<span class="badge bg-success">Conciliado</span>'
+                : '<span class="badge bg-light text-muted border">Pendiente</span>';
+            return `<tr class="mov-row${issues.length ? ' mov-row-warning' : ''}${m.conciliado ? ' mov-row-conciliado' : ''}" data-id="${m.id}" data-clase="${claseRow}">
             <td class="text-center">${warnHtml}</td>
             <td data-field="fecha_movimiento">${inputFechaMov(m.fecha_movimiento, gc, true)}</td>
             <td class="mov-col-proyecto" data-field="proyecto_id"><select class="form-select cell-edit fw-bold" onchange="${gc}">${optsSelect(proys, 'id', 'nombre', m.proyecto_id, '— Admin —')}</select></td>
@@ -12493,6 +12508,7 @@
                 : m.status_pago
                 ? badgeStatusPago(m.status_pago)
                 : '<span class="text-muted small">—</span>'}</td>
+            <td class="text-nowrap">${concBadge}</td>
             <td data-field="fecha_estado_pago">${inputFechaMov(m.fecha_estado_pago, gc)}</td>
             <td data-field="fecha_facturacion">${inputFechaMov(m.fecha_facturacion, gc)}</td>
             <td data-field="descripcion"><input type="text" class="form-control cell-edit" value="${esc(m.descripcion)}" onchange="${gc}"></td>
@@ -12503,7 +12519,7 @@
             <td><span class="badge bg-light text-dark">${movimientoTipoLabel(m)}</span></td>
             <td class="text-end pe-2"><button type="button" class="btn btn-sm btn-outline-danger btn-accion" onclick="event.stopPropagation(); borrarMovimientoGlobal(${m.id})" title="Eliminar"><i class="fa-solid fa-trash"></i></button></td>
         </tr>`;
-        }).join('') : `<tr><td colspan="14" class="text-center text-muted py-4">${_movTotal ? 'Ningún movimiento coincide con los filtros' : 'Sin movimientos'}</td></tr>`;
+        }).join('') : `<tr><td colspan="15" class="text-center text-muted py-4">${_movTotal ? 'Ningún movimiento coincide con los filtros' : 'Sin movimientos'}</td></tr>`;
         actualizarSeleccionMovUI();
         requestAnimationFrame(() => {
             const table = document.getElementById('tabla-movimientos-grid');
@@ -12960,9 +12976,10 @@
                 acciones.push(`<button class="btn btn-link btn-sm p-0" onclick="ignorarConciliacion(${b.id}, false)" title="Restaurar">↩</button>`);
             } else {
                 if (b.candidatos && b.candidatos.length) {
-                    acciones.push(b.candidatos.slice(0, 3).map(c =>
-                        `<button class="btn btn-link btn-sm p-0 me-1" onclick="vincularConciliacion(${b.id}, ${c.movimiento_id})" title="${esc(c.descripcion)}">#${c.movimiento_id}</button>`
-                    ).join(''));
+                    acciones.push(b.candidatos.slice(0, 3).map(c => {
+                        const epLabel = c.es_ep_facturado ? 'EP✓' : `#${c.movimiento_id}`;
+                        return `<button class="btn btn-link btn-sm p-0 me-1" onclick="vincularConciliacion(${b.id}, ${c.movimiento_id})" title="${esc(c.descripcion)}">${epLabel}</button>`;
+                    }).join(''));
                 }
                 acciones.push(`<button class="btn btn-link btn-sm p-0 text-muted" onclick="ignorarConciliacion(${b.id}, true)" title="Ignorar">✕</button>`);
                 acciones.push(`<button class="btn btn-link btn-sm p-0 text-teal ms-1" onclick="abrirConcCrearMovimiento(${b.id})" title="Crear movimiento">+</button>`);
@@ -12979,13 +12996,15 @@
 
         tbodyL.innerHTML = (data.libro || []).length ? data.libro.map(m => {
             const cls = m.tipo === 'Ingreso' ? 'text-success' : (m.tipo === 'Egreso' ? 'text-danger' : '');
-            const badge = m.conciliado
-                ? '<span class="badge bg-success">Conciliado</span>'
-                : '<span class="badge bg-info text-dark">Solo libro</span>';
+            let badge;
+            if (m.conciliado) badge = '<span class="badge bg-success">Conciliado</span>';
+            else if (m.clase === 'estado_pago' && m.status_pago === 'Facturado') badge = '<span class="badge bg-warning text-dark">EP Facturado</span>';
+            else badge = '<span class="badge bg-info text-dark">Solo libro</span>';
+            const epInfo = m.clase === 'estado_pago' && m.numero_ep ? ` EP#${m.numero_ep}` : '';
             return `<tr>
                 <td>${badge}</td>
                 <td class="text-nowrap">${esc(fmtFecha(m.fecha_movimiento))}</td>
-                <td>${esc(m.descripcion || '—')}<br><small class="text-muted">${esc(m.origen)} → ${esc(m.destino)}</small></td>
+                <td>${esc(m.descripcion || '—')}${epInfo}<br><small class="text-muted">${esc(m.origen)} → ${esc(m.destino)}${m.status_pago ? ' · ' + esc(m.status_pago) : ''}</small></td>
                 <td class="text-end text-nowrap ${cls}">${fmtMontoMov(m.monto)}</td>
                 <td class="small">${esc(m.tipo)}</td>
             </tr>`;

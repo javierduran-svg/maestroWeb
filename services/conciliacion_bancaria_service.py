@@ -8,7 +8,7 @@ import unicodedata
 from datetime import date, datetime, timedelta
 
 import pandas as pd
-from sqlalchemy import or_
+from sqlalchemy import and_, func, or_
 
 from extensions import db
 from models import BancoMovimiento, EmpresaBancoConexion, Movimiento
@@ -261,20 +261,55 @@ def _movimientos_libro_en_periodo(
     cuenta_banco_id: int,
     fecha_desde: date | None,
     fecha_hasta: date | None,
+    incluir_ep_facturados: bool = True,
 ) -> list[Movimiento]:
+    """Movimientos del libro candidatos a conciliar con el extracto.
+
+    Incluye:
+    - Asientos que tocan la cuenta banco de la conexión
+    - EP con status Facturado (ingresos por cobrar → depósito esperado), aunque
+      el destino contable sea otra cuenta banco (p.ej. «Banco pesos» vs Santander)
+    """
+    filtros_cuenta = or_(
+        Movimiento.cta_origen_id == cuenta_banco_id,
+        Movimiento.cta_destino_id == cuenta_banco_id,
+    )
+    if incluir_ep_facturados:
+        filtros_cuenta = or_(
+            filtros_cuenta,
+            and_(
+                Movimiento.clase == 'estado_pago',
+                Movimiento.status_pago == 'Facturado',
+                Movimiento.transaccion == 'Ingreso',
+            ),
+        )
+
     q = Movimiento.query.filter(
         Movimiento.empresa_id == empresa_id,
         Movimiento.estado == 'Activo',
-        or_(
-            Movimiento.cta_origen_id == cuenta_banco_id,
-            Movimiento.cta_destino_id == cuenta_banco_id,
-        ),
+        filtros_cuenta,
     )
-    if fecha_desde:
-        q = q.filter(Movimiento.fecha_movimiento >= fecha_desde)
-    if fecha_hasta:
-        q = q.filter(Movimiento.fecha_movimiento <= fecha_hasta)
+    if fecha_desde or fecha_hasta:
+        fecha_ref = func.coalesce(
+            Movimiento.fecha_facturacion,
+            Movimiento.fecha_estado_pago,
+            Movimiento.fecha_movimiento,
+        )
+        if fecha_desde:
+            q = q.filter(fecha_ref >= fecha_desde)
+        if fecha_hasta:
+            # Incluye EP facturados antes del periodo cuyo cobro puede caer en el extracto
+            q = q.filter(or_(
+                Movimiento.fecha_movimiento <= fecha_hasta,
+                fecha_ref <= fecha_hasta,
+            ))
     return q.order_by(Movimiento.fecha_movimiento, Movimiento.id).all()
+
+
+def _fecha_referencia_mov(m: Movimiento) -> date:
+    if m.clase == 'estado_pago':
+        return m.fecha_facturacion or m.fecha_estado_pago or m.fecha_movimiento
+    return m.fecha_movimiento
 
 
 def _monto_efectivo_movimiento(m: Movimiento, cuenta_banco_id: int) -> tuple[float, str]:
@@ -282,6 +317,10 @@ def _monto_efectivo_movimiento(m: Movimiento, cuenta_banco_id: int) -> tuple[flo
     monto = float(m.monto_pesos or 0)
     if m.status_pago == 'Cedida' and m.monto_ingreso_cesion is not None:
         monto = float(m.monto_ingreso_cesion)
+
+    # EP Facturado / Pagado / Cedida: siempre son ingresos esperados o cobrados en banco
+    if m.clase == 'estado_pago' and m.transaccion == 'Ingreso':
+        return abs(monto), 'ingreso'
 
     if m.cta_destino_id == cuenta_banco_id and m.cta_origen_id != cuenta_banco_id:
         return abs(monto), 'ingreso'
@@ -320,27 +359,68 @@ def _buscar_candidatos(
             continue
         if abs(monto - banco.monto) > tolerancia_monto:
             continue
-        diff_dias = abs((mov.fecha_movimiento - banco.fecha).days)
-        if diff_dias > tolerancia_dias:
-            continue
-        score = 100 - diff_dias * 10 - (0 if abs(monto - banco.monto) < 0.01 else 5)
+
+        fecha_ref = _fecha_referencia_mov(mov)
+        es_ep_facturado = (
+            mov.clase == 'estado_pago'
+            and mov.status_pago == 'Facturado'
+            and banco.tipo == 'ingreso'
+        )
+        # Depósitos vs EP facturado: el cobro suele llegar días/semanas después.
+        if es_ep_facturado:
+            dias_antes = (fecha_ref - banco.fecha).days  # >0 si banco es anterior a factura
+            dias_despues = (banco.fecha - fecha_ref).days
+            if dias_antes > 3 or dias_despues > max(90, tolerancia_dias):
+                continue
+            diff_dias = abs((banco.fecha - fecha_ref).days)
+            score = 120 - min(diff_dias, 60) - (0 if abs(monto - banco.monto) < 0.01 else 5)
+            if mov.numero_factura and mov.numero_factura in (banco.descripcion or ''):
+                score += 25
+        else:
+            diff_dias = abs((fecha_ref - banco.fecha).days)
+            if diff_dias > tolerancia_dias:
+                continue
+            score = 100 - diff_dias * 10 - (0 if abs(monto - banco.monto) < 0.01 else 5)
+            if mov.clase == 'estado_pago':
+                score += 15
+
+        label = mov.descripcion or ''
+        if mov.clase == 'estado_pago':
+            ep = f'EP#{mov.numero_ep}' if mov.numero_ep else 'EP'
+            st = mov.status_pago or ''
+            label = f'{ep} [{st}] {label}'.strip()
+
         candidatos.append({
             'movimiento_id': mov.id,
-            'fecha': mov.fecha_movimiento.isoformat(),
+            'fecha': fecha_ref.isoformat() if fecha_ref else None,
             'monto': monto,
-            'descripcion': mov.descripcion or '',
+            'descripcion': label,
             'transaccion': mov.transaccion,
+            'clase': mov.clase,
+            'status_pago': mov.status_pago,
             'diff_dias': diff_dias,
             'score': score,
+            'es_ep_facturado': es_ep_facturado,
         })
     candidatos.sort(key=lambda c: (-c['score'], c['diff_dias']))
     return candidatos[:5]
 
 
+def _aplicar_cobro_ep_si_corresponde(mov: Movimiento, fecha_banco: date) -> None:
+    """Al conciliar un depósito con EP Facturado, marca el cobro en el libro."""
+    if mov.clase != 'estado_pago':
+        return
+    if mov.status_pago != 'Facturado':
+        return
+    mov.status_pago = 'Pagado'
+    if not mov.fecha_estado_pago:
+        mov.fecha_estado_pago = fecha_banco
+
+
 def ejecutar_conciliacion_automatica(
     conexion_id: int,
     empresa_id: int,
-    tolerancia_dias: int = 3,
+    tolerancia_dias: int = 5,
     solo_exactos: bool = True,
 ) -> dict:
     conn = EmpresaBancoConexion.query.filter_by(id=conexion_id, empresa_id=empresa_id).first()
@@ -357,13 +437,18 @@ def ejecutar_conciliacion_automatica(
         return {'conciliados': 0, 'sugerencias': 0, 'mensaje': 'No hay movimientos bancarios pendientes'}
 
     fechas = [b.fecha for b in pendientes]
-    fecha_desde = min(fechas) - timedelta(days=tolerancia_dias)
-    fecha_hasta = max(fechas) + timedelta(days=tolerancia_dias)
-    libro = _movimientos_libro_en_periodo(empresa_id, cuenta_banco_id, fecha_desde, fecha_hasta)
+    # Ventana amplia para EP Facturado (cobro posterior a facturación)
+    fecha_desde = min(fechas) - timedelta(days=max(tolerancia_dias, 5))
+    fecha_hasta = max(fechas) + timedelta(days=max(tolerancia_dias, 5))
+    libro = _movimientos_libro_en_periodo(
+        empresa_id, cuenta_banco_id, fecha_desde - timedelta(days=90), fecha_hasta,
+    )
     vinculados = _ids_movimientos_vinculados(empresa_id, conexion_id)
 
     conciliados = 0
+    ep_marcados_pagados = 0
     sugerencias = 0
+    proyectos_a_recalcular = set()
     for banco in pendientes:
         candidatos = _buscar_candidatos(
             banco, libro, cuenta_banco_id, vinculados, tolerancia_dias=tolerancia_dias,
@@ -371,24 +456,42 @@ def ejecutar_conciliacion_automatica(
         if not candidatos:
             continue
         mejor = candidatos[0]
-        if len(candidatos) == 1 or (mejor['diff_dias'] == 0 and mejor['score'] >= 95):
+        mov = next((m for m in libro if m.id == mejor['movimiento_id']), None)
+        auto_ok = (
+            len(candidatos) == 1
+            or (mejor['diff_dias'] == 0 and mejor['score'] >= 95)
+            or (mejor.get('es_ep_facturado') and mejor['score'] >= 110 and (
+                len(candidatos) == 1 or candidatos[1]['score'] < mejor['score'] - 15
+            ))
+        )
+        if auto_ok or (not solo_exactos and mejor['score'] >= 90):
             banco.movimiento_id = mejor['movimiento_id']
             banco.estado_conciliacion = 'conciliado'
             vinculados.add(mejor['movimiento_id'])
-            conciliados += 1
-        elif not solo_exactos and mejor['score'] >= 90:
-            banco.movimiento_id = mejor['movimiento_id']
-            banco.estado_conciliacion = 'conciliado'
-            vinculados.add(mejor['movimiento_id'])
+            if mov:
+                antes = mov.status_pago
+                _aplicar_cobro_ep_si_corresponde(mov, banco.fecha)
+                if antes == 'Facturado' and mov.status_pago == 'Pagado':
+                    ep_marcados_pagados += 1
+                    if mov.proyecto_id:
+                        proyectos_a_recalcular.add(mov.proyecto_id)
             conciliados += 1
         else:
             sugerencias += 1
 
+    if proyectos_a_recalcular:
+        from common import _recalcular_proyectos
+        _recalcular_proyectos(empresa_id, *proyectos_a_recalcular)
+
+    partes = [f'{conciliados} vinculados', f'{sugerencias} con candidatos ambiguos']
+    if ep_marcados_pagados:
+        partes.append(f'{ep_marcados_pagados} EP Facturado → Pagado')
     return {
         'conciliados': conciliados,
         'sugerencias': sugerencias,
+        'ep_marcados_pagados': ep_marcados_pagados,
         'pendientes': len(pendientes) - conciliados,
-        'mensaje': f'Conciliación automática: {conciliados} vinculados, {sugerencias} con candidatos ambiguos',
+        'mensaje': 'Conciliación automática: ' + ', '.join(partes),
     }
 
 
@@ -411,7 +514,15 @@ def vincular_movimiento(banco_mov_id: int, movimiento_id: int, empresa_id: int) 
 
     banco.movimiento_id = movimiento_id
     banco.estado_conciliacion = 'conciliado'
-    return {'mensaje': 'Movimientos vinculados', 'banco_id': banco.id, 'movimiento_id': movimiento_id}
+    antes = mov.status_pago
+    _aplicar_cobro_ep_si_corresponde(mov, banco.fecha)
+    msg = 'Movimientos vinculados'
+    if antes == 'Facturado' and mov.status_pago == 'Pagado':
+        msg += ' · EP marcado como Pagado'
+        if mov.proyecto_id:
+            from common import _recalcular_proyectos
+            _recalcular_proyectos(empresa_id, mov.proyecto_id)
+    return {'mensaje': msg, 'banco_id': banco.id, 'movimiento_id': movimiento_id}
 
 
 def desvincular_movimiento(banco_mov_id: int, empresa_id: int) -> dict:

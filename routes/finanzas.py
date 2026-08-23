@@ -704,8 +704,9 @@ def manejar_movimientos():
     query = _ordenar_movimientos(query, request.args.get('sort'), request.args.get('order'))
     page, per_page = _parse_pagination_args()
     page_items, total, page = _paginate_query(query, page, per_page)
+    conciliados = _ids_movimientos_conciliados(eid)
     return _paginated_json(
-        [_movimiento_a_dict(m) for m in page_items],
+        [_movimiento_a_dict(m, conciliados) for m in page_items],
         total,
         page,
         per_page,

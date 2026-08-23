@@ -2344,8 +2344,8 @@ def _validar_datos_propuesta(data: dict, empresa_id: int, propuesta_id: int | No
     return campos, None
 
 
-def _movimiento_a_dict(m: Movimiento) -> dict:
-    return {
+def _movimiento_a_dict(m: Movimiento, conciliados: set[int] | None = None) -> dict:
+    d = {
         'id': m.id,
         'clase': m.clase,
         'fecha_movimiento': m.fecha_movimiento.strftime('%Y-%m-%d'),
@@ -2382,6 +2382,20 @@ def _movimiento_a_dict(m: Movimiento) -> dict:
             else None
         ),
     }
+    if conciliados is not None:
+        d['conciliado'] = m.id in conciliados
+        d['estado_conciliacion'] = 'conciliado' if m.id in conciliados else 'pendiente'
+    return d
+
+
+def _ids_movimientos_conciliados(empresa_id: int) -> set[int]:
+    """IDs de movimientos del libro vinculados a extracto bancario."""
+    rows = BancoMovimiento.query.filter(
+        BancoMovimiento.empresa_id == empresa_id,
+        BancoMovimiento.movimiento_id.isnot(None),
+        BancoMovimiento.estado_conciliacion == 'conciliado',
+    ).with_entities(BancoMovimiento.movimiento_id).all()
+    return {r[0] for r in rows}
 
 
 def _numero_ep_efectivo(m: Movimiento) -> int | None:
@@ -3159,6 +3173,7 @@ __all__ = [
     '_migrar_credenciales_env',
     '_migrar_schema',
     '_migrar_schema_bootstrap',
+    '_ids_movimientos_conciliados',
     '_movimiento_a_dict',
     '_movimiento_banco_duplicado',
     '_movimiento_liquidacion_duplicado',
