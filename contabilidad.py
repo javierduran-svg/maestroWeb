@@ -83,9 +83,11 @@ def recalcular_proyecto(proyecto, movimientos) -> None:
     gastos = [m for m in movs if m.clase == 'gasto']
 
     proyecto.monto_contrato = sum(m.monto_pesos for m in estados)
+    # Solo Pagado/Cedida: fecha_estado_pago es la fecha del documento EP (se setea al crear),
+    # no implica cobro. Misma regla que _es_movimiento_ingreso / cuadro PDF.
     proyecto.monto_pagado = sum(
         m.monto_pesos for m in estados
-        if getattr(m, 'status_pago', None) in ('Pagado', 'Cedida') or m.fecha_estado_pago is not None
+        if getattr(m, 'status_pago', None) in ('Pagado', 'Cedida')
     )
     proyecto.monto_facturado = sum(
         m.monto_pesos for m in estados
