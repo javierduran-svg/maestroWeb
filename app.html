@@ -787,9 +787,15 @@
         .prop-auto-legend { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.68rem; color: #6c757d; font-weight: 400; text-transform: none; letter-spacing: 0; }
         .prop-auto-legend .prop-auto-swatch { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 2px; background: rgba(255, 214, 0, 0.35); box-shadow: 0 0 0 1px rgba(199, 146, 0, 0.5); }
         #propCalcUnidades tbody td, #propCalcEtapas tbody td { vertical-align: middle; }
+        #propCalcUnidades tr.prop-calc-subtotal { background: #f0f4f5; }
+        #propCalcUnidades tr.prop-calc-subtotal td { font-weight: 600; }
+        #propCalcUnidades tr.prop-calc-subtotal .form-control { font-weight: 600; background: transparent; border-color: transparent; }
+        #propCalcUnidades tr.prop-calc-item-child td:first-child .form-control { padding-left: 1.1rem; }
         .prop-calc-table input[type=number]::-webkit-outer-spin-button,
         .prop-calc-table input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .prop-calc-table input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+        .prop-template-editor table.prop-tabla tr.prop-hon-subtotal td { font-weight: 600; background: #f0f4f5; }
+        .prop-template-editor table.prop-tabla tr.prop-hon-item td:first-child { padding-left: 1.25rem; }
         #propCalcUnidades th, #propCalcEtapas th, .prop-template-editor table.prop-tabla th { position: relative; }
         .prop-tabla-resize { table-layout: fixed; width: 100%; }
         .prop-col-resize-grip {
@@ -3527,7 +3533,10 @@
                                     <tbody id="propCalcUnidadesBody"></tbody>
                                     <tfoot><tr><td colspan="4" class="text-end fw-bold">Total</td><td class="text-end prop-calc-total" id="propCalcTotalUnidades">0</td><td></td></tr></tfoot>
                                 </table>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()"><i class="fa-solid fa-plus"></i></button>
+                                <div class="d-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarFilaCalcPropuesta()" title="Agregar ítem"><i class="fa-solid fa-plus"></i> Ítem</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarSubtotalCalcPropuesta()" title="Agregar subtotal de los ítems anteriores"><i class="fa-solid fa-layer-group"></i> Subtotal</button>
+                                </div>
                             </div>
                             <div class="table-responsive" id="propEtapasWrap">
                                 <table class="table table-panel table-compact table-bordered mb-1 prop-calc-table" id="propCalcEtapas">
@@ -9483,6 +9492,7 @@
 
     // Recalcula el total CES (base × nivel × tipo) y lo reparte entre los
     // entregables según su participación (share), sobre-escribiendo overrides.
+    // Las filas de subtotal se ignoran (no tienen share ni monto propio).
     function recomputeCesFilas() {
         if (!esServicioCes()) return;
         const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
@@ -9491,19 +9501,20 @@
         const baseEl = document.getElementById('propCesBase');
         const totalEl = document.getElementById('propCesTotal');
         if (baseEl) baseEl.value = base ? base.toFixed(1) : '';
-        const sumShares = _propCalcFilas.reduce((s, f) => s + (f.share || 0), 0) || 1;
+        const items = _propCalcFilas.filter(f => !esFilaSubtotalPropuesta(f));
+        const sumShares = items.reduce((s, f) => s + (f.share || 0), 0) || 1;
         let acc = 0;
-        _propCalcFilas.forEach((f, i) => {
+        items.forEach((f, i) => {
             f.m2 = m2;
             f.cantidad = 1;
-            if (i < _propCalcFilas.length - 1) {
+            if (i < items.length - 1) {
                 f.uf_unidad = Math.round(total * (f.share || 0) / sumShares);
                 acc += f.uf_unidad;
             } else {
                 f.uf_unidad = Math.max(0, Math.round(total) - acc);
             }
         });
-        if (totalEl) totalEl.value = _propCalcFilas.reduce((s, f) => s + (f.uf_unidad || 0), 0).toFixed(0);
+        if (totalEl) totalEl.value = items.reduce((s, f) => s + (f.uf_unidad || 0), 0).toFixed(0);
         renderOtrosGastosCes();
     }
 
@@ -9618,6 +9629,22 @@
         recalcularPropuesta();
     }
 
+    // Inserta una fila de subtotal: suma los ítems desde el subtotal anterior
+    // (o el inicio) hasta esta fila. No aporta al total general.
+    function agregarSubtotalCalcPropuesta() {
+        const n = _propCalcFilas.filter(f => esFilaSubtotalPropuesta(f)).length + 1;
+        _propCalcFilas.push({
+            kind: 'subtotal',
+            label: `Subtotal edificio ${n}`,
+            m2: 0,
+            cantidad: 0,
+            uf_unidad: 0,
+            share: 0,
+        });
+        renderCalcPropuesta();
+        recalcularPropuesta();
+    }
+
     function eliminarFilaCalcPropuesta(idx) {
         _propCalcFilas.splice(idx, 1);
         renderCalcPropuesta();
@@ -9628,8 +9655,37 @@
         return (Number(n) || 0).toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
+    function esFilaSubtotalPropuesta(f) {
+        return f && (f.kind === 'subtotal' || f.tipo_fila === 'subtotal');
+    }
+
+    // Monto de un ítem (cantidad × UF/u). Las filas de subtotal no aportan.
     function subtotalFilaPropuesta(f) {
+        if (esFilaSubtotalPropuesta(f)) return 0;
         return (f.cantidad || 0) * (f.uf_unidad || 0);
+    }
+
+    // Suma de ítems entre el subtotal anterior (o el inicio) y la fila idx
+    // (sin incluirla). Sirve para mostrar el valor de una fila subtotal.
+    function montoGrupoHastaSubtotal(idx) {
+        let sum = 0;
+        for (let i = idx - 1; i >= 0; i--) {
+            const f = _propCalcFilas[i];
+            if (esFilaSubtotalPropuesta(f)) break;
+            sum += subtotalFilaPropuesta(f);
+        }
+        return sum;
+    }
+
+    // True si la fila es un ítem cubierto por un subtotal posterior
+    // (ítems del mismo bloque edificio / departamentos).
+    function esItemBajoSubtotalPropuesta(idx) {
+        const f = _propCalcFilas[idx];
+        if (!f || esFilaSubtotalPropuesta(f)) return false;
+        for (let i = idx + 1; i < _propCalcFilas.length; i++) {
+            if (esFilaSubtotalPropuesta(_propCalcFilas[i])) return true;
+        }
+        return false;
     }
 
     function totalHonorariosPropuesta() {
@@ -9659,9 +9715,21 @@
         if (!body) return;
         const ces = esModoTablaUf();
         body.innerHTML = _propCalcFilas.map((f, i) => {
+            if (esFilaSubtotalPropuesta(f)) {
+                const sub = montoGrupoHastaSubtotal(i);
+                return `<tr class="prop-calc-subtotal">
+            <td><input type="text" class="form-control form-control-sm" value="${esc(f.label || 'Subtotal')}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
+            <td class="text-end text-muted small">—</td>
+            <td class="text-end text-muted small">—</td>
+            <td class="text-end text-muted small">—</td>
+            <td class="text-end subtotal-fila prop-calc-total" data-idx="${i}" data-kind="subtotal">${fmtUfNum(sub)}</td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
+        </tr>`;
+            }
             const sub = subtotalFilaPropuesta(f);
+            const childCls = esItemBajoSubtotalPropuesta(i) ? ' prop-calc-item-child' : '';
             if (ces) {
-                return `<tr>
+                return `<tr class="${childCls.trim()}">
             <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
             <td class="text-end text-muted small">${fmtUfNum(f.m2)}</td>
             <td class="text-end text-muted small">1</td>
@@ -9670,7 +9738,7 @@
             <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="eliminarFilaCalcPropuesta(${i})" title="Quitar"><i class="fa-solid fa-xmark"></i></button></td>
         </tr>`;
             }
-            return `<tr>
+            return `<tr class="${childCls.trim()}">
             <td><input type="text" class="form-control form-control-sm" value="${esc(f.label)}" oninput="_propCalcFilas[${i}].label=this.value;actualizarBloquesTemplate()"></td>
             <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.m2}" min="1" oninput="_propCalcFilas[${i}].m2=parseFloat(this.value)||0;_propCalcFilas[${i}].uf_unidad=tarifaCevRtPorM2(_propCalcFilas[${i}].m2);recalcularPropuestaLive()"></td>
             <td><input type="number" inputmode="decimal" class="form-control form-control-sm text-end" value="${f.cantidad}" min="0" step="1" oninput="_propCalcFilas[${i}].cantidad=parseFloat(this.value)||0;recalcularPropuestaLive()"></td>
@@ -9756,7 +9824,12 @@
         const totalUnidades = totalHonorariosPropuesta();
         _propCalcFilas.forEach((f, i) => {
             const cell = document.querySelector(`#propCalcUnidadesBody .subtotal-fila[data-idx="${i}"]`);
-            if (cell) cell.textContent = fmtUfNum(subtotalFilaPropuesta(f));
+            if (!cell) return;
+            if (esFilaSubtotalPropuesta(f)) {
+                cell.textContent = fmtUfNum(montoGrupoHastaSubtotal(i));
+            } else {
+                cell.textContent = fmtUfNum(subtotalFilaPropuesta(f));
+            }
         });
         const totalEl = document.getElementById('propCalcTotalUnidades');
         if (totalEl) totalEl.textContent = fmtUfNum(totalUnidades);
@@ -9840,7 +9913,7 @@
             const m2 = parseFloat(document.getElementById('propM2')?.value) || 0;
             return m2 ? `una superficie total de ${fmtUfNum(m2)} m²` : 'las edificaciones del proyecto';
         }
-        const filas = _propCalcFilas.filter(f => f.cantidad > 0);
+        const filas = _propCalcFilas.filter(f => !esFilaSubtotalPropuesta(f) && f.cantidad > 0);
         if (!filas.length) return 'las unidades del proyecto';
         const partes = filas.map(f => {
             const n = Math.round(f.cantidad);
@@ -10371,8 +10444,17 @@
         const inner = !filas.length
             ? '<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody><tr><td colspan="3" class="text-muted">Sin unidades</td></tr></tbody>'
             : (() => {
-                const rows = filas.map((f, i) => `<tr><td>${i + 1} ${esc(f.label)}</td><td class="text-end">${f.cantidad || 0}</td><td class="text-end">${subtotalFilaPropuesta(f).toFixed(1).replace('.', ',')}</td></tr>`).join('');
-                const total = filas.reduce((s, f) => s + subtotalFilaPropuesta(f), 0);
+                let itemNum = 0;
+                const rows = filas.map((f, i) => {
+                    if (esFilaSubtotalPropuesta(f)) {
+                        const monto = montoGrupoHastaSubtotal(i);
+                        return `<tr class="prop-hon-subtotal"><td>${esc(f.label || 'Subtotal')}</td><td class="text-end">—</td><td class="text-end">${monto.toFixed(1).replace('.', ',')}</td></tr>`;
+                    }
+                    itemNum += 1;
+                    const childCls = esItemBajoSubtotalPropuesta(i) ? ' class="prop-hon-item"' : '';
+                    return `<tr${childCls}><td>${itemNum} ${esc(f.label)}</td><td class="text-end">${f.cantidad || 0}</td><td class="text-end">${subtotalFilaPropuesta(f).toFixed(1).replace('.', ',')}</td></tr>`;
+                }).join('');
+                const total = totalHonorariosPropuesta();
                 return `<thead><tr><th>ITEM</th><th class="text-end">Cant</th><th class="text-end">Monto [UF]</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td colspan="2" class="text-end fw-bold">TOTAL</td><td class="text-end fw-bold">${total.toFixed(1).replace('.', ',')}</td></tr></tfoot>`;
             })();
         return `<table class="prop-tabla prop-tabla-resize" data-resize-key="honTpl">${colgroupHtml('honTpl', [null, 80, 90])}${inner}</table>`;
@@ -10629,6 +10711,7 @@
             // ('manual') se conserva tal como la definió el usuario.
             const m2 = parseFloat(document.getElementById('propM2').value) || 0;
             _propCalcFilas.forEach(f => {
+                if (esFilaSubtotalPropuesta(f)) return;
                 f.m2 = m2;
                 if (f.tipo === 'arancel_ee') {
                     const factor = (typeof f.factor === 'number') ? f.factor : 1;
@@ -10644,7 +10727,9 @@
             // Sin fórmula asociada: solo se actualiza el m² informativo de
             // cada fila. Los montos UF los define el usuario manualmente.
             const m2 = parseFloat(document.getElementById('propM2').value) || 0;
-            _propCalcFilas.forEach(f => { f.m2 = m2; });
+            _propCalcFilas.forEach(f => {
+                if (!esFilaSubtotalPropuesta(f)) f.m2 = m2;
+            });
             renderCalcPropuesta();
             recalcularPropuesta();
             sincronizarDatosEnTemplate();
