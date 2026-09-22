@@ -1355,21 +1355,18 @@ def _inyectar_logo_html(html: str, logo_path: str | None) -> str:
     logo_uri = _logo_data_uri(logo_path, teal=is_ep)
     if not logo_uri:
         return html
-    # height fijo ayuda a xhtml2pdf cuando max-height CSS falla en celdas anchas.
-    img_attrs = 'class="prop-doc-logo" alt="Logo" height="44"'
-    if is_ep:
-        img_tag = f'<img src="{logo_uri}" {img_attrs}/>'
-    else:
-        img_tag = f'<img src="{logo_uri}" class="prop-doc-logo" alt="Logo"/>'
+    # height fijo: xhtml2pdf ignora max-height CSS y, sin atributo, el logo
+    # sale a tamaño nativo (inmenso en carátula de propuestas RT/CEV/etc.).
+    logo_h = '44' if is_ep else '56'
+    img_tag = f'<img src="{logo_uri}" class="prop-doc-logo" alt="Logo" height="{logo_h}"/>'
     if re.search(r'<img[^>]+class="[^"]*prop-doc-logo', html, flags=re.I):
         def _rew_logo_img(m: re.Match) -> str:
             tag = m.group(0)
             tag = re.sub(r'\ssrc="[^"]*"', f' src="{logo_uri}"', tag, count=1, flags=re.I)
-            if is_ep:
-                if re.search(r'\sheight=', tag, flags=re.I):
-                    tag = re.sub(r'\sheight="[^"]*"', ' height="44"', tag, count=1, flags=re.I)
-                else:
-                    tag = re.sub(r'\s*/?>\s*$', ' height="44"/>', tag, count=1)
+            if re.search(r'\sheight=', tag, flags=re.I):
+                tag = re.sub(r'\sheight="[^"]*"', f' height="{logo_h}"', tag, count=1, flags=re.I)
+            else:
+                tag = re.sub(r'\s*/?>\s*$', f' height="{logo_h}"/>', tag, count=1)
             return tag
 
         html = re.sub(r'<img[^>]+class="[^"]*prop-doc-logo[^"]*"[^>]*/?>', _rew_logo_img, html, count=1, flags=re.I)
