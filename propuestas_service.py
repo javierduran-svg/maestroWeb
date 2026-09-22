@@ -1306,6 +1306,65 @@ def _logo_data_uri(logo_path: str | None, *, teal: bool = False) -> str:
         return ''
 
 
+def _aplanar_png_alpha_sobre_blanco(raw: bytes) -> bytes | None:
+    """Compone RGBA sobre blanco. xhtml2pdf ditheriza el alfa a puntos negros."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    try:
+        img = Image.open(io.BytesIO(raw))
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            rgba = img.convert('RGBA')
+            fondo = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
+            compuesto = Image.alpha_composite(fondo, rgba).convert('RGB')
+        elif img.mode != 'RGB':
+            compuesto = img.convert('RGB')
+        else:
+            return None  # ya opaco; no reescribir
+        out = io.BytesIO()
+        compuesto.save(out, format='PNG', optimize=True)
+        return out.getvalue()
+    except Exception:
+        return None
+
+
+def _aplanar_firmas_en_html(html: str) -> str:
+    """Antes del PDF: aplana firmas PNG con transparencia y fija height."""
+
+    def _rew(m: re.Match) -> str:
+        tag = m.group(0)
+        src_m = re.search(r'\ssrc="(data:image/[^"]+)"', tag, flags=re.I)
+        if src_m:
+            uri = src_m.group(1)
+            dm = re.match(r'data:(image/[\w+.-]+)(;charset=[^;]+)?;base64,(.+)$', uri, flags=re.I | re.S)
+            if dm:
+                mime = dm.group(1).lower()
+                try:
+                    raw = base64.b64decode(dm.group(3), validate=False)
+                except Exception:
+                    raw = b''
+                if raw and ('png' in mime or 'webp' in mime):
+                    flat = _aplanar_png_alpha_sobre_blanco(raw)
+                    if flat:
+                        b64 = base64.b64encode(flat).decode('ascii')
+                        new_uri = f'data:image/png;base64,{b64}'
+                        tag = re.sub(r'\ssrc="[^"]*"', f' src="{new_uri}"', tag, count=1, flags=re.I)
+        # height fijo: xhtml2pdf ignora max-height del CSS en firmas.
+        if re.search(r'\sheight=', tag, flags=re.I):
+            tag = re.sub(r'\sheight="[^"]*"', ' height="70"', tag, count=1, flags=re.I)
+        else:
+            tag = re.sub(r'\s*/?>\s*$', ' height="70"/>', tag, count=1)
+        return tag
+
+    return re.sub(
+        r'<img[^>]+class="[^"]*prop-doc-firma-img[^"]*"[^>]*/?>',
+        _rew,
+        html or '',
+        flags=re.I,
+    )
+
+
 def _normalizar_html_para_pdf(html: str) -> str:
     import html as html_mod
 
@@ -1391,6 +1450,9 @@ def _inyectar_logo_html(html: str, logo_path: str | None) -> str:
 def _envolver_html_export(contenido: str, titulo: str, logo_path: str | None = None, pdf: bool = False) -> str:
     html = _normalizar_html_para_pdf(contenido)
     html = _inyectar_logo_html(html, logo_path)
+    if pdf:
+        # PNG con alfa → puntos negros en xhtml2pdf; aplanar sobre blanco.
+        html = _aplanar_firmas_en_html(html)
     titulo_safe = titulo.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
     css = PROP_PDF_CSS if pdf else PROP_DOC_CSS
     footer = ''
