@@ -221,6 +221,7 @@ def _encolar(destinatario: str, asunto: str, texto: str, html: str) -> None:
 
 def _enviar_smtp(destinatario: str, asunto: str, texto: str, html: str) -> bool:
     from email.message import EmailMessage
+    from email.utils import formataddr
 
     host = os.environ.get('SMTP_HOST', 'smtp.gmail.com').strip() or 'smtp.gmail.com'
     port = int(os.environ.get('SMTP_PORT', '587') or '587')
@@ -231,7 +232,7 @@ def _enviar_smtp(destinatario: str, asunto: str, texto: str, html: str) -> bool:
 
     msg = EmailMessage()
     msg['Subject'] = asunto
-    msg['From'] = f'Maestro WEB <{remitente}>'
+    msg['From'] = formataddr(('Notificaciones bgreen', remitente))
     msg['To'] = destinatario
     msg.set_content(texto)
     msg.add_alternative(html, subtype='html')
