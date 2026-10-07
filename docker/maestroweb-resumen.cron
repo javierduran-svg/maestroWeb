@@ -1,0 +1,2 @@
+CRON_TZ=America/Santiago
+0 9 * * 1 root cd /opt/maestroweb && /usr/bin/docker compose -f docker-compose.prod.yml exec -T app python scripts/resumen_semanal.py >> /var/log/maestroweb-resumen.log 2>&1

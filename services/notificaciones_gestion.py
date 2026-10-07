@@ -6,13 +6,16 @@ import os
 import smtplib
 import ssl
 import threading
+from datetime import date, datetime, timedelta
 from html import escape
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from flask import current_app, has_request_context
 
 from common import _nombre_display_trabajador, _usuario_sesion
 from extensions import db
-from models import EntregaProgramada, Proyecto, TareaEntrega, Trabajador
+from models import Empresa, EntregaProgramada, Proyecto, TareaEntrega, Trabajador
 
 _EVENTOS = {
     'asignada': 'asignada',
@@ -253,3 +256,222 @@ def _enviar_smtp(destinatario: str, asunto: str, texto: str, html: str) -> bool:
     except Exception:
         current_app.logger.exception('No se pudo enviar la notificación de gestión a %s', destinatario)
         return False
+
+
+_ZONA = ZoneInfo('America/Santiago')
+_DIAS = ('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo')
+_MARCA_SEMANA = Path(__file__).resolve().parent.parent / 'uploads' / '.resumen_semanal_semana'
+
+
+def _lunes_domingo(hoy: date) -> tuple[date, date]:
+    lunes = hoy - timedelta(days=hoy.weekday())
+    return lunes, lunes + timedelta(days=6)
+
+
+def _etiqueta_dia(d: date) -> str:
+    return f'{_DIAS[d.weekday()]} {d.strftime("%d/%m")}'
+
+
+def _correos_empresa(empresa_id: int) -> list[str]:
+    vistos: set[str] = set()
+    correos: list[str] = []
+    trabajadores = Trabajador.query.filter_by(empresa_id=empresa_id).all()
+    for trabajador in trabajadores:
+        email = (trabajador.email or '').strip()
+        clave = email.lower()
+        if not email or clave in vistos:
+            continue
+        vistos.add(clave)
+        correos.append(email)
+    return correos
+
+
+def _nombres_asignados(ids: set[int]) -> dict[int, str]:
+    if not ids:
+        return {}
+    filas = Trabajador.query.filter(Trabajador.id.in_(ids)).all()
+    return {t.id: _nombre_display_trabajador(t) for t in filas}
+
+
+def armar_resumen_empresa(empresa_id: int, lunes: date, domingo: date) -> list[dict]:
+    """Proyectos activos con etapas o tareas cuya fecha cae en la semana."""
+    proyectos = (
+        Proyecto.query.filter_by(empresa_id=empresa_id, status='Activo')
+        .order_by(Proyecto.nombre)
+        .all()
+    )
+    if not proyectos:
+        return []
+    por_id = {p.id: p for p in proyectos}
+    entregas = EntregaProgramada.query.filter(
+        EntregaProgramada.empresa_id == empresa_id,
+        EntregaProgramada.proyecto_id.in_(list(por_id)),
+    ).all()
+    entregas_por_id = {e.id: e for e in entregas}
+    tareas = []
+    if entregas_por_id:
+        tareas = TareaEntrega.query.filter(
+            TareaEntrega.empresa_id == empresa_id,
+            TareaEntrega.entrega_id.in_(list(entregas_por_id)),
+        ).all()
+
+    ids_asig = {e.asignado_id for e in entregas if e.asignado_id}
+    ids_asig.update(t.asignado_id for t in tareas if t.asignado_id)
+    nombres = _nombres_asignados(ids_asig)
+
+    def _quien(asignado_id: int | None) -> str:
+        if not asignado_id:
+            return 'Sin asignar'
+        return nombres.get(asignado_id) or 'Sin asignar'
+
+    bloques: dict[int, dict] = {}
+
+    def _bloque(proyecto_id: int) -> dict:
+        if proyecto_id not in bloques:
+            bloques[proyecto_id] = {
+                'proyecto': por_id[proyecto_id].nombre,
+                'etapas': [],
+                'tareas': [],
+            }
+        return bloques[proyecto_id]
+
+    for entrega in entregas:
+        if not (lunes <= entrega.fecha_entrega <= domingo):
+            continue
+        _bloque(entrega.proyecto_id)['etapas'].append({
+            'fecha': entrega.fecha_entrega,
+            'titulo': (entrega.descripcion or '').strip() or 'Etapa sin descripción',
+            'status': entrega.status or '',
+            'asignado': _quien(entrega.asignado_id),
+        })
+
+    for tarea in tareas:
+        if not tarea.fecha_limite or not (lunes <= tarea.fecha_limite <= domingo):
+            continue
+        entrega = entregas_por_id.get(tarea.entrega_id)
+        if not entrega or entrega.proyecto_id not in por_id:
+            continue
+        _bloque(entrega.proyecto_id)['tareas'].append({
+            'fecha': tarea.fecha_limite,
+            'titulo': (tarea.descripcion or '').strip() or 'Tarea sin descripción',
+            'status': tarea.status or '',
+            'asignado': _quien(tarea.asignado_id),
+            'etapa': (entrega.descripcion or '').strip(),
+        })
+
+    ordenados = []
+    for proyecto in proyectos:
+        bloque = bloques.get(proyecto.id)
+        if not bloque:
+            continue
+        bloque['etapas'].sort(key=lambda x: (x['fecha'], x['titulo']))
+        bloque['tareas'].sort(key=lambda x: (x['fecha'], x['titulo']))
+        ordenados.append(bloque)
+    return ordenados
+
+
+def _mensaje_resumen(lunes: date, domingo: date, bloques: list[dict]) -> tuple[str, str, str]:
+    rango = f'{_etiqueta_dia(lunes)} al {_etiqueta_dia(domingo)}'
+    asunto = f'Entregas de la semana {lunes.strftime("%d/%m")}–{domingo.strftime("%d/%m")}'
+    intro = f'Resumen de etapas y tareas con entrega del {rango}.'
+    if not bloques:
+        cuerpo = 'Esta semana no hay etapas ni tareas con fecha de entrega en los proyectos activos.'
+        texto = f'Hola,\n\n{intro}\n\n{cuerpo}\n'
+        html_cuerpo = f'<p style="margin:0;">{escape(cuerpo)}</p>'
+    else:
+        lineas = ['Hola,', '', intro, '']
+        partes = []
+        for bloque in bloques:
+            lineas.append(bloque['proyecto'])
+            partes.append(
+                f'<h2 style="margin:20px 0 8px;font-size:16px;">{escape(bloque["proyecto"])}</h2>'
+            )
+            if bloque['etapas']:
+                lineas.append('Etapas')
+                partes.append('<p style="margin:8px 0 4px;font-weight:600;">Etapas</p><ul style="margin:0;padding-left:18px;">')
+                for item in bloque['etapas']:
+                    fila = f'{_etiqueta_dia(item["fecha"])} — {item["titulo"]} — {item["status"]} — {item["asignado"]}'
+                    lineas.append(f'- {fila}')
+                    partes.append(f'<li style="margin:0 0 6px;">{escape(fila)}</li>')
+                partes.append('</ul>')
+            if bloque['tareas']:
+                lineas.append('Tareas')
+                partes.append('<p style="margin:8px 0 4px;font-weight:600;">Tareas</p><ul style="margin:0;padding-left:18px;">')
+                for item in bloque['tareas']:
+                    fila = f'{_etiqueta_dia(item["fecha"])} — {item["titulo"]} — {item["status"]} — {item["asignado"]}'
+                    if item['etapa']:
+                        fila += f' (etapa: {item["etapa"]})'
+                    lineas.append(f'- {fila}')
+                    partes.append(f'<li style="margin:0 0 6px;">{escape(fila)}</li>')
+                partes.append('</ul>')
+            lineas.append('')
+        texto = '\n'.join(lineas)
+        html_cuerpo = ''.join(partes)
+
+    html = f'''<!DOCTYPE html>
+<html><body style="margin:0;background:#f4f7f6;font-family:Segoe UI,Arial,sans-serif;color:#1c2b27;">
+  <div style="max-width:640px;margin:24px auto;background:#fff;border:1px solid #d7e3df;border-radius:8px;overflow:hidden;">
+    <div style="background:#0d6e6e;color:#fff;padding:16px 20px;font-size:15px;">Notificaciones bgreen · Gestión</div>
+    <div style="padding:20px;">
+      <p style="margin:0 0 12px;">Hola,</p>
+      <p style="margin:0 0 8px;">{escape(intro)}</p>
+      {html_cuerpo}
+    </div>
+  </div>
+</body></html>'''
+    return asunto, texto, html
+
+
+def _marca_leida() -> str:
+    try:
+        return _MARCA_SEMANA.read_text(encoding='utf-8').strip()
+    except OSError:
+        return ''
+
+
+def _marca_guardar(lunes: date) -> None:
+    _MARCA_SEMANA.parent.mkdir(parents=True, exist_ok=True)
+    _MARCA_SEMANA.write_text(lunes.isoformat() + '\n', encoding='utf-8')
+
+
+def enviar_resumen_semanal(*, force: bool = False, dry_run: bool = False) -> int:
+    """Envía el mismo resumen a cada persona de la organización. 0 = ok."""
+    hoy = datetime.now(_ZONA).date()
+    lunes, domingo = _lunes_domingo(hoy)
+    if hoy.weekday() != 0 and not force and not dry_run:
+        print(f'Hoy no es lunes en Chile ({hoy.isoformat()}). No se envía.')
+        return 0
+    if not dry_run and not force and _marca_leida() == lunes.isoformat():
+        print(f'Resumen de la semana {lunes.isoformat()} ya enviado.')
+        return 0
+    if not dry_run and not _smtp_listo():
+        print('SMTP no configurado.')
+        return 1
+
+    empresas = Empresa.query.filter_by(activa=True).order_by(Empresa.id).all()
+    enviados = 0
+    fallos = 0
+    for empresa in empresas:
+        bloques = armar_resumen_empresa(empresa.id, lunes, domingo)
+        correos = _correos_empresa(empresa.id)
+        asunto, texto, html = _mensaje_resumen(lunes, domingo, bloques)
+        print(
+            f'{empresa.nombre}: {len(bloques)} proyecto(s), {len(correos)} destinatario(s)',
+        )
+        if dry_run:
+            print(texto)
+            continue
+        for correo in correos:
+            if _enviar_smtp(correo, asunto, texto, html):
+                enviados += 1
+                print(f'enviado {correo}')
+            else:
+                fallos += 1
+                print(f'falló {correo}')
+    if dry_run:
+        return 0
+    if fallos:
+        return 1
+    _marca_guardar(lunes)
+    print(f'Listo. Correos enviados: {enviados}')
+    return 0
