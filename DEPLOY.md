@@ -98,6 +98,7 @@ Complete obligatoriamente:
 | `FLASK_SECRET_KEY` | `python3 -c "import secrets; print(secrets.token_hex(32))"` |
 | `SECRET_ENCRYPTION_KEY` | **La misma de tu `.env` local** si restaura BD cifrada |
 | `SEED_DEV_ADMIN` | `0` (no resetea contraseñas al arrancar) |
+| `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Buzón que envía avisos de Gestión (`smtp.gmail.com:587`). La clave solo en el `.env` del servidor. |
 
 No incluya credenciales SII, Fintoc ni datos de empresa en `.env`: van en la base de datos (restaurada con el dump) y se gestionan desde la app por cada empresa.
 

@@ -34,6 +34,7 @@ from propuestas_service import (
     siguiente_numero_propuesta,
 )
 
+from services.notificaciones_gestion import notificar_entrega, notificar_tarea, snapshot_entrega, snapshot_tarea
 from services.rentabilidad_service import calcular_rentabilidad_proyectos
 from pdf_cuadro_proyectos import generar_pdf_cuadro_proyectos
 
@@ -351,6 +352,7 @@ def manejar_entregas_proyecto(proyecto_id):
     )
     db.session.add(entrega)
     db.session.commit()
+    notificar_entrega(None, entrega)
     return jsonify({'mensaje': 'Entrega programada', 'entrega': _entrega_a_dict(entrega)}), 201
 
 
@@ -383,6 +385,7 @@ def crear_entrega():
     )
     db.session.add(entrega)
     db.session.commit()
+    notificar_entrega(None, entrega)
     return jsonify({'mensaje': 'Entrega programada', 'entrega': _entrega_a_dict(entrega)}), 201
 
 
@@ -395,6 +398,8 @@ def manejar_entrega(entrega_id):
 
     if request.method == 'GET':
         return jsonify(_entrega_a_dict(entrega))
+
+    antes_entrega = snapshot_entrega(entrega)
 
     if request.method == 'DELETE':
         db.session.delete(entrega)
@@ -423,6 +428,7 @@ def manejar_entrega(entrega_id):
         proyecto = Proyecto.query.filter_by(empresa_id=eid, id=int(data['proyecto_id'])).first_or_404()
         entrega.proyecto_id = proyecto.id
     db.session.commit()
+    notificar_entrega(antes_entrega, entrega)
     return jsonify({'mensaje': 'Entrega actualizada', 'entrega': _entrega_a_dict(entrega)})
 
 
@@ -456,6 +462,7 @@ def manejar_tareas_entrega(entrega_id):
     )
     db.session.add(tarea)
     db.session.commit()
+    notificar_tarea(None, tarea)
     return jsonify({'mensaje': 'Tarea creada', 'tarea': _tarea_a_dict(tarea)}), 201
 
 
@@ -465,6 +472,7 @@ def manejar_tarea(tarea_id):
     if err:
         return err
     tarea = TareaEntrega.query.filter_by(empresa_id=eid, id=tarea_id).first_or_404()
+    antes_tarea = snapshot_tarea(tarea)
 
     if request.method == 'DELETE':
         db.session.delete(tarea)
@@ -487,6 +495,7 @@ def manejar_tarea(tarea_id):
             return jsonify({'error': f'status debe ser uno de: {", ".join(ESTADOS_TAREA_ENTREGA)}'}), 400
         tarea.status = status
     db.session.commit()
+    notificar_tarea(antes_tarea, tarea)
     return jsonify({'mensaje': 'Tarea actualizada', 'tarea': _tarea_a_dict(tarea)})
 
 
