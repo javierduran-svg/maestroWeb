@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from flask import current_app, has_request_context
 
-from common import _nombre_display_trabajador, _usuario_sesion
+from common import _usuario_sesion
 from extensions import db
 from models import Empresa, EntregaProgramada, Proyecto, TareaEntrega, Trabajador
 
@@ -22,6 +22,19 @@ _EVENTOS = {
     'modificada': 'modificada',
     'completada': 'completada',
 }
+
+
+def _nombre_corto(trabajador: Trabajador | None) -> str:
+    """Primer nombre y la inicial del apellido paterno: «Javier D.»."""
+    if trabajador is None:
+        return ''
+    partes = (trabajador.nombres or '').split()
+    primero = partes[0] if partes else ''
+    apellido = (trabajador.apellido_paterno or '').strip()
+    inicial = apellido[0].upper() if apellido else ''
+    if primero and inicial:
+        return f'{primero} {inicial}.'
+    return primero or (f'{inicial}.' if inicial else '')
 
 
 def clasificar_evento(antes: dict | None, despues: dict) -> str | None:
@@ -115,8 +128,8 @@ def _notificar(tipo: str, articulo: str, antes: dict | None, despues: dict) -> N
 
 
 def _mensaje(tipo, articulo, evento, antes, despues, trabajador, actor):
-    nombre = _nombre_display_trabajador(trabajador)
-    actor_nombre = _nombre_display_trabajador(actor) if actor else ''
+    nombre = _nombre_corto(trabajador)
+    actor_nombre = _nombre_corto(actor) if actor else ''
     titulo = despues.get('titulo') or f'{tipo} sin descripción'
     proyecto = despues.get('proyecto') or 'Sin proyecto'
     verbo = _EVENTOS[evento]
@@ -290,7 +303,7 @@ def _nombres_asignados(ids: set[int]) -> dict[int, str]:
     if not ids:
         return {}
     filas = Trabajador.query.filter(Trabajador.id.in_(ids)).all()
-    return {t.id: _nombre_display_trabajador(t) for t in filas}
+    return {t.id: _nombre_corto(t) for t in filas}
 
 
 def armar_resumen_empresa(empresa_id: int, lunes: date, domingo: date) -> list[dict]:
