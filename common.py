@@ -2169,6 +2169,11 @@ def _cliente_a_dict(c: Cliente) -> dict:
         'id': c.id,
         'razon_social': c.razon_social,
         'rut': c.rut,
+        'giro': c.giro or '',
+        'direccion': c.direccion or '',
+        'comuna': c.comuna or '',
+        'ciudad': c.ciudad or '',
+        'email': c.email or '',
         'comentarios': c.comentarios,
         'num_proyectos': len(c.proyectos),
     }
@@ -2190,6 +2195,10 @@ def _validar_datos_cliente(
         return None, 'RUT requerido'
     comentarios = (data.get('comentarios') or '').strip() or None
 
+    def _opcional(clave: str, largo: int) -> str | None:
+        valor = (data.get(clave) or '').strip()
+        return valor[:largo] or None
+
     existentes = Cliente.query.filter_by(empresa_id=empresa_id).all()
     for otro in existentes:
         if cliente_id and otro.id == cliente_id:
@@ -2200,6 +2209,11 @@ def _validar_datos_cliente(
     return {
         'razon_social': razon[:150],
         'rut': rut,
+        'giro': _opcional('giro', 150),
+        'direccion': _opcional('direccion', 255),
+        'comuna': _opcional('comuna', 80),
+        'ciudad': _opcional('ciudad', 80),
+        'email': _opcional('email', 120),
         'comentarios': comentarios,
     }, None
 

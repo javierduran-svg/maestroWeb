@@ -694,6 +694,34 @@ def ensure_schema_bootstrap() -> None:
     db.session.commit()
 
 
+def _asegurar_columnas_facturacion_cliente() -> None:
+    """Giro, dirección, comuna, ciudad y correo del mandante en clientes."""
+    if not inspect(db.engine).has_table('clientes'):
+        return
+    cols = {c['name'] for c in inspect(db.engine).get_columns('clientes')}
+    faltantes = [
+        (nombre, tipo)
+        for nombre, tipo in (
+            ('giro', 'VARCHAR(150)'),
+            ('direccion', 'VARCHAR(255)'),
+            ('comuna', 'VARCHAR(80)'),
+            ('ciudad', 'VARCHAR(80)'),
+            ('email', 'VARCHAR(120)'),
+        )
+        if nombre not in cols
+    ]
+    if not faltantes:
+        return
+    with db.engine.connect() as conn:
+        for nombre, tipo in faltantes:
+            conn.execute(text(f'ALTER TABLE clientes ADD COLUMN {nombre} {tipo}'))
+        conn.commit()
+    logger.warning(
+        'Columnas de facturación añadidas a clientes: %s',
+        ', '.join(nombre for nombre, _tipo in faltantes),
+    )
+
+
 def _asegurar_columnas_imagenes_trabajador() -> None:
     """Garantiza que trabajadores tenga foto_path/firma_path en cualquier motor.
 
@@ -738,5 +766,6 @@ def ensure_schema() -> None:
             )
             db.create_all()
         asegurar_empresa_default()
+    _asegurar_columnas_facturacion_cliente()
     _asegurar_columnas_imagenes_trabajador()
     ensure_schema_bootstrap()

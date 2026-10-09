@@ -647,6 +647,20 @@
             border: none !important; padding: 0 8px 0 0; vertical-align: top; background: transparent;
         }
         #modalEstadoPago #epTemplate .ep-meta-line { margin: 0 0 6px 0; font-size: 9pt; line-height: 1.35; }
+        #modalEstadoPago #epTemplate .ep-doc-facturacion {
+            margin: 2px 0 12px 0; padding: 8px 10px 2px 10px;
+            border: 1px solid #d7e3e1; border-radius: 4px; background: #f7fbfa;
+        }
+        #modalEstadoPago #epTemplate .ep-fact-titulo {
+            margin: 0 0 6px 0; font-size: 8.5pt; font-weight: 700;
+            color: var(--teal-green); letter-spacing: 0.03em; text-transform: uppercase;
+        }
+        #modalEstadoPago #epTemplate table.ep-doc-fact-grid {
+            width: 100%; border-collapse: collapse; margin: 0; font-size: 9pt;
+        }
+        #modalEstadoPago #epTemplate table.ep-doc-fact-grid td {
+            border: none !important; padding: 0 8px 0 0; vertical-align: top; background: transparent;
+        }
         #modalEstadoPago #epTemplate table.ep-tabla {
             width: 100% !important;
             border-collapse: collapse !important;
@@ -3442,14 +3456,22 @@
 </div>
 
 <div class="modal fade" id="modalCliente" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title" id="tituloModalCliente">Nuevo Cliente</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-4">
             <input type="hidden" id="cliId">
-            <div class="mb-3"><label class="form-label small fw-bold">Razón Social</label><input type="text" class="form-control" id="cliRazon" required maxlength="150"></div>
-            <div class="mb-3"><label class="form-label small fw-bold">RUT</label><input type="text" class="form-control" id="cliRut" placeholder="76.123.456-7" required maxlength="20"></div>
-            <div class="mb-3"><label class="form-label small fw-bold">Comentarios</label><textarea class="form-control" id="cliComent" rows="2"></textarea></div>
-            <div id="cliMsg" class="small text-danger d-none"></div>
+            <div class="row g-3">
+                <div class="col-md-8"><label class="form-label small fw-bold">Razón Social</label><input type="text" class="form-control" id="cliRazon" required maxlength="150"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">RUT</label><input type="text" class="form-control" id="cliRut" placeholder="76.123.456-7" required maxlength="20"></div>
+                <div class="col-12"><p class="small fw-bold text-teal mb-0">Datos de facturación</p><small class="text-muted">Se usan en el estado de pago del mandante.</small></div>
+                <div class="col-12"><label class="form-label small fw-bold">Giro</label><input type="text" class="form-control" id="cliGiro" maxlength="150"></div>
+                <div class="col-12"><label class="form-label small fw-bold">Dirección</label><input type="text" class="form-control" id="cliDireccion" maxlength="255"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Comuna</label><input type="text" class="form-control" id="cliComuna" maxlength="80"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Ciudad</label><input type="text" class="form-control" id="cliCiudad" maxlength="80"></div>
+                <div class="col-md-4"><label class="form-label small fw-bold">Correo</label><input type="email" class="form-control" id="cliEmail" maxlength="120"></div>
+                <div class="col-12"><label class="form-label small fw-bold">Comentarios</label><textarea class="form-control" id="cliComent" rows="2"></textarea></div>
+            </div>
+            <div id="cliMsg" class="small text-danger d-none mt-2"></div>
         </div>
         <div class="modal-footer border-0"><button type="button" class="btn btn-teal px-4" onclick="guardarCliente()">GUARDAR</button></div>
     </div></div>
@@ -3687,6 +3709,10 @@
                                 <div class="prop-field span-2"><label>Proyecto</label><input type="text" class="form-control bg-light" id="epProyectoNombre" readonly></div>
                                 <div class="prop-field span-2"><label>Servicio</label><input type="text" class="form-control bg-light" id="epServicio" readonly></div>
                                 <div class="prop-field span-2"><label>Cliente</label><input type="text" class="form-control bg-light" id="epCliente" readonly></div>
+                                <div class="prop-field span-2">
+                                    <label>Facturación del mandante</label>
+                                    <div id="epFacturacionResumen" class="small text-muted" style="white-space:pre-line">Se obtiene desde Clientes</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3727,7 +3753,7 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title">Editar plantilla de estado de pago</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
         <div class="modal-body p-3">
-            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{INTRO}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{MONTO_PALABRAS}}</code>, <code>{{LOGO}}</code>.</p>
+            <p class="small text-muted mb-2">Marcadores: <code>{{EMPRESA}}</code>, <code>{{RUT}}</code>, <code>{{DIRECCION}}</code>, <code>{{INTRO}}</code>, <code>{{NUMERO_EP}}</code>, <code>{{FECHA}}</code>, <code>{{ATENCION}}</code>, <code>{{PROYECTO}}</code>, <code>{{SERVICIO}}</code>, <code>{{TOTAL_SERVICIO_UF}}</code>, <code>{{MANDANTE}}</code>, <code>{{MANDANTE_RUT}}</code>, <code>{{MANDANTE_GIRO}}</code>, <code>{{MANDANTE_DIRECCION}}</code>, <code>{{MANDANTE_COMUNA}}</code>, <code>{{MANDANTE_CIUDAD}}</code>, <code>{{MANDANTE_EMAIL}}</code>, <code>{{TABLA_EP}}</code>, <code>{{NOTAS}}</code>, <code>{{SUBTOTAL}}</code>, <code>{{IVA}}</code>, <code>{{TOTAL}}</code>, <code>{{MONTO_PALABRAS}}</code>, <code>{{LOGO}}</code>. Los datos del mandante salen de Clientes.</p>
             <div id="plantillaEstadoPagoEditor" class="prop-template-editor" contenteditable="true"></div>
         </div>
         <div class="modal-footer border-0">
@@ -7130,15 +7156,21 @@
     function abrirClienteModal(id = null) {
         document.getElementById('cliId').value = id || '';
         document.getElementById('tituloModalCliente').innerText = id ? 'Editar Cliente' : 'Nuevo Cliente';
-        document.getElementById('cliRazon').value = '';
-        document.getElementById('cliRut').value = '';
-        document.getElementById('cliComent').value = '';
+        ['cliRazon', 'cliRut', 'cliGiro', 'cliDireccion', 'cliComuna', 'cliCiudad', 'cliEmail', 'cliComent'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
         const msg = document.getElementById('cliMsg');
         if (msg) { msg.textContent = ''; msg.classList.add('d-none'); }
         if (id) {
             apiFetch(`/api/clientes/${id}`).then(r => r.json()).then(c => {
                 document.getElementById('cliRazon').value = c.razon_social || '';
                 document.getElementById('cliRut').value = c.rut || '';
+                document.getElementById('cliGiro').value = c.giro || '';
+                document.getElementById('cliDireccion').value = c.direccion || '';
+                document.getElementById('cliComuna').value = c.comuna || '';
+                document.getElementById('cliCiudad').value = c.ciudad || '';
+                document.getElementById('cliEmail').value = c.email || '';
                 document.getElementById('cliComent').value = c.comentarios || '';
             });
         }
@@ -7165,6 +7197,11 @@
         const payload = {
             razon_social: razon,
             rut,
+            giro: document.getElementById('cliGiro').value.trim(),
+            direccion: document.getElementById('cliDireccion').value.trim(),
+            comuna: document.getElementById('cliComuna').value.trim(),
+            ciudad: document.getElementById('cliCiudad').value.trim(),
+            email: document.getElementById('cliEmail').value.trim(),
             comentarios: document.getElementById('cliComent').value.trim(),
         };
         const res = await apiFetch(id ? `/api/clientes/${id}` : '/api/clientes', {
@@ -11873,10 +11910,69 @@
     const INTRO_EP_DEFAULT =
         'Por medio de la presente enviamos el Estado de Pago correspondiente a los servicios indicados a continuación:';
 
+    function datosFacturacionMandanteEp() {
+        const p = _epProyectoCtx || {};
+        const id = Number(p.cliente_id);
+        const c = (_clientesCache || []).find(x => Number(x.id) === id) || {};
+        const txt = (v) => (v || '').trim() || '—';
+        return {
+            mandante: txt(c.razon_social || p.cliente || document.getElementById('epCliente')?.value),
+            rut: txt(c.rut),
+            giro: txt(c.giro),
+            direccion: txt(c.direccion),
+            comuna: txt(c.comuna),
+            ciudad: txt(c.ciudad),
+            email: txt(c.email),
+        };
+    }
+
+    function pintarResumenFacturacionEp() {
+        const el = document.getElementById('epFacturacionResumen');
+        if (!el) return;
+        const d = datosFacturacionMandanteEp();
+        const lineas = [d.mandante, d.rut, d.giro, d.direccion, [d.comuna, d.ciudad].filter(v => v && v !== '—').join(', '), d.email]
+            .filter(v => v && v !== '—');
+        el.textContent = lineas.length ? lineas.join('\n') : 'Sin datos de facturación en Clientes';
+    }
+
+    function htmlBloqueFacturacionMandante() {
+        return `<div class="ep-doc-facturacion">
+  <p class="ep-fact-titulo"><strong>Datos de facturación del mandante</strong></p>
+  <table class="ep-doc-fact-grid" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td class="ep-meta-left" valign="top" width="50%">
+        <p class="ep-meta-line"><strong>Razón social</strong><br><span data-prop="mandante"></span></p>
+        <p class="ep-meta-line"><strong>Giro</strong><br><span data-prop="mandante_giro"></span></p>
+        <p class="ep-meta-line"><strong>Dirección</strong><br><span data-prop="mandante_direccion"></span></p>
+      </td>
+      <td class="ep-meta-right" valign="top" width="50%">
+        <p class="ep-meta-line"><strong>RUT</strong><br><span data-prop="mandante_rut"></span></p>
+        <p class="ep-meta-line"><strong>Comuna</strong><br><span data-prop="mandante_comuna"></span></p>
+        <p class="ep-meta-line"><strong>Ciudad</strong><br><span data-prop="mandante_ciudad"></span></p>
+        <p class="ep-meta-line"><strong>Correo</strong><br><span data-prop="mandante_email"></span></p>
+      </td>
+    </tr>
+  </table>
+</div>`;
+    }
+
+    function asegurarBloqueFacturacionEp(editor) {
+        if (!editor || editor.querySelector('[data-prop="mandante"]')) return;
+        const ancla = editor.querySelector('#ep-bloque-tabla');
+        const wrap = document.createElement('div');
+        wrap.innerHTML = htmlBloqueFacturacionMandante();
+        const bloque = wrap.firstElementChild;
+        if (!bloque) return;
+        if (ancla && ancla.parentNode) ancla.parentNode.insertBefore(bloque, ancla);
+        else editor.appendChild(bloque);
+    }
+
     function varsTemplateEstadoPago() {
         const emp = (_empresasCache || []).find(e => e.id === _empresaActivaId) || {};
         const tot = totalesEpDocumento();
         const fecha = document.getElementById('epFechaPago').value || document.getElementById('epFecha').value;
+        const mandante = datosFacturacionMandanteEp();
+        pintarResumenFacturacionEp();
         return {
             '{{EMPRESA}}': emp.nombre || 'B-green Chile Limitada',
             '{{RUT}}': emp.rut || '',
@@ -11888,6 +11984,13 @@
             '{{PROYECTO}}': document.getElementById('epProyectoNombre').value || '',
             '{{SERVICIO}}': document.getElementById('epServicio').value || '',
             '{{TOTAL_SERVICIO_UF}}': fmtUfEp(totalServicioUfProyecto()),
+            '{{MANDANTE}}': mandante.mandante,
+            '{{MANDANTE_RUT}}': mandante.rut,
+            '{{MANDANTE_GIRO}}': mandante.giro,
+            '{{MANDANTE_DIRECCION}}': mandante.direccion,
+            '{{MANDANTE_COMUNA}}': mandante.comuna,
+            '{{MANDANTE_CIUDAD}}': mandante.ciudad,
+            '{{MANDANTE_EMAIL}}': mandante.email,
             '{{TABLA_EP}}': construirTablaEpHtml(),
             '{{NOTAS}}': document.getElementById('epNotas').value || '',
             '{{SUBTOTAL}}': fmtPesosEp(tot.subtotal),
@@ -11914,6 +12017,7 @@
     async function sincronizarDatosEnTemplateEp() {
         const editor = document.getElementById('epTemplate');
         if (!editor) return;
+        asegurarBloqueFacturacionEp(editor);
         const vars = varsTemplateEstadoPago();
         const map = {
             empresa_nombre: vars['{{EMPRESA}}'],
@@ -11926,6 +12030,13 @@
             proyecto: vars['{{PROYECTO}}'],
             servicio: vars['{{SERVICIO}}'],
             total_servicio_uf: `${vars['{{TOTAL_SERVICIO_UF}}']} UF`,
+            mandante: vars['{{MANDANTE}}'],
+            mandante_rut: vars['{{MANDANTE_RUT}}'],
+            mandante_giro: vars['{{MANDANTE_GIRO}}'],
+            mandante_direccion: vars['{{MANDANTE_DIRECCION}}'],
+            mandante_comuna: vars['{{MANDANTE_COMUNA}}'],
+            mandante_ciudad: vars['{{MANDANTE_CIUDAD}}'],
+            mandante_email: vars['{{MANDANTE_EMAIL}}'],
             notas: vars['{{NOTAS}}'],
             subtotal: vars['{{SUBTOTAL}}'],
             iva: vars['{{IVA}}'],
@@ -12018,8 +12129,7 @@
         }
         asignarHtmlEditor(editor, rellenarTemplateEstadoPago(_epTemplateBase));
         editor.dataset.editado = '0';
-        await sincronizarLogoEpTemplate();
-        editor.querySelectorAll('[data-prop]').forEach(el => el.classList.add('prop-campo-auto'));
+        await sincronizarDatosEnTemplateEp();
         poblarFontSizeSelect(document.getElementById('epFontSizeSelect'));
     }
 
@@ -12252,6 +12362,7 @@
         const editor = document.getElementById('epTemplate');
         if (editor) { editor.innerHTML = ''; editor.dataset.editado = '0'; }
 
+        try { await listarClientes(); } catch (_) { /* el documento usa la caché si la carga falla */ }
         const p = (_proyItems || []).find(x => x.id === Number(proyectoId)) || {};
         _epProyectoCtx = p;
         document.getElementById('epProyectoNombre').value = p.nombre || '';

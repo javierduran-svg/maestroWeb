@@ -983,6 +983,19 @@ h1.ep-doc-titulo { font-size: 13pt; }
 table.ep-doc-meta-grid { width: 100%; border-collapse: collapse; margin: 0 0 10px 0; font-size: 9pt; }
 table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: top; }
 .ep-meta-line { margin: 0 0 6px 0; font-size: 9pt; line-height: 1.35; }
+.ep-doc-facturacion {
+  margin: 2px 0 12px 0;
+  padding: 6px 8px 2px 8px;
+  border: 1px solid #d7e3e1;
+}
+.ep-fact-titulo {
+  margin: 0 0 6px 0;
+  font-size: 8.5pt;
+  color: #008080;
+  letter-spacing: 0.02em;
+}
+table.ep-doc-fact-grid { width: 100%; border-collapse: collapse; margin: 0; font-size: 9pt; }
+table.ep-doc-fact-grid td { border: none; padding: 0 8px 0 0; vertical-align: top; }
 table.ep-tabla {
   width: 100%;
   border-collapse: collapse;
@@ -1078,6 +1091,7 @@ PROP_PDF_CSS = """
 """ + PROP_DOC_CSS + """
 /* EP PDF: anchos absolutos del rewrite ganan sobre width:100% del preview. */
 table.ep-doc-meta-grid { width: auto; }
+table.ep-doc-fact-grid { width: auto; }
 table.ep-doc-totales { width: auto; }
 table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
 """

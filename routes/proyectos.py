@@ -152,9 +152,10 @@ def manejar_cliente(cliente_id):
     campos, error = _validar_datos_cliente(request.json or {}, eid, cliente_id=cliente_id)
     if error:
         return jsonify({'error': error}), 400
-    cliente.razon_social = campos['razon_social']
-    cliente.rut = campos['rut']
-    cliente.comentarios = campos['comentarios']
+    for campo in (
+        'razon_social', 'rut', 'giro', 'direccion', 'comuna', 'ciudad', 'email', 'comentarios',
+    ):
+        setattr(cliente, campo, campos[campo])
     try:
         db.session.commit()
     except IntegrityError:

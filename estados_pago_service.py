@@ -43,6 +43,25 @@ TEMPLATE_ESTADO_PAGO = r"""<div class="prop-doc ep-doc">
   </tr>
 </table>
 
+<div class="ep-doc-facturacion">
+  <p class="ep-fact-titulo"><strong>Datos de facturación del mandante</strong></p>
+  <table class="ep-doc-fact-grid" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td class="ep-meta-left" valign="top" width="50%">
+        <p class="ep-meta-line"><strong>Razón social</strong><br><span data-prop="mandante">{{MANDANTE}}</span></p>
+        <p class="ep-meta-line"><strong>Giro</strong><br><span data-prop="mandante_giro">{{MANDANTE_GIRO}}</span></p>
+        <p class="ep-meta-line"><strong>Dirección</strong><br><span data-prop="mandante_direccion">{{MANDANTE_DIRECCION}}</span></p>
+      </td>
+      <td class="ep-meta-right" valign="top" width="50%">
+        <p class="ep-meta-line"><strong>RUT</strong><br><span data-prop="mandante_rut">{{MANDANTE_RUT}}</span></p>
+        <p class="ep-meta-line"><strong>Comuna</strong><br><span data-prop="mandante_comuna">{{MANDANTE_COMUNA}}</span></p>
+        <p class="ep-meta-line"><strong>Ciudad</strong><br><span data-prop="mandante_ciudad">{{MANDANTE_CIUDAD}}</span></p>
+        <p class="ep-meta-line"><strong>Correo</strong><br><span data-prop="mandante_email">{{MANDANTE_EMAIL}}</span></p>
+      </td>
+    </tr>
+  </table>
+</div>
+
 <div id="ep-bloque-tabla">{{TABLA_EP}}</div>
 
 <table class="ep-doc-totales" cellpadding="0" cellspacing="0" width="100%">
@@ -609,6 +628,27 @@ def _preparar_html_ep_para_pdf(html: str) -> str:
         r'<td[^>]*>([\s\S]*?)</td>\s*'
         r'</tr>\s*</table>',
         _rew_meta,
+        out,
+        count=1,
+        flags=re.I,
+    )
+
+    def _rew_fact(match: re.Match) -> str:
+        return (
+            f'<table class="ep-doc-fact-grid" border="0" cellpadding="2" cellspacing="0" '
+            f'width="{w}">'
+            '<tr>'
+            f'<td class="ep-meta-left" width="{half}" valign="top">{match.group(1)}</td>'
+            f'<td class="ep-meta-right" width="{w - half}" valign="top">{match.group(2)}</td>'
+            '</tr></table>'
+        )
+
+    out = re.sub(
+        r'<table[^>]*class="[^"]*\bep-doc-fact-grid\b[^"]*"[^>]*>\s*<tr>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'<td[^>]*>([\s\S]*?)</td>\s*'
+        r'</tr>\s*</table>',
+        _rew_fact,
         out,
         count=1,
         flags=re.I,

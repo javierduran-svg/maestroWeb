@@ -697,13 +697,26 @@ def importar_desde_excel(
             while rut in ruts_usados:
                 rut = f'{rut[:14]}-{excel_id}'[:20]
             ruts_usados.add(rut)
-            partes = [str(row.get(c, '')).strip() for c in ('GiroReceptor', 'Direccion', 'Ciudad') if pd.notna(row.get(c))]
-            comentarios = ' | '.join(p for p in partes if p and p.lower() != 'nan') or None
+
+            def _celda(*nombres, largo=255):
+                for nombre in nombres:
+                    if nombre not in row or pd.isna(row.get(nombre)):
+                        continue
+                    valor = str(row.get(nombre)).strip()
+                    if valor and valor.lower() != 'nan':
+                        return valor[:largo]
+                return None
+
             cliente = Cliente(
                 empresa_id=eid,
                 razon_social=razon[:150],
                 rut=rut[:20],
-                comentarios=comentarios,
+                giro=_celda('GiroReceptor', 'Giro', largo=150),
+                direccion=_celda('Direccion', 'Dirección', 'DireccionReceptor'),
+                comuna=_celda('Comuna', 'ComunaReceptor', largo=80),
+                ciudad=_celda('Ciudad', 'CiudadReceptor', largo=80),
+                email=_celda('Email', 'Correo', 'EmailReceptor', largo=120),
+                comentarios=_celda('Comentarios', 'Observaciones', largo=2000),
             )
             db.session.add(cliente)
             stats['clientes'] += 1

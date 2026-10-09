@@ -27,6 +27,11 @@ class Cliente(db.Model):
     empresa_id = db.Column(db.Integer, db.ForeignKey('empresas.id'), nullable=False)
     razon_social = db.Column(db.String(150), nullable=False)
     rut = db.Column(db.String(20), nullable=False)
+    giro = db.Column(db.String(150), nullable=True)
+    direccion = db.Column(db.String(255), nullable=True)
+    comuna = db.Column(db.String(80), nullable=True)
+    ciudad = db.Column(db.String(80), nullable=True)
+    email = db.Column(db.String(120), nullable=True)
     comentarios = db.Column(db.Text, nullable=True)
     proyectos = db.relationship('Proyecto', backref='cliente_rel', lazy=True)
 
