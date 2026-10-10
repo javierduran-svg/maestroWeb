@@ -1584,6 +1584,7 @@ def _liquidacion_a_dict(liq: Liquidacion) -> dict:
     if sueldo_uf is None and t:
         sueldo_uf, _ = _sueldo_base_clp_trabajador(t, liq.uf_valor or _uf_hoy()['valor'])
     impuesto_unico, total_previred = _impuesto_y_previred(detalle)
+    costo_rrhh = float(liq.alcance_liquido or 0) + impuesto_unico + total_previred
     return {
         'id': liq.id,
         'trabajador_id': liq.trabajador_id,
@@ -1600,6 +1601,7 @@ def _liquidacion_a_dict(liq: Liquidacion) -> dict:
         'total_descuentos': liq.total_descuentos,
         'impuesto_unico': impuesto_unico,
         'total_previred': total_previred,
+        'costo_rrhh': costo_rrhh,
         'alcance_liquido': liq.alcance_liquido,
         'total_aportes_empleador': float(
             (detalle.get('aportes_empleador') or {}).get('total')

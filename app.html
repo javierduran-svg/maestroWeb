@@ -2856,6 +2856,7 @@
                             <th class="text-end" title="Cotizaciones del trabajador y del empleador que se pagan en Previred. No incluye el impuesto único.">Previred</th>
                             <th class="text-end">Aportes empleador</th>
                             <th class="text-end">Líquido a Pagar</th>
+                            <th class="text-end" title="Líquido a pagar + impuesto único + Previred">Costo RRHH</th>
                             <th>Estado</th>
                             <th class="text-end" style="width:48px"></th>
                         </tr></thead>
@@ -2868,6 +2869,12 @@
                                 <td class="text-end" id="liqTotalPrevired"></td>
                                 <td class="text-end" id="liqTotalAportes"></td>
                                 <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
+                                <td class="text-end" id="liqTotalCosto"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td colspan="8" class="text-end">Costo mensual RRHH</td>
+                                <td class="text-end saldo-positivo" id="liqGranTotal" title="Líquido a pagar + impuesto único + Previred"></td>
                                 <td colspan="2"></td>
                             </tr>
                         </tfoot>
@@ -14734,6 +14741,7 @@
             <th class="text-end" title="Cotizaciones del trabajador y del empleador que se pagan en Previred. No incluye el impuesto único.">Previred</th>
             <th class="text-end">Aportes empleador</th>
             <th class="text-end">Líquido a Pagar</th>
+            <th class="text-end" title="Líquido a pagar + impuesto único + Previred">Costo RRHH</th>
             <th>Estado</th>
             <th class="text-end" style="width:48px"></th>
         </tr>`;
@@ -14749,6 +14757,12 @@
             <td class="text-end" id="liqTotalPrevired"></td>
             <td class="text-end" id="liqTotalAportes"></td>
             <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
+            <td class="text-end" id="liqTotalCosto"></td>
+            <td colspan="2"></td>
+        </tr>
+        <tr class="fw-bold">
+            <td colspan="8" class="text-end">Costo mensual RRHH</td>
+            <td class="text-end saldo-positivo" id="liqGranTotal" title="Líquido a pagar + impuesto único + Previred"></td>
             <td colspan="2"></td>
         </tr>`;
         return tfoot;
@@ -14850,7 +14864,7 @@
         const tbody = document.getElementById('tabla-liquidaciones');
         const tfoot = pieLiquidaciones();
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
             tfoot.classList.add('d-none');
             return;
         }
@@ -14863,6 +14877,7 @@
             <td class="text-end">${fmt(l.total_previred || 0)}</td>
             <td class="text-end">${fmt(l.total_aportes_empleador || 0)}</td>
             <td class="text-end fw-bold saldo-positivo">${fmt(l.alcance_liquido)}</td>
+            <td class="text-end fw-bold">${fmt(l.costo_rrhh || ((l.alcance_liquido || 0) + (l.impuesto_unico || 0) + (l.total_previred || 0)))}</td>
             <td><span class="badge ${l.estado === 'Pagado' ? 'badge-activo' : 'bg-light text-dark border'}">${esc(l.estado)}</span></td>
             <td class="text-end">
                 <button class="btn btn-outline-secondary btn-accion" onclick="exportarPdfLiquidacion(${l.id})" title="Exportar PDF"><i class="fa-solid fa-file-pdf"></i></button>
@@ -14874,12 +14889,15 @@
             previred: items.reduce((s, l) => s + (l.total_previred || 0), 0),
             aportes_empleador: items.reduce((s, l) => s + (l.total_aportes_empleador || 0), 0),
             liquido: items.reduce((s, l) => s + (l.alcance_liquido || 0), 0),
+            costo_rrhh: items.reduce((s, l) => s + (l.costo_rrhh || ((l.alcance_liquido || 0) + (l.impuesto_unico || 0) + (l.total_previred || 0))), 0),
         };
         document.getElementById('liqTotalDesc').textContent = fmt(totales.descuentos || 0);
         document.getElementById('liqTotalImpuesto').textContent = fmt(totales.impuesto_unico || 0);
         document.getElementById('liqTotalPrevired').textContent = fmt(totales.previred || 0);
         document.getElementById('liqTotalAportes').textContent = fmt(totales.aportes_empleador || 0);
         document.getElementById('liqTotalLiq').textContent = fmt(totales.liquido || 0);
+        document.getElementById('liqTotalCosto').textContent = fmt(totales.costo_rrhh || 0);
+        document.getElementById('liqGranTotal').textContent = fmt(totales.costo_rrhh || 0);
         tfoot.classList.remove('d-none');
     }
 
