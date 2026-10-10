@@ -2818,6 +2818,7 @@
                         <button class="btn btn-teal btn-sm" onclick="generarPlanillaSueldos()">GENERAR PLANILLA DE SUELDOS</button>
                         <button class="btn btn-sm btn-outline-secondary" onclick="cargarLiquidaciones()">Consultar</button>
                         <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas()" title="Movimientos del año cuya cuenta destino es de remuneraciones">Remuneraciones pagadas</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas('resumen')" title="Total pagado por mes y trabajador">Resumen mensual</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnExportPdfPlanilla" onclick="exportarPdfPlanilla()" title="Exportar todas las liquidaciones del período"><i class="fa-solid fa-file-pdf me-1"></i>EXPORTAR PDF</button>
                         <button class="btn btn-sm btn-teal" id="btnExportPrevired" onclick="exportarPrevired()" title="Descargar archivo TXT para carga en Previred"><i class="fa-solid fa-file-export me-1"></i>EXPORTAR PLANILLA MENSUAL A PREVIRED</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnIngresarMovimientos" onclick="ingresarPlanillaMovimientos()" title="Registrar liquidaciones del período en movimientos contables"><i class="fa-solid fa-book me-1"></i>INGRESAR A MOVIMIENTOS</button>
@@ -14608,6 +14609,52 @@
         tfoot.classList.remove('d-none');
     }
 
+    function renderResumenMensualRemuneraciones(data) {
+        const items = data.resumen || [];
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const thead = document.querySelector('#tabla-liquidaciones-grid thead');
+        const tbody = document.getElementById('tabla-liquidaciones');
+        const tfoot = document.getElementById('tabla-liquidaciones-tfoot');
+        const cols = 2 + meses.length + 1;
+        if (thead) {
+            thead.innerHTML = `<tr>
+                <th>Persona</th>
+                <th>RUT</th>
+                ${meses.map(m => `<th class="text-end">${m}</th>`).join('')}
+                <th class="text-end">Total</th>
+            </tr>`;
+        }
+        const celdaMes = monto => {
+            const n = Number(monto) || 0;
+            return n
+                ? `<td class="text-end text-nowrap">${fmt(n)}</td>`
+                : '<td class="text-end text-muted">—</td>';
+        };
+        if (!items.length) {
+            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted py-4">Sin remuneraciones pagadas para este año</td></tr>`;
+            tfoot.classList.add('d-none');
+            return;
+        }
+        tbody.innerHTML = items.map(r => `<tr>
+            <td class="fw-medium text-nowrap">${esc(r.nombre || '—')}</td>
+            <td class="text-nowrap">${esc(r.rut || '—')}</td>
+            ${(r.meses || []).map(celdaMes).join('')}
+            <td class="text-end fw-bold text-nowrap saldo-positivo" title="${r.pagos || 0} pago(s)">${fmt(r.total || 0)}</td>
+        </tr>`).join('');
+        const totalesMes = (data.totales && data.totales.meses) || meses.map((_, i) =>
+            items.reduce((s, r) => s + (Number((r.meses || [])[i]) || 0), 0)
+        );
+        const total = (data.totales && data.totales.monto != null)
+            ? data.totales.monto
+            : items.reduce((s, r) => s + (Number(r.total) || 0), 0);
+        tfoot.innerHTML = `<tr class="table-light fw-bold">
+            <td colspan="2" class="text-end">Total</td>
+            ${totalesMes.map(celdaMes).join('')}
+            <td class="text-end text-nowrap saldo-positivo">${fmt(total)}</td>
+        </tr>`;
+        tfoot.classList.remove('d-none');
+    }
+
     function renderLiquidaciones(data) {
         if (data.consulta === 'pagadas') {
             renderRemuneracionesPagadas(data);
@@ -14660,11 +14707,14 @@
         renderLiquidaciones(data);
     }
 
-    async function consultarRemuneracionesPagadas() {
+    async function consultarRemuneracionesPagadas(modo) {
         const anio = document.getElementById('liqAnio').value;
         const msg = document.getElementById('liqMsg');
+        const resumen = modo === 'resumen';
         msg.className = 'small mt-2 text-muted';
-        msg.textContent = 'Consultando remuneraciones pagadas…';
+        msg.textContent = resumen
+            ? 'Consultando resumen mensual…'
+            : 'Consultando remuneraciones pagadas…';
         const res = await apiFetch(`/api/personal/remuneraciones-pagadas?anio=${encodeURIComponent(anio)}`);
         const data = await res.json();
         if (!res.ok) {
@@ -14672,8 +14722,16 @@
             msg.textContent = data.error || 'Error al consultar remuneraciones pagadas';
             return;
         }
-        const n = (data.pagos || []).length;
         msg.className = 'small mt-2 text-teal';
+        if (resumen) {
+            const n = (data.resumen || []).length;
+            msg.textContent = n
+                ? `Resumen mensual ${anio} · ${n} trabajador${n === 1 ? '' : 'es'}`
+                : `No hay remuneraciones pagadas en ${anio}`;
+            renderResumenMensualRemuneraciones(data);
+            return;
+        }
+        const n = (data.pagos || []).length;
         msg.textContent = n
             ? `${n} remuneración${n === 1 ? '' : 'es'} pagada${n === 1 ? '' : 's'} en ${anio}`
             : `No hay remuneraciones pagadas en ${anio}`;

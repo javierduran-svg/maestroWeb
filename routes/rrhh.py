@@ -394,6 +394,42 @@ def _ids_cuentas_remuneracion(empresa_id: int) -> list[int]:
     return [c.id for c in cuentas if _es_cuenta_remuneracion(c.nombre)]
 
 
+def _resumen_mensual_por_trabajador(pagos: list[dict]) -> list[dict]:
+    """Agrupa pagos del año por trabajador (o por cuenta si no hay persona)."""
+    grupos: dict[tuple, dict] = {}
+    for p in pagos:
+        if p.get('trabajador_id'):
+            clave = ('t', p['trabajador_id'])
+        else:
+            clave = ('c', p.get('cuenta_destino') or p.get('nombre') or '')
+        grupo = grupos.get(clave)
+        if grupo is None:
+            grupo = {
+                'nombre': p.get('nombre') or p.get('cuenta_destino') or 'Sin asignar',
+                'rut': p.get('rut') or '',
+                'cuenta_destino': p.get('cuenta_destino') or '',
+                'meses': [0.0] * 12,
+                'total': 0.0,
+                'pagos': 0,
+            }
+            grupos[clave] = grupo
+        monto = float(p.get('monto') or 0)
+        fecha = p.get('fecha') or ''
+        mes = 0
+        if len(fecha) >= 7:
+            try:
+                mes = int(fecha[5:7])
+            except ValueError:
+                mes = 0
+        if 1 <= mes <= 12:
+            grupo['meses'][mes - 1] += monto
+        grupo['total'] += monto
+        grupo['pagos'] += 1
+    filas = list(grupos.values())
+    filas.sort(key=lambda r: (r['nombre'] or '').lower())
+    return filas
+
+
 def _pago_remuneracion_a_dict(mov: Movimiento, por_cuenta: dict) -> dict:
     trabajadores = por_cuenta.get(mov.cta_destino_id) or []
     return {
@@ -430,7 +466,8 @@ def obtener_remuneraciones_pagadas():
                 'anio': anio,
                 'mes': mes,
                 'pagos': [],
-                'totales': {'monto': 0},
+                'resumen': [],
+                'totales': {'monto': 0, 'meses': [0.0] * 12},
             })
 
         consulta = Movimiento.query.filter(
@@ -464,12 +501,21 @@ def obtener_remuneraciones_pagadas():
                 t.nombres or '',
             ))
         payload = [_pago_remuneracion_a_dict(m, por_cuenta) for m in movimientos]
+        resumen = _resumen_mensual_por_trabajador(payload)
+        totales_meses = [0.0] * 12
+        for fila in resumen:
+            for i, monto in enumerate(fila['meses']):
+                totales_meses[i] += monto
         return jsonify({
             'consulta': 'pagadas',
             'anio': anio,
             'mes': mes,
             'pagos': payload,
-            'totales': {'monto': sum(d['monto'] for d in payload)},
+            'resumen': resumen,
+            'totales': {
+                'monto': sum(d['monto'] for d in payload),
+                'meses': totales_meses,
+            },
         })
     except Exception as e:
         db.session.rollback()
