@@ -241,6 +241,16 @@ def _parse_fecha(valor):
     return datetime.strptime(valor, '%Y-%m-%d').date()
 
 
+def _parse_bool_flag(valor, default: bool) -> bool:
+    if valor is None or valor == '':
+        return default
+    if isinstance(valor, bool):
+        return valor
+    if isinstance(valor, (int, float)):
+        return bool(valor)
+    return str(valor).strip().lower() in ('1', 'true', 'si', 'sí', 'yes', 'on')
+
+
 def _parse_condicion_pago(valor):
     try:
         dias = int(valor) if valor is not None else 30
@@ -1419,6 +1429,9 @@ def _trabajador_a_dict(t: Trabajador, uf_clp: float | None = None) -> dict:
         'afp': t.afp,
         'sistema_salud': t.sistema_salud,
         'valor_plan_isapre_uf': t.valor_plan_isapre_uf,
+        'paga_gratificacion': _flag_trabajador(t, 'paga_gratificacion', True),
+        'afecto_cesantia': _flag_trabajador(t, 'afecto_cesantia', True),
+        'sis_cargo_trabajador': _flag_trabajador(t, 'sis_cargo_trabajador', False),
         'cuenta_gasto_id': t.cuenta_gasto_id,
         'cuenta_gasto': t.cuenta_gasto.nombre if t.cuenta_gasto else '',
         'email': t.email or '',
@@ -1480,7 +1493,7 @@ def _validar_datos_trabajador(data: dict, empresa_id: int, trabajador_id: int | 
         sueldo_base = float(sueldo_clp_raw)
         sueldo_base_uf = round(sueldo_base / uf_clp, 4) if uf_clp > 0 else 0.0
 
-    return {
+    campos = {
         'rut': rut,
         'apellido_paterno': data['apellido_paterno'][:100],
         'apellido_materno': (data.get('apellido_materno') or '')[:100] or None,
@@ -1499,7 +1512,14 @@ def _validar_datos_trabajador(data: dict, empresa_id: int, trabajador_id: int | 
         'valor_plan_isapre_uf': float(data.get('valor_plan_isapre_uf') or 0),
         'cuenta_gasto_id': cuenta.id,
         'email': email,
-    }, None
+    }
+    if 'paga_gratificacion' in data:
+        campos['paga_gratificacion'] = _parse_bool_flag(data.get('paga_gratificacion'), True)
+    if 'afecto_cesantia' in data:
+        campos['afecto_cesantia'] = _parse_bool_flag(data.get('afecto_cesantia'), True)
+    if 'sis_cargo_trabajador' in data:
+        campos['sis_cargo_trabajador'] = _parse_bool_flag(data.get('sis_cargo_trabajador'), False)
+    return campos, None
 
 
 def _aplicar_password_trabajador(trabajador: Trabajador, data: dict, es_nuevo: bool) -> str | None:
@@ -1736,8 +1756,10 @@ def _asegurar_aportes_empleador(
     if isinstance(aportes, dict) and 'total' in aportes:
         return det
     imponible = float(
-        total_imponible if total_imponible is not None
-        else det.get('total_imponible') or 0
+        det.get('base_imponible')
+        or (total_imponible if total_imponible is not None else None)
+        or det.get('total_imponible')
+        or 0
     )
     det['aportes_empleador'] = _calcular_aportes_empleador(imponible, mes, anio)
     return det
@@ -1799,115 +1821,48 @@ def _enriquecer_detalle_pdf(detalle: dict, trabajador: Trabajador | None, liq: L
     return det
 
 
+def _flag_trabajador(trabajador: Trabajador, nombre: str, default: bool) -> bool:
+    valor = getattr(trabajador, nombre, default)
+    if valor is None:
+        return default
+    return bool(valor)
+
+
 def _calcular_montos_liquidacion(
     trabajador: Trabajador,
     dias_trabajados: int,
     uf_clp: float,
     mes: int | None = None,
     anio: int | None = None,
+    uf_fecha: date | None = None,
 ) -> dict:
+    from remuneraciones import calcular_remuneracion
+
     hoy = date.today()
-    uf_fecha = hoy.strftime('%Y-%m-%d')
     mes_liq = mes or hoy.month
     anio_liq = anio or hoy.year
-    aportes_cero = _aportes_empleador_vacio()
-    vacio = {
-        'dias_trabajados': 0,
-        'sueldo_base_proporcional': 0.0,
-        'total_imponible': 0.0,
-        'total_haberes': 0.0,
-        'total_descuentos': 0.0,
-        'alcance_liquido': 0.0,
-        'uf_valor': uf_clp,
-        'sueldo_base_uf': 0.0,
-        'detalle': {
-            'uf_valor': uf_clp,
-            'uf_fecha': uf_fecha,
-            'sueldo_base_uf': 0.0,
-            'sueldo_base_clp': 0.0,
-            'dias_trabajados': 0,
-            'dias_mes_ref': DIAS_MES_REF,
-            'sueldo_proporcional_clp': 0.0,
-            'afp_pct': round(TASA_AFP * 100, 2),
-            'descuento_afp': 0.0,
-            'descuento_salud': 0.0,
-            'descuento_salud_cotizacion': 0.0,
-            'descuento_adicional_salud': 0.0,
-            'impuesto_unico': 0.0,
-            'fonasa_pct': int(TASA_FONASA * 100),
-            'haberes_imponibles': [],
-            'haberes_no_imponibles': [],
-            'total_no_imponible': 0.0,
-            'total_imponible': 0.0,
-            'total_haberes': 0.0,
-            'total_descuentos': 0.0,
-            'total_tributable': 0.0,
-            'alcance_liquido': 0.0,
-            'aportes_empleador': aportes_cero,
-            'unidad_negocio': os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ'),
-        },
-    }
-    if dias_trabajados <= 0:
-        return vacio
-
-    sueldo_uf, sueldo_clp = _sueldo_base_clp_trabajador(trabajador, uf_clp)
-    sueldo_prop = round(sueldo_clp * dias_trabajados / DIAS_MES_REF)
-    total_imponible = float(sueldo_prop)
-    total_no_imponible = 0.0
-    total_haberes = total_imponible + total_no_imponible
-
-    descuento_afp = round(total_imponible * TASA_AFP)
-    cotiz_salud, adicional_salud, descuento_salud = _desglose_salud_liquidacion(
-        trabajador, total_imponible, uf_clp,
+    sueldo_uf = float(trabajador.sueldo_base_uf or 0)
+    if sueldo_uf <= 0 and uf_clp:
+        sueldo_uf, _ = _sueldo_base_clp_trabajador(trabajador, uf_clp)
+    montos = calcular_remuneracion(
+        sueldo_base_uf=sueldo_uf,
+        dias_trabajados=dias_trabajados,
+        uf_clp=uf_clp,
+        afp=trabajador.afp or '',
+        sistema_salud=trabajador.sistema_salud or '',
+        valor_plan_isapre_uf=float(trabajador.valor_plan_isapre_uf or 0),
+        tipo_contrato=trabajador.tipo_contrato or 'Indefinido',
+        fecha_ingreso=trabajador.fecha_ingreso,
+        mes=mes_liq,
+        anio=anio_liq,
+        paga_gratificacion=_flag_trabajador(trabajador, 'paga_gratificacion', True),
+        afecto_cesantia=_flag_trabajador(trabajador, 'afecto_cesantia', True),
+        sis_cargo_trabajador=_flag_trabajador(trabajador, 'sis_cargo_trabajador', False),
+        uf_fecha=uf_fecha,
+        aportes_empleador_fn=_calcular_aportes_empleador,
     )
-    impuesto_unico = 0.0
-    total_descuentos = float(descuento_afp + descuento_salud + impuesto_unico)
-    liquido = total_haberes - total_descuentos
-    total_tributable = round(total_imponible - descuento_afp - cotiz_salud)
-    aportes = _calcular_aportes_empleador(total_imponible, mes_liq, anio_liq)
-
-    detalle = {
-        'uf_valor': uf_clp,
-        'uf_fecha': uf_fecha,
-        'sueldo_base_uf': sueldo_uf,
-        'sueldo_base_clp': sueldo_clp,
-        'dias_trabajados': dias_trabajados,
-        'dias_mes_ref': DIAS_MES_REF,
-        'sueldo_proporcional_clp': float(sueldo_prop),
-        'afp_pct': round(TASA_AFP * 100, 2),
-        'descuento_afp': float(descuento_afp),
-        'descuento_salud': float(descuento_salud),
-        'descuento_salud_cotizacion': cotiz_salud,
-        'descuento_adicional_salud': adicional_salud,
-        'impuesto_unico': impuesto_unico,
-        'valor_plan_uf': float(trabajador.valor_plan_isapre_uf or 0),
-        'fonasa_pct': int(TASA_FONASA * 100),
-        'haberes_imponibles': [{
-            'concepto': f'SUELDO BASE {dias_trabajados} DIAS',
-            'monto': float(sueldo_prop),
-        }],
-        'haberes_no_imponibles': [],
-        'total_no_imponible': total_no_imponible,
-        'total_imponible': total_imponible,
-        'total_haberes': total_haberes,
-        'total_descuentos': total_descuentos,
-        'total_tributable': total_tributable,
-        'alcance_liquido': liquido,
-        'aportes_empleador': aportes,
-        'unidad_negocio': os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ'),
-    }
-
-    return {
-        'dias_trabajados': dias_trabajados,
-        'sueldo_base_proporcional': float(sueldo_prop),
-        'total_imponible': total_imponible,
-        'total_haberes': total_haberes,
-        'total_descuentos': total_descuentos,
-        'alcance_liquido': liquido,
-        'uf_valor': uf_clp,
-        'sueldo_base_uf': sueldo_uf,
-        'detalle': detalle,
-    }
+    montos['detalle']['unidad_negocio'] = os.environ.get('EMPRESA_UNIDAD_NEGOCIO', 'CASA MATRIZ')
+    return montos
 
 
 def _recalcular_proyectos(empresa_id: int, *proyecto_ids):

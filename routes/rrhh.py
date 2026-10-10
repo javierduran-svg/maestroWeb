@@ -298,14 +298,22 @@ def generar_liquidaciones():
         if not trabajadores:
             return jsonify({'error': 'No hay trabajadores registrados'}), 400
 
-        fecha_uf = date.today()
+        from remuneraciones import utm_periodo
+
+        fecha_uf = _fecha_uf_planilla(mes, anio)
         uf_clp, fecha_uf_usada, _ = _obtener_uf_para_fecha(fecha_uf, auto_fetch=True)
-        if uf_clp is None:
+        if uf_clp is None or fecha_uf_usada != fecha_uf:
             return jsonify({
                 'error': (
-                    f'No hay valor UF para hoy ({fecha_uf.strftime("%d/%m/%Y")}). '
+                    f'No hay valor UF del {fecha_uf.strftime("%d/%m/%Y")} '
+                    '(último día del mes liquidado). '
                     'Regístrelo con POST /api/uf o verifique conexión a mindicador.cl / sii.cl.'
                 ),
+            }), 400
+        utm_clp = utm_periodo(mes, anio)
+        if not utm_clp:
+            return jsonify({
+                'error': f'No hay UTM tabulada para {mes:02d}/{anio}.',
             }), 400
 
         generadas = []
@@ -314,7 +322,9 @@ def generar_liquidaciones():
             if dias <= 0:
                 continue
 
-            montos = _calcular_montos_liquidacion(t, dias, uf_clp, mes=mes, anio=anio)
+            montos = _calcular_montos_liquidacion(
+                t, dias, uf_clp, mes=mes, anio=anio, uf_fecha=fecha_uf,
+            )
             detalle_json = json.dumps(montos['detalle'], ensure_ascii=False)
             campos_extra = {
                 'detalle_calculo': detalle_json,

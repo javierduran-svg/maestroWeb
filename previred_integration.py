@@ -119,7 +119,12 @@ def _linea_trabajador(liq, mes: int, anio: int) -> str:
     rut_cuerpo, rut_dv = _split_rut(t.rut)
     periodo = _periodo_mmaaaa(mes, anio)
     dias = int(liq.dias_trabajados or det.get('dias_trabajados') or 0)
-    imponible = int(round(float(liq.total_imponible or det.get('total_imponible') or 0)))
+    imponible = int(round(float(
+        det.get('base_imponible')
+        or liq.total_imponible
+        or det.get('total_imponible')
+        or 0
+    )))
     cotiz_afp = int(round(float(det.get('descuento_afp') or imponible * 0.11)))
     cotiz_salud_7 = int(round(float(det.get('descuento_salud_cotizacion') or 0)))
     cotiz_adicional = int(round(float(det.get('descuento_adicional_salud') or 0)))
@@ -128,7 +133,9 @@ def _linea_trabajador(liq, mes: int, anio: int) -> str:
         from common import _calcular_aportes_empleador
         aportes = _calcular_aportes_empleador(imponible, mes, anio)
     cotiz_adicional_afp = int(round(float(aportes.get('cotizacion_adicional_afp') or 0)))
-    cotiz_sis = int(round(float(aportes.get('sis') or 0)))
+    cotiz_sis = int(round(float(
+        aportes.get('sis') or det.get('descuento_sis') or 0
+    )))
     cotiz_ev = int(round(float(aportes.get('expectativa_vida') or 0)))
     cotiz_crp = int(round(float(aportes.get('rentabilidad_protegida') or 0)))
     plan_uf = float(det.get('valor_plan_uf') or t.valor_plan_isapre_uf or 0)

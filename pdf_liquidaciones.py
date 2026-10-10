@@ -347,6 +347,15 @@ def _descuentos_desde_detalle(det: dict, t: dict) -> list[tuple[str, float]]:
         if salud:
             items.append((f'FONASA {fonasa_pct} %', salud))
 
+    cesantia = float(det.get('descuento_cesantia') or 0)
+    if cesantia:
+        pct = det.get('cesantia_pct', 0.6)
+        items.append((f'SEGURO CESANTIA {float(pct):.1f} %'.replace('.', ','), cesantia))
+
+    sis = float(det.get('descuento_sis') or 0)
+    if sis:
+        items.append(('SIS 1,78 %', sis))
+
     impuesto = float(det.get('impuesto_unico') or 0)
     if impuesto:
         items.append(('IMPUESTO UNICO', impuesto))
@@ -369,6 +378,7 @@ def _aportes_empleador_desde_detalle(det: dict) -> list[tuple[str, float]]:
         ('RENTABILIDAD PROTEGIDA', 'rentabilidad_protegida_pct', 'rentabilidad_protegida'),
         ('EXPECTATIVA DE VIDA', 'expectativa_vida_pct', 'expectativa_vida'),
         (sis_label, 'sis_pct', 'sis'),
+        ('SEGURO CESANTIA EMPLEADOR', 'cesantia_pct', 'cesantia'),
     )
     for nombre, pct_k, mon_k in filas:
         monto = float(ap.get(mon_k) or 0)

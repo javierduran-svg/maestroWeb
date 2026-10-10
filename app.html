@@ -3985,12 +3985,27 @@
                 <div class="col-md-4"><label class="form-label small fw-bold">Sueldo base ($ ref.)</label><input type="text" class="form-control bg-light" id="trabSueldoClp" readonly tabindex="-1"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">AFP</label><select class="form-select" id="trabAfp" required></select></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Sistema salud</label><select class="form-select" id="trabSalud" onchange="toggleIsapreTrabajador()" required></select></div>
-                <div class="col-md-4 d-none" id="wrapIsapreUf"><label class="form-label small fw-bold">Plan Isapre (UF)</label><input type="number" class="form-control" id="trabIsapreUf" min="0" step="0.01" value="0"></div>
+                <div class="col-md-4 d-none" id="wrapIsapreUf"><label class="form-label small fw-bold">Plan Isapre (UF)</label><input type="number" class="form-control" id="trabIsapreUf" min="0" step="0.00001" value="0"></div>
                 <div class="col-md-4 d-none" id="wrapIsapreNombre"><label class="form-label small fw-bold">Nombre Isapre</label><input type="text" class="form-control" id="trabNombreIsapre" placeholder="Banmédica, Consalud…"></div>
                 <div class="col-md-4 d-none" id="wrapIsaprePlan"><label class="form-label small fw-bold">Nombre plan</label><input type="text" class="form-control" id="trabNombrePlan" placeholder="Plan salud"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Banco</label><input type="text" class="form-control" id="trabBanco" placeholder="Santander, BCI…"></div>
                 <div class="col-md-4"><label class="form-label small fw-bold">Cuenta depósito sueldo</label><input type="text" class="form-control" id="trabCuentaBancaria" placeholder="N° cuenta"></div>
                 <div class="col-md-8"><label class="form-label small fw-bold">Cuenta de gasto (remuneración)</label><select class="form-select" id="trabCuenta" required></select></div>
+                <div class="col-12">
+                    <div class="form-text mb-1">Cálculo del libro de remuneraciones</div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="trabGratificacion" checked>
+                        <label class="form-check-label small" for="trabGratificacion">Gratificación legal (25 % con tope)</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="trabCesantia" checked>
+                        <label class="form-check-label small" for="trabCesantia">Afecto a seguro de cesantía</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="trabSisTrabajador">
+                        <label class="form-check-label small" for="trabSisTrabajador">SIS de cargo del trabajador (1,78 %)</label>
+                    </div>
+                </div>
             </div>
             <div id="trabMsg" class="small mt-2"></div>
         </div>
@@ -14509,6 +14524,9 @@
         document.getElementById('trabNombreIsapre').value = '';
         document.getElementById('trabNombrePlan').value = '';
         document.getElementById('trabIsapreUf').value = '0';
+        document.getElementById('trabGratificacion').checked = true;
+        document.getElementById('trabCesantia').checked = true;
+        document.getElementById('trabSisTrabajador').checked = false;
         document.getElementById('trabMsg').textContent = '';
         resetTrabFotoPreview(null);
         resetTrabFirmaPreview(null);
@@ -14545,6 +14563,9 @@
                 document.getElementById('trabAfp').value = trabajador.afp;
                 document.getElementById('trabSalud').value = trabajador.sistema_salud;
                 document.getElementById('trabIsapreUf').value = trabajador.valor_plan_isapre_uf || 0;
+                document.getElementById('trabGratificacion').checked = trabajador.paga_gratificacion !== false;
+                document.getElementById('trabCesantia').checked = trabajador.afecto_cesantia !== false;
+                document.getElementById('trabSisTrabajador').checked = !!trabajador.sis_cargo_trabajador;
                 document.getElementById('trabCuenta').value = trabajador.cuenta_gasto_id;
                 toggleIsapreTrabajador();
                 resetTrabFotoPreview(fotoUrlTrabajador(trabajador));
@@ -14599,6 +14620,9 @@
             afp: document.getElementById('trabAfp').value,
             sistema_salud: document.getElementById('trabSalud').value,
             valor_plan_isapre_uf: document.getElementById('trabIsapreUf').value || 0,
+            paga_gratificacion: document.getElementById('trabGratificacion').checked,
+            afecto_cesantia: document.getElementById('trabCesantia').checked,
+            sis_cargo_trabajador: document.getElementById('trabSisTrabajador').checked,
             cuenta_gasto_id: document.getElementById('trabCuenta').value,
             rol: document.getElementById('trabRol').value,
         };

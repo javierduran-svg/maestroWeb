@@ -28,7 +28,7 @@ from models import (
 UF_REFERENCIA_CLP = float(os.environ.get('UF_REFERENCIA_CLP', '38000'))
 NOMBRE_CUENTA_BANCO_PESOS = 'Cta Cte Santander F91345803 pesos'
 TIPOS_CONTRATO = ['Indefinido', 'Plazo Fijo']
-SISTEMAS_SALUD = ['Fonasa', 'Isapre']
+SISTEMAS_SALUD = ['Fonasa', 'Isapre', 'No cotiza']
 AFPS = ['Habitat', 'Capital', 'Cuprum', 'Modelo', 'PlanVital', 'ProVida', 'Uno']
 ESTADOS_PROPUESTA = ['No enviada', 'Enviada', 'Adjudicada', 'No Adjudicada']
 
@@ -524,6 +524,9 @@ def _migrar_schema_legacy() -> None:
     db.create_all()
     if inspect(db.engine).has_table('trabajadores'):
         cols_t = {c['name'] for c in inspect(db.engine).get_columns('trabajadores')}
+        dialecto = db.engine.dialect.name
+        bool_true = 'TRUE' if dialecto == 'postgresql' else '1'
+        bool_false = 'FALSE' if dialecto == 'postgresql' else '0'
         with db.engine.connect() as conn:
             for col, tipo in (
                 ('sueldo_base_uf', 'FLOAT DEFAULT 0'),
@@ -539,6 +542,9 @@ def _migrar_schema_legacy() -> None:
                 ('costo_hh_manual', 'FLOAT'),
                 ('foto_path', 'VARCHAR(255)'),
                 ('firma_path', 'VARCHAR(255)'),
+                ('paga_gratificacion', f'BOOLEAN DEFAULT {bool_true}'),
+                ('afecto_cesantia', f'BOOLEAN DEFAULT {bool_true}'),
+                ('sis_cargo_trabajador', f'BOOLEAN DEFAULT {bool_false}'),
             ):
                 if col not in cols_t:
                     conn.execute(text(f'ALTER TABLE trabajadores ADD COLUMN {col} {tipo}'))
