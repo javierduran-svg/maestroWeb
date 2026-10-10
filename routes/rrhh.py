@@ -1,8 +1,10 @@
 import json
+import unicodedata
 from datetime import date
 from io import BytesIO
 
 from flask import Blueprint, jsonify, request, send_file, abort
+from sqlalchemy import extract
 
 from bootstrap import (
     cuentas_remuneracion as _cuentas_remuneracion,
@@ -14,7 +16,7 @@ from bootstrap import (
 )
 from common import *
 from extensions import db
-from models import Cuenta, Liquidacion, Trabajador
+from models import Cuenta, Liquidacion, Movimiento, Trabajador
 from pdf_liquidaciones import generar_pdf_liquidacion, generar_pdf_planilla
 from previred_integration import PreviredFileGenerator
 
@@ -374,26 +376,42 @@ def generar_liquidaciones():
         return jsonify({'error': str(e)}), 500
 
 
-def _marcar_pagadas_con_movimiento(empresa_id: int, liquidaciones: list) -> list:
-    """Una liquidación está pagada si su estado lo dice o si ya tiene movimiento contable."""
-    pagadas = []
-    cambio = False
-    for liq in liquidaciones:
-        tiene_mov = _movimiento_liquidacion_duplicado(empresa_id, liq.id)
-        if liq.estado != 'Pagado' and not tiene_mov:
-            continue
-        if liq.estado != 'Pagado':
-            liq.estado = 'Pagado'
-            cambio = True
-        pagadas.append(liq)
-    if cambio:
-        db.session.commit()
-    return pagadas
+def _norm_nombre_cuenta(nombre: str) -> str:
+    s = unicodedata.normalize('NFKD', nombre or '')
+    return ''.join(c for c in s if not unicodedata.combining(c)).lower()
+
+
+def _es_cuenta_remuneracion(nombre: str) -> bool:
+    """Gasto de remuneraciones. Excluye el pasivo 'por pagar'."""
+    n = _norm_nombre_cuenta(nombre)
+    if 'por pagar' in n:
+        return False
+    return 'remuneracion' in n
+
+
+def _ids_cuentas_remuneracion(empresa_id: int) -> list[int]:
+    cuentas = Cuenta.query.filter_by(empresa_id=empresa_id).all()
+    return [c.id for c in cuentas if _es_cuenta_remuneracion(c.nombre)]
+
+
+def _pago_remuneracion_a_dict(mov: Movimiento, por_cuenta: dict) -> dict:
+    trabajadores = por_cuenta.get(mov.cta_destino_id) or []
+    return {
+        'id': mov.id,
+        'fecha': mov.fecha_movimiento.strftime('%Y-%m-%d') if mov.fecha_movimiento else None,
+        'monto': float(mov.monto_pesos or 0),
+        'descripcion': mov.descripcion or '',
+        'cuenta_destino': mov.cta_destino.nombre if mov.cta_destino else '',
+        'cuenta_origen': mov.cta_origen.nombre if mov.cta_origen else '',
+        'nombre': ', '.join(_nombre_completo_trabajador(t) for t in trabajadores),
+        'rut': ', '.join(t.rut for t in trabajadores if t.rut),
+        'trabajador_id': trabajadores[0].id if len(trabajadores) == 1 else None,
+    }
 
 
 @bp.route('/api/personal/remuneraciones-pagadas', methods=['GET'])
 def obtener_remuneraciones_pagadas():
-    """Histórico de liquidaciones ya pagadas, por año y opcionalmente por mes."""
+    """Pagos de remuneraciones: movimientos cuya cuenta destino es de remuneraciones."""
     try:
         eid, err = _requiere_empresa()
         if err:
@@ -405,30 +423,53 @@ def obtener_remuneraciones_pagadas():
         if mes is not None and not (1 <= mes <= 12):
             return jsonify({'error': 'mes debe estar entre 1 y 12'}), 400
 
-        consulta = Liquidacion.query.filter_by(empresa_id=eid)
+        ids = _ids_cuentas_remuneracion(eid)
+        if not ids:
+            return jsonify({
+                'consulta': 'pagadas',
+                'anio': anio,
+                'mes': mes,
+                'pagos': [],
+                'totales': {'monto': 0},
+            })
+
+        consulta = Movimiento.query.filter(
+            Movimiento.empresa_id == eid,
+            Movimiento.estado == 'Activo',
+            Movimiento.cta_destino_id.in_(ids),
+        )
         if anio is not None:
-            consulta = consulta.filter_by(anio=anio)
-        if mes is not None:
-            consulta = consulta.filter_by(mes=mes)
-        pagadas = _marcar_pagadas_con_movimiento(eid, consulta.all())
-        pagadas.sort(key=lambda l: (
-            -(l.anio or 0),
-            -(l.mes or 0),
-            l.trabajador_rel.apellido_paterno if l.trabajador_rel else '',
-            l.trabajador_rel.nombres if l.trabajador_rel else '',
-        ))
-        payload = [_liquidacion_a_dict(l) for l in pagadas]
+            inicio = date(anio, mes or 1, 1)
+            if mes is not None:
+                fin = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
+            else:
+                fin = date(anio + 1, 1, 1)
+            consulta = consulta.filter(
+                Movimiento.fecha_movimiento >= inicio,
+                Movimiento.fecha_movimiento < fin,
+            )
+        elif mes is not None:
+            consulta = consulta.filter(extract('month', Movimiento.fecha_movimiento) == mes)
+
+        movimientos = consulta.order_by(
+            Movimiento.fecha_movimiento.desc(),
+            Movimiento.id.desc(),
+        ).all()
+        por_cuenta: dict[int, list] = {}
+        for t in Trabajador.query.filter_by(empresa_id=eid).all():
+            por_cuenta.setdefault(t.cuenta_gasto_id, []).append(t)
+        for grupo in por_cuenta.values():
+            grupo.sort(key=lambda t: (
+                t.apellido_paterno or '',
+                t.nombres or '',
+            ))
+        payload = [_pago_remuneracion_a_dict(m, por_cuenta) for m in movimientos]
         return jsonify({
             'consulta': 'pagadas',
             'anio': anio,
             'mes': mes,
-            'liquidaciones': payload,
-            'totales': {
-                'haberes': sum(d['total_haberes'] for d in payload),
-                'descuentos': sum(d['total_descuentos'] for d in payload),
-                'liquido': sum(d['alcance_liquido'] for d in payload),
-                'aportes_empleador': sum(d.get('total_aportes_empleador') or 0 for d in payload),
-            },
+            'pagos': payload,
+            'totales': {'monto': sum(d['monto'] for d in payload)},
         })
     except Exception as e:
         db.session.rollback()
