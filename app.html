@@ -2574,7 +2574,10 @@
                         <h5 class="mb-0">Cuentas</h5>
                         <small class="text-muted" id="cuentasContador">Plan de cuentas y saldos</small>
                     </div>
-                    <button class="btn btn-sm btn-teal" onclick="abrirCuentaModal()">+ CUENTA</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnCuentasResumen" onclick="toggleResumenMensualCuentas()" title="Total imputado por mes y cuenta destino">Resumen mensual</button>
+                        <button class="btn btn-sm btn-teal" onclick="abrirCuentaModal()">+ CUENTA</button>
+                    </div>
                 </div>
                 <div class="row chart-box g-3">
                     <div class="col-lg-8">
@@ -2591,6 +2594,22 @@
                         <thead><tr><th>Nombre</th><th>Categoría</th><th>Moneda</th><th class="text-end">Saldo inicial</th><th class="text-end">Saldo</th><th class="text-end" style="width:72px"></th></tr></thead>
                         <tbody id="tabla-cuentas"></tbody>
                     </table>
+                </div>
+                <div id="cuentasResumenPanel" class="d-none border-top">
+                    <div class="panel-header flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">Resumen mensual</h5>
+                            <small class="text-muted" id="cuentasResumenMsg">Total imputado a cada cuenta destino, por mes.</small>
+                        </div>
+                        <select class="form-select form-select-sm ms-auto" id="cuentasResumenAnio" style="width:auto;min-width:88px" onchange="cargarResumenMensualCuentas()"></select>
+                    </div>
+                    <div class="table-responsive tabla-scroll-wrap">
+                        <table id="tabla-cuentas-resumen-grid" class="table table-hover table-panel table-compact mb-0">
+                            <thead id="tabla-cuentas-resumen-head"></thead>
+                            <tbody id="tabla-cuentas-resumen-body"></tbody>
+                            <tfoot id="tabla-cuentas-resumen-foot"></tfoot>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -13066,6 +13085,124 @@
         requestAnimationFrame(() => {
             const panel = document.getElementById('view-cuentas');
             if (panel) initTablasRedimensionablesEn(panel);
+        });
+        cargarResumenMensualCuentas();
+    }
+
+    function toggleResumenMensualCuentas() {
+        const panel = document.getElementById('cuentasResumenPanel');
+        const btn = document.getElementById('btnCuentasResumen');
+        if (!panel) return;
+        const mostrar = panel.classList.contains('d-none');
+        panel.classList.toggle('d-none', !mostrar);
+        if (btn) {
+            btn.classList.toggle('btn-teal', mostrar);
+            btn.classList.toggle('btn-outline-secondary', !mostrar);
+        }
+        if (mostrar) cargarResumenMensualCuentas();
+    }
+
+    function poblarAniosResumenCuentas(aniosExtra) {
+        const sel = document.getElementById('cuentasResumenAnio');
+        if (!sel) return;
+        const anioActual = new Date().getFullYear();
+        const anios = new Set([anioActual]);
+        (aniosExtra || []).forEach(y => {
+            const n = parseInt(y, 10);
+            if (n >= 2000 && n <= 2100) anios.add(n);
+        });
+        const prev = sel.value ? parseInt(sel.value, 10) : anioActual;
+        const lista = [...anios].sort((a, b) => b - a);
+        sel.innerHTML = lista.map(y => `<option value="${y}">${y}</option>`).join('');
+        sel.value = lista.includes(prev) ? String(prev) : String(lista[0]);
+    }
+
+    function renderResumenMensualCuentas(data) {
+        const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+        const catLabels = {
+            activo_cliente: 'Clientes',
+            activo_banco: 'Banco',
+            patrimonio_socio: 'Socio',
+            pasivo_factoring: 'Factoring',
+            gasto: 'Gasto',
+            ingreso: 'Ingreso',
+        };
+        const thead = document.getElementById('tabla-cuentas-resumen-head');
+        const tbody = document.getElementById('tabla-cuentas-resumen-body');
+        const tfoot = document.getElementById('tabla-cuentas-resumen-foot');
+        const msg = document.getElementById('cuentasResumenMsg');
+        const cols = 2 + meses.length + 1;
+        if (thead) {
+            thead.innerHTML = `<tr>
+                <th>Cuenta</th>
+                <th>Categoría</th>
+                ${meses.map(m => `<th class="text-end text-nowrap">${m}</th>`).join('')}
+                <th class="text-end">Total</th>
+            </tr>`;
+        }
+        const celdaMes = monto => {
+            const n = Number(monto) || 0;
+            return n
+                ? `<td class="text-end text-nowrap">${fmt(n)}</td>`
+                : '<td class="text-end text-muted">—</td>';
+        };
+        const items = data.cuentas || [];
+        if (!items.length) {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted py-4">Sin movimientos imputados en ${esc(String(data.anio || ''))}</td></tr>`;
+            if (tfoot) tfoot.innerHTML = '';
+            if (msg) msg.textContent = `No hay movimientos imputados en ${data.anio || ''}`;
+            return;
+        }
+        if (tbody) {
+            tbody.innerHTML = items.map(c => `<tr>
+                <td class="fw-medium text-nowrap">${esc(c.nombre || '—')}</td>
+                <td class="text-nowrap">${esc(catLabels[c.categoria] || c.categoria || '')}</td>
+                ${(c.meses || []).map(celdaMes).join('')}
+                <td class="text-end fw-bold text-nowrap saldo-positivo">${fmt(c.total || 0)}</td>
+            </tr>`).join('');
+        }
+        const totales = data.totales || [];
+        if (tfoot) {
+            tfoot.innerHTML = totales.map(t => `<tr class="table-light fw-bold">
+                <td colspan="2" class="text-end">Total ${esc(t.moneda || '')}</td>
+                ${(t.meses || []).map(celdaMes).join('')}
+                <td class="text-end text-nowrap saldo-positivo">${fmt(t.monto || 0)}</td>
+            </tr>`).join('');
+        }
+        if (msg) {
+            const n = items.length;
+            msg.textContent = `Resumen mensual ${data.anio} · ${n} cuenta${n === 1 ? '' : 's'}`;
+        }
+    }
+
+    async function cargarResumenMensualCuentas() {
+        const panel = document.getElementById('cuentasResumenPanel');
+        const sel = document.getElementById('cuentasResumenAnio');
+        const tbody = document.getElementById('tabla-cuentas-resumen-body');
+        if (!panel || panel.classList.contains('d-none') || !sel || !tbody) return;
+        if (!sel.options.length) poblarAniosResumenCuentas();
+        const anio = sel.value || new Date().getFullYear();
+        const msg = document.getElementById('cuentasResumenMsg');
+        if (msg) msg.textContent = 'Consultando resumen mensual…';
+        const res = await apiFetch(`/api/cuentas/resumen-mensual?anio=${encodeURIComponent(anio)}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            if (msg) msg.textContent = data.error || 'Error al consultar el resumen mensual';
+            tbody.innerHTML = `<tr><td colspan="15" class="text-center text-danger py-4">${esc(data.error || 'Error al consultar')}</td></tr>`;
+            return;
+        }
+        const elegido = sel.value;
+        poblarAniosResumenCuentas(data.anios);
+        if (sel.value !== elegido && elegido) sel.value = elegido;
+        renderResumenMensualCuentas(data);
+        const tabla = document.getElementById('tabla-cuentas-resumen-grid');
+        if (tabla) {
+            tabla.dataset.colResizeInit = '';
+            tabla.dataset.colResizePending = '1';
+        }
+        requestAnimationFrame(() => {
+            const vista = document.getElementById('view-cuentas');
+            if (vista) initTablasRedimensionablesEn(vista);
         });
     }
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
-from sqlalchemy import cast, func, String
+from sqlalchemy import cast, extract, func, String
 from sqlalchemy.orm import aliased
 
 from bootstrap import empresa_default_id as _empresa_default_id
@@ -17,6 +17,7 @@ from contabilidad import (
     calcular_transaccion,
     generar_eventos_calendario_contable,
     recalcular_proyecto,
+    _movimiento_afecta_contabilidad,
     PERIODOS_DASHBOARD,
 )
 from extensions import db
@@ -519,6 +520,92 @@ def manejar_cuentas():
 @bp.route('/api/cuentas/categorias', methods=['GET'])
 def get_categorias_cuenta():
     return jsonify(CATEGORIAS_CUENTA)
+
+
+def _resumen_mensual_por_cuenta(cuentas, movimientos) -> list[dict]:
+    """Suma del año imputada a cada cuenta destino, igual que remuneraciones pagadas."""
+    por_id = {
+        c.id: {
+            'id': c.id,
+            'nombre': c.nombre,
+            'categoria': c.categoria,
+            'moneda': c.moneda or 'CLP',
+            'meses': [0.0] * 12,
+            'total': 0.0,
+        }
+        for c in cuentas
+    }
+    for m in movimientos:
+        if not _movimiento_afecta_contabilidad(m) or not m.fecha_movimiento:
+            continue
+        fila = por_id.get(m.cta_destino_id)
+        if fila is None:
+            continue
+        monto = float(m.monto_pesos or 0)
+        mes = m.fecha_movimiento.month
+        if 1 <= mes <= 12:
+            fila['meses'][mes - 1] += monto
+        fila['total'] += monto
+    filas = [f for f in por_id.values() if f['total']]
+    filas.sort(key=lambda r: (r['nombre'] or '').lower())
+    return filas
+
+
+@bp.route('/api/cuentas/resumen-mensual', methods=['GET'])
+def get_resumen_mensual_cuentas():
+    """Total mensual imputado a cada cuenta destino."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        anio = request.args.get('anio', type=int) or date.today().year
+        if anio < 2000:
+            return jsonify({'error': 'anio inválido'}), 400
+
+        cuentas = Cuenta.query.filter_by(empresa_id=eid).order_by(Cuenta.nombre).all()
+        inicio = date(anio, 1, 1)
+        fin = date(anio + 1, 1, 1)
+        movimientos = Movimiento.query.filter(
+            Movimiento.empresa_id == eid,
+            Movimiento.fecha_movimiento >= inicio,
+            Movimiento.fecha_movimiento < fin,
+        ).all()
+        resumen = _resumen_mensual_por_cuenta(cuentas, movimientos)
+        totales_por_moneda: dict[str, dict] = {}
+        for fila in resumen:
+            acc = totales_por_moneda.setdefault(fila['moneda'], {
+                'moneda': fila['moneda'],
+                'meses': [0.0] * 12,
+                'monto': 0.0,
+            })
+            for i, monto in enumerate(fila['meses']):
+                acc['meses'][i] += monto
+            acc['monto'] += fila['total']
+        orden_moneda = {'CLP': 0, 'USD': 1}
+        totales = sorted(
+            totales_por_moneda.values(),
+            key=lambda t: (orden_moneda.get(t['moneda'], 9), t['moneda']),
+        )
+        anios_rows = db.session.query(
+            extract('year', Movimiento.fecha_movimiento)
+        ).filter(
+            Movimiento.empresa_id == eid,
+            Movimiento.estado == 'Activo',
+            Movimiento.fecha_movimiento.isnot(None),
+        ).distinct().all()
+        anios = sorted({int(y) for (y,) in anios_rows if y}, reverse=True)
+        if anio not in anios:
+            anios.append(anio)
+            anios.sort(reverse=True)
+        return jsonify({
+            'anio': anio,
+            'anios': anios,
+            'cuentas': resumen,
+            'totales': totales,
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/api/cuentas/<int:cuenta_id>', methods=['GET', 'PUT', 'DELETE'])
