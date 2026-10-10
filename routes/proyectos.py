@@ -9,8 +9,9 @@ from common import *
 from contabilidad import calcular_transaccion, recalcular_proyecto
 from extensions import db
 from models import (
-    Cliente, Empresa, EntregaProgramada, Movimiento, PlantillaEstadoPago, PlantillaPropuesta,
-    Propuesta, Proyecto, TareaEntrega,
+    BancoMovimiento, Cliente, Empresa, EntregaProgramada, LineaComprobante, Movimiento,
+    PlantillaEstadoPago, PlantillaPropuesta, Propuesta, Proyecto, Reembolso, RegistroTiempo,
+    TareaEntrega,
 )
 from estados_pago_service import (
     generar_docx_estado_pago,
@@ -202,32 +203,126 @@ def manejar_proyectos():
         return jsonify({'error': str(e)}), 500
 
 
+def _expunge_si(predicado):
+    """Saca de la sesión filas que el DELETE masivo va a borrar, para que el ORM no las reescriba."""
+    for obj in list(db.session):
+        if predicado(obj):
+            db.session.expunge(obj)
+
+
+def _eliminar_proyecto(proyecto, empresa_id: int) -> None:
+    """Borra el proyecto y lo que lo bloquea por clave foránea.
+
+    Horas y entregas se eliminan. Reembolsos y líneas contables se desvinculan
+    para conservar pagos y comprobantes. El extracto bancario queda pendiente
+    si estaba conciliado con un movimiento del proyecto.
+    """
+    pid = proyecto.id
+    movs = Movimiento.query.filter_by(proyecto_id=pid).all()
+    entregas = EntregaProgramada.query.filter_by(proyecto_id=pid).all()
+    mov_ids = [m.id for m in movs]
+    entrega_ids = [e.id for e in entregas]
+    tarea_ids = []
+    if entrega_ids:
+        tarea_ids = [
+            t.id for t in TareaEntrega.query.filter(TareaEntrega.entrega_id.in_(entrega_ids)).all()
+        ]
+    mov_set = set(mov_ids)
+    entrega_set = set(entrega_ids)
+    tarea_set = set(tarea_ids)
+    _expunge_si(lambda obj: (
+        (isinstance(obj, Movimiento) and obj.id in mov_set)
+        or (isinstance(obj, EntregaProgramada) and obj.id in entrega_set)
+        or (isinstance(obj, TareaEntrega) and obj.id in tarea_set)
+        or (isinstance(obj, RegistroTiempo) and obj.proyecto_id == pid)
+        or (isinstance(obj, Reembolso) and (obj.proyecto_id == pid or obj.movimiento_id in mov_set))
+        or (isinstance(obj, LineaComprobante) and obj.proyecto_id == pid)
+        or (isinstance(obj, BancoMovimiento) and obj.movimiento_id in mov_set)
+    ))
+
+    RegistroTiempo.query.filter_by(proyecto_id=pid).delete(synchronize_session=False)
+    if entrega_ids:
+        RegistroTiempo.query.filter(RegistroTiempo.entrega_id.in_(entrega_ids)).delete(
+            synchronize_session=False,
+        )
+    if tarea_ids:
+        RegistroTiempo.query.filter(RegistroTiempo.tarea_id.in_(tarea_ids)).delete(
+            synchronize_session=False,
+        )
+    if tarea_ids:
+        TareaEntrega.query.filter(TareaEntrega.id.in_(tarea_ids)).delete(synchronize_session=False)
+    if entrega_ids:
+        EntregaProgramada.query.filter(EntregaProgramada.id.in_(entrega_ids)).delete(
+            synchronize_session=False,
+        )
+
+    if mov_ids:
+        BancoMovimiento.query.filter(
+            BancoMovimiento.movimiento_id.in_(mov_ids),
+            BancoMovimiento.estado_conciliacion == 'conciliado',
+        ).update(
+            {
+                BancoMovimiento.movimiento_id: None,
+                BancoMovimiento.estado_conciliacion: 'pendiente',
+            },
+            synchronize_session=False,
+        )
+        BancoMovimiento.query.filter(
+            BancoMovimiento.movimiento_id.in_(mov_ids),
+        ).update(
+            {BancoMovimiento.movimiento_id: None},
+            synchronize_session=False,
+        )
+        Reembolso.query.filter(Reembolso.movimiento_id.in_(mov_ids)).update(
+            {Reembolso.movimiento_id: None},
+            synchronize_session=False,
+        )
+        # gasto_cesion_id apunta a otro movimiento del mismo proyecto.
+        Movimiento.query.filter(Movimiento.gasto_cesion_id.in_(mov_ids)).update(
+            {Movimiento.gasto_cesion_id: None},
+            synchronize_session=False,
+        )
+        db.session.flush()
+        Movimiento.query.filter(Movimiento.id.in_(mov_ids)).delete(synchronize_session=False)
+
+    Reembolso.query.filter_by(empresa_id=empresa_id, proyecto_id=pid).update(
+        {Reembolso.proyecto_id: None},
+        synchronize_session=False,
+    )
+    LineaComprobante.query.filter_by(proyecto_id=pid).update(
+        {LineaComprobante.proyecto_id: None},
+        synchronize_session=False,
+    )
+    db.session.delete(proyecto)
+
+
 @bp.route('/api/proyectos/<int:proyecto_id>', methods=['GET', 'PUT', 'DELETE'])
 def manejar_proyecto(proyecto_id):
     eid, err = _requiere_empresa()
     if err:
         return err
     proyecto = Proyecto.query.filter_by(empresa_id=eid, id=proyecto_id).first_or_404()
+
+    if request.method == 'DELETE':
+        try:
+            _eliminar_proyecto(proyecto, eid)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            current_app.logger.exception('No se pudo eliminar proyecto id=%s', proyecto_id)
+            return jsonify({
+                'error': 'No se pudo eliminar el proyecto porque quedan datos asociados',
+            }), 409
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception('No se pudo eliminar proyecto id=%s', proyecto_id)
+            return jsonify({'error': 'No se pudo eliminar el proyecto'}), 500
+        return jsonify({'mensaje': 'Proyecto eliminado'})
+
     movimientos = Movimiento.query.filter_by(empresa_id=eid).all()
 
     if request.method == 'GET':
         return jsonify(_proyecto_a_dict(proyecto, movimientos))
-
-    if request.method == 'DELETE':
-        Movimiento.query.filter_by(empresa_id=eid, proyecto_id=proyecto_id).delete()
-        entrega_ids = [
-            e.id for e in EntregaProgramada.query.filter_by(
-                empresa_id=eid, proyecto_id=proyecto_id,
-            ).all()
-        ]
-        if entrega_ids:
-            TareaEntrega.query.filter(TareaEntrega.entrega_id.in_(entrega_ids)).delete(
-                synchronize_session=False,
-            )
-        EntregaProgramada.query.filter_by(empresa_id=eid, proyecto_id=proyecto_id).delete()
-        db.session.delete(proyecto)
-        db.session.commit()
-        return jsonify({'mensaje': 'Proyecto eliminado'})
 
     data = request.json or {}
     if 'nombre' in data:

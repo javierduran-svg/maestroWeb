@@ -7304,7 +7304,12 @@
 
     async function borrarProyecto(id) {
         if (!confirm('¿Eliminar proyecto y sus movimientos asociados?')) return;
-        await apiFetch(`/api/proyectos/${id}`, { method: 'DELETE' });
+        const res = await apiFetch(`/api/proyectos/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || 'No se pudo eliminar el proyecto');
+            return;
+        }
         _proySeleccionados.delete(id);
         if (_proyUltimoAncla === id) _proyUltimoAncla = null;
         if (_proyectoExpandido === id) _proyectoExpandido = null;
@@ -7980,10 +7985,21 @@
         const ids = [..._proySeleccionados];
         if (!ids.length) return;
         if (!confirm(`¿Eliminar ${ids.length} proyecto${ids.length !== 1 ? 's' : ''} y sus movimientos asociados?`)) return;
-        await Promise.all(ids.map(id => apiFetch(`/api/proyectos/${id}`, { method: 'DELETE' })));
-        if (ids.includes(_proyectoExpandido)) _proyectoExpandido = null;
-        _proySeleccionados.clear();
-        _proyUltimoAncla = null;
+        const errores = [];
+        const eliminados = new Set();
+        for (const id of ids) {
+            const res = await apiFetch(`/api/proyectos/${id}`, { method: 'DELETE' });
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                errores.push(data.error || `Proyecto ${id}`);
+            } else {
+                eliminados.add(id);
+            }
+        }
+        if (errores.length) alert([...new Set(errores)].join('\n'));
+        if (eliminados.has(_proyectoExpandido)) _proyectoExpandido = null;
+        _proySeleccionados = new Set([..._proySeleccionados].filter(id => !eliminados.has(id)));
+        if (_proyUltimoAncla != null && !_proySeleccionados.has(_proyUltimoAncla)) _proyUltimoAncla = null;
         await refrescarProyectos();
         listarClientes();
     }
