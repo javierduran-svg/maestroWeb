@@ -1203,9 +1203,13 @@ def _ingresar_liquidaciones_a_movimientos(empresa_id: int, mes: int, anio: int) 
     insertados = 0
     omitidos = 0
     errores = []
+    cambio_estado = False
 
     for liq in liquidaciones:
         if _movimiento_liquidacion_duplicado(empresa_id, liq.id):
+            if liq.estado != 'Pagado':
+                liq.estado = 'Pagado'
+                cambio_estado = True
             omitidos += 1
             continue
         t = liq.trabajador_rel
@@ -1240,10 +1244,12 @@ def _ingresar_liquidaciones_a_movimientos(empresa_id: int, mes: int, anio: int) 
             proyecto_id=None,
         )
         db.session.add(mov)
+        liq.estado = 'Pagado'
         insertados += 1
 
-    if insertados:
+    if insertados or cambio_estado:
         db.session.commit()
+    if insertados:
         _recalcular_todos_proyectos(empresa_id)
 
     partes = [f'{insertados} ingresado(s)']

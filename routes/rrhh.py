@@ -374,6 +374,67 @@ def generar_liquidaciones():
         return jsonify({'error': str(e)}), 500
 
 
+def _marcar_pagadas_con_movimiento(empresa_id: int, liquidaciones: list) -> list:
+    """Una liquidación está pagada si su estado lo dice o si ya tiene movimiento contable."""
+    pagadas = []
+    cambio = False
+    for liq in liquidaciones:
+        tiene_mov = _movimiento_liquidacion_duplicado(empresa_id, liq.id)
+        if liq.estado != 'Pagado' and not tiene_mov:
+            continue
+        if liq.estado != 'Pagado':
+            liq.estado = 'Pagado'
+            cambio = True
+        pagadas.append(liq)
+    if cambio:
+        db.session.commit()
+    return pagadas
+
+
+@bp.route('/api/personal/remuneraciones-pagadas', methods=['GET'])
+def obtener_remuneraciones_pagadas():
+    """Histórico de liquidaciones ya pagadas, por año y opcionalmente por mes."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        anio = request.args.get('anio', type=int)
+        mes = request.args.get('mes', type=int)
+        if anio is not None and anio < 2000:
+            return jsonify({'error': 'anio inválido'}), 400
+        if mes is not None and not (1 <= mes <= 12):
+            return jsonify({'error': 'mes debe estar entre 1 y 12'}), 400
+
+        consulta = Liquidacion.query.filter_by(empresa_id=eid)
+        if anio is not None:
+            consulta = consulta.filter_by(anio=anio)
+        if mes is not None:
+            consulta = consulta.filter_by(mes=mes)
+        pagadas = _marcar_pagadas_con_movimiento(eid, consulta.all())
+        pagadas.sort(key=lambda l: (
+            -(l.anio or 0),
+            -(l.mes or 0),
+            l.trabajador_rel.apellido_paterno if l.trabajador_rel else '',
+            l.trabajador_rel.nombres if l.trabajador_rel else '',
+        ))
+        payload = [_liquidacion_a_dict(l) for l in pagadas]
+        return jsonify({
+            'consulta': 'pagadas',
+            'anio': anio,
+            'mes': mes,
+            'liquidaciones': payload,
+            'totales': {
+                'haberes': sum(d['total_haberes'] for d in payload),
+                'descuentos': sum(d['total_descuentos'] for d in payload),
+                'liquido': sum(d['alcance_liquido'] for d in payload),
+                'aportes_empleador': sum(d.get('total_aportes_empleador') or 0 for d in payload),
+            },
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @bp.route('/api/personal/liquidaciones/<int:mes>/<int:anio>', methods=['GET'])
 def obtener_liquidaciones(mes, anio):
     try:

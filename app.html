@@ -2817,6 +2817,7 @@
                         </div>
                         <button class="btn btn-teal btn-sm" onclick="generarPlanillaSueldos()">GENERAR PLANILLA DE SUELDOS</button>
                         <button class="btn btn-sm btn-outline-secondary" onclick="cargarLiquidaciones()">Consultar</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas()" title="Liquidaciones ya pagadas del año indicado">Remuneraciones pagadas</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnExportPdfPlanilla" onclick="exportarPdfPlanilla()" title="Exportar todas las liquidaciones del período"><i class="fa-solid fa-file-pdf me-1"></i>EXPORTAR PDF</button>
                         <button class="btn btn-sm btn-teal" id="btnExportPrevired" onclick="exportarPrevired()" title="Descargar archivo TXT para carga en Previred"><i class="fa-solid fa-file-export me-1"></i>EXPORTAR PLANILLA MENSUAL A PREVIRED</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnIngresarMovimientos" onclick="ingresarPlanillaMovimientos()" title="Registrar liquidaciones del período en movimientos contables"><i class="fa-solid fa-book me-1"></i>INGRESAR A MOVIMIENTOS</button>
@@ -2826,6 +2827,7 @@
                 <div class="table-responsive tabla-scroll-wrap">
                     <table id="tabla-liquidaciones-grid" class="table table-hover table-panel table-compact mb-0">
                         <thead><tr>
+                            <th id="liqColPeriodo" class="d-none">Período</th>
                             <th>Nombre</th>
                             <th>RUT</th>
                             <th class="text-end">Sueldo Base</th>
@@ -2838,7 +2840,7 @@
                         <tbody id="tabla-liquidaciones"></tbody>
                         <tfoot id="tabla-liquidaciones-tfoot" class="d-none">
                             <tr class="table-light fw-bold">
-                                <td colspan="3" class="text-end">Totales</td>
+                                <td id="liqTotalLabel" colspan="3" class="text-end">Totales</td>
                                 <td class="text-end saldo-negativo" id="liqTotalDesc"></td>
                                 <td class="text-end" id="liqTotalAportes"></td>
                                 <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
@@ -14541,12 +14543,22 @@
         const items = data.liquidaciones || [];
         const tbody = document.getElementById('tabla-liquidaciones');
         const tfoot = document.getElementById('tabla-liquidaciones-tfoot');
+        const pagadas = data.consulta === 'pagadas';
+        const colPeriodo = document.getElementById('liqColPeriodo');
+        const totalLabel = document.getElementById('liqTotalLabel');
+        if (colPeriodo) colPeriodo.classList.toggle('d-none', !pagadas);
+        if (totalLabel) totalLabel.colSpan = pagadas ? 4 : 3;
+        const cols = pagadas ? 9 : 8;
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
+            const vacio = pagadas
+                ? 'Sin remuneraciones pagadas para este año'
+                : 'Sin liquidaciones para este período';
+            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted py-4">${vacio}</td></tr>`;
             tfoot.classList.add('d-none');
             return;
         }
         tbody.innerHTML = items.map(l => `<tr>
+            ${pagadas ? `<td class="text-nowrap">${String(l.mes).padStart(2, '0')}/${l.anio}</td>` : ''}
             <td class="fw-medium">${esc(l.nombre)}</td>
             <td class="text-nowrap">${esc(l.rut)}</td>
             <td class="text-end" title="${fmtUf(l.sueldo_base_uf || 0)}">${fmt(l.sueldo_base_proporcional)}</td>
@@ -14581,6 +14593,26 @@
             msg.textContent = data.error || 'Error al consultar';
             return;
         }
+        renderLiquidaciones(data);
+    }
+
+    async function consultarRemuneracionesPagadas() {
+        const anio = document.getElementById('liqAnio').value;
+        const msg = document.getElementById('liqMsg');
+        msg.className = 'small mt-2 text-muted';
+        msg.textContent = 'Consultando remuneraciones pagadas…';
+        const res = await apiFetch(`/api/personal/remuneraciones-pagadas?anio=${encodeURIComponent(anio)}`);
+        const data = await res.json();
+        if (!res.ok) {
+            msg.className = 'small mt-2 text-danger';
+            msg.textContent = data.error || 'Error al consultar remuneraciones pagadas';
+            return;
+        }
+        const n = (data.liquidaciones || []).length;
+        msg.className = 'small mt-2 text-teal';
+        msg.textContent = n
+            ? `${n} remuneración${n === 1 ? '' : 'es'} pagada${n === 1 ? '' : 's'} en ${anio}`
+            : `No hay remuneraciones pagadas en ${anio}`;
         renderLiquidaciones(data);
     }
 
