@@ -1555,12 +1555,35 @@ def _detalle_calculo_desde_liq(liq: Liquidacion) -> dict:
     return _calcular_montos_liquidacion(t, liq.dias_trabajados, uf, mes=liq.mes, anio=liq.anio)['detalle']
 
 
+def _impuesto_y_previred(detalle: dict) -> tuple[float, float]:
+    """Impuesto único (SII) y cotizaciones que se enteran en Previred.
+
+    Previred suma AFP, salud, cesantía y aportes del empleador. El impuesto
+    único no entra en ese pago.
+    """
+    det = detalle or {}
+    impuesto = float(det.get('impuesto_unico') or 0)
+    salud = float(det.get('descuento_salud') or 0)
+    if not salud:
+        salud = float(det.get('descuento_salud_cotizacion') or 0) + float(det.get('descuento_adicional_salud') or 0)
+    aportes = det.get('aportes_empleador') or {}
+    previred = (
+        float(det.get('descuento_afp') or 0)
+        + float(det.get('descuento_sis') or 0)
+        + salud
+        + float(det.get('descuento_cesantia') or 0)
+        + float(aportes.get('total') or 0)
+    )
+    return impuesto, previred
+
+
 def _liquidacion_a_dict(liq: Liquidacion) -> dict:
     t = liq.trabajador_rel
     detalle = _detalle_calculo_desde_liq(liq)
     sueldo_uf = liq.sueldo_base_uf
     if sueldo_uf is None and t:
         sueldo_uf, _ = _sueldo_base_clp_trabajador(t, liq.uf_valor or _uf_hoy()['valor'])
+    impuesto_unico, total_previred = _impuesto_y_previred(detalle)
     return {
         'id': liq.id,
         'trabajador_id': liq.trabajador_id,
@@ -1575,6 +1598,8 @@ def _liquidacion_a_dict(liq: Liquidacion) -> dict:
         'total_imponible': liq.total_imponible,
         'total_haberes': liq.total_haberes,
         'total_descuentos': liq.total_descuentos,
+        'impuesto_unico': impuesto_unico,
+        'total_previred': total_previred,
         'alcance_liquido': liq.alcance_liquido,
         'total_aportes_empleador': float(
             (detalle.get('aportes_empleador') or {}).get('total')
