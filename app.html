@@ -1760,7 +1760,8 @@
             border-top: 2px solid #dee2e6;
         }
         .gestion-proyecto-header:hover td { background: #e9ecef !important; }
-        .gestion-entrega-row.gestion-entrega-agrupada .col-meta-proyecto { visibility: hidden; }
+        #gestion-proximas-card .gestion-proximas-filtros-top .form-select { width: auto; max-width: 22rem; }
+        #gestion-proximas-card #filtroGestProxProyecto { min-width: 14rem; }
         .trab-foto-preview-wrap { position: relative; display: inline-block; }
         .trab-firma-preview-wrap {
             position: relative;
@@ -1991,7 +1992,7 @@
                             <div class="panel-header flex-wrap gap-2">
                                 <div>
                                     <h5 class="mb-0">Próximas entregas y tareas</h5>
-                                    <small class="text-muted" id="gestionProximasSubtitulo">Próximos 60 días y vencidas · expandir entrega para ver tareas · clic en icono para cambiar estado</small>
+                                    <small class="text-muted" id="gestionProximasSubtitulo">Próximos 60 días y vencidas, por fecha de etapa o tarea · expandir entrega para ver tareas · clic en icono para cambiar estado</small>
                                 </div>
                                 <div class="d-flex flex-wrap align-items-center gap-3 ms-auto">
                                     <div class="d-flex align-items-center gap-2">
@@ -2010,27 +2011,33 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="panel-toolbar d-flex flex-wrap align-items-center gap-2 px-3 py-2 border-bottom bg-light">
-                                <small class="text-muted" id="gestionProximasContador">—</small>
-                                <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" onclick="limpiarFiltrosGestionProximas()">Limpiar filtros</button>
+                            <div class="panel-toolbar gestion-proximas-filtros-top d-flex flex-wrap align-items-center gap-3 px-3 py-2 border-bottom bg-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="small text-muted text-nowrap mb-0" for="filtroGestProxProyecto">Proyecto</label>
+                                    <select class="form-select form-select-sm" id="filtroGestProxProyecto" onchange="renderGestionProximasDesdeCache()"><option value="">Todos</option></select>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="small text-muted text-nowrap mb-0" for="filtroGestProxEstado">Estado</label>
+                                    <select class="form-select form-select-sm" id="filtroGestProxEstado" style="min-width:7.5rem" onchange="renderGestionProximasDesdeCache()"><option value="">Todos</option></select>
+                                </div>
+                                <small class="text-muted ms-auto" id="gestionProximasContador">—</small>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosGestionProximas()">Limpiar filtros</button>
                             </div>
                             <div class="table-responsive tabla-scroll-wrap p-0">
                                 <table class="table table-hover table-panel table-compact gestion-proximas-table mb-0">
                                     <colgroup>
-                                        <col class="col-chevron"><col class="col-status"><col class="col-desc"><col class="col-meta"><col class="col-asignado"><col class="col-fecha">
+                                        <col class="col-chevron"><col class="col-status"><col class="col-desc"><col class="col-asignado"><col class="col-fecha">
                                     </colgroup>
                                     <thead>
                                         <tr>
                                             <th class="mov-th-sort text-center" colspan="2" data-col="status" onclick="ordenarGestionProximas('status')">Estado <i class="fa-solid fa-sort sort-icon"></i></th>
                                             <th class="mov-th-sort" data-col="descripcion" onclick="ordenarGestionProximas('descripcion')">Entrega / Tarea <i class="fa-solid fa-sort sort-icon"></i></th>
-                                            <th class="mov-th-sort" data-col="proyecto" onclick="ordenarGestionProximas('proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
                                             <th class="mov-th-sort" data-col="asignado" onclick="ordenarGestionProximas('asignado')">Asignado a <i class="fa-solid fa-sort sort-icon"></i></th>
                                             <th class="mov-th-sort col-fecha" data-col="fecha" onclick="ordenarGestionProximas('fecha')">Fecha <i class="fa-solid fa-sort sort-icon"></i></th>
                                         </tr>
                                         <tr class="mov-filtros">
-                                            <th colspan="2"><select class="form-select mov-filtro" id="filtroGestProxEstado" onchange="renderGestionProximasDesdeCache()"><option value="">Todos</option></select></th>
+                                            <th colspan="2"></th>
                                             <th><input type="text" class="form-control mov-filtro" id="filtroGestProxDesc" placeholder="Buscar…" oninput="debounceRenderGestionProximas()"></th>
-                                            <th><select class="form-select mov-filtro" id="filtroGestProxProyecto" onchange="renderGestionProximasDesdeCache()"><option value="">Todos</option></select></th>
                                             <th><select class="form-select mov-filtro" id="filtroGestProxAsignado" onchange="renderGestionProximasDesdeCache()"><option value="">Todos</option></select></th>
                                             <th class="col-fecha"><input type="text" class="form-control mov-filtro cell-edit-date" id="filtroGestProxFecha" placeholder="dd-mm-aaaa" oninput="debounceRenderGestionProximas()"></th>
                                         </tr>
@@ -4379,8 +4386,8 @@
     }
 
     function etiquetaGestionProximasHorizonte(valor) {
-        if (valor === 'all') return 'Todas las entregas y vencidas';
-        return `Próximos ${valor} días y vencidas`;
+        if (valor === 'all') return 'Todas las etapas, tareas y vencidas';
+        return `Próximos ${valor} días y vencidas, por fecha de etapa o tarea`;
     }
 
     function syncGestionProximasHorizonteUI(valor) {
@@ -6303,15 +6310,12 @@
 
     function toggleGestionEntregaExpand(entregaId, ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        if (_gestionEntregasExpandidas.has(entregaId)) {
-            _gestionEntregasExpandidas.delete(entregaId);
-        } else {
-            _gestionEntregasExpandidas.add(entregaId);
-        }
         const row = document.getElementById(`gestion-entrega-tareas-${entregaId}`);
         const chevron = document.querySelector(`.gestion-entrega-chevron[data-entrega-id="${entregaId}"]`);
         if (!row) return;
-        const abrir = _gestionEntregasExpandidas.has(entregaId);
+        const abrir = row.classList.contains('d-none');
+        if (abrir) _gestionEntregasExpandidas.add(entregaId);
+        else _gestionEntregasExpandidas.delete(entregaId);
         row.classList.toggle('d-none', !abrir);
         if (chevron) {
             chevron.classList.toggle('fa-chevron-right', !abrir);
@@ -6319,7 +6323,7 @@
         }
     }
 
-    const GESTION_PROXIMAS_COLGROUP = '<colgroup><col class="col-chevron"><col class="col-status"><col class="col-desc"><col class="col-meta"><col class="col-asignado"><col class="col-fecha"></colgroup>';
+    const GESTION_PROXIMAS_COLGROUP = '<colgroup><col class="col-chevron"><col class="col-status"><col class="col-desc"><col class="col-asignado"><col class="col-fecha"></colgroup>';
 
     function filasGestionEntregaTareas(entrega) {
         const asc = _gestionProximasOrdenDir === 'asc';
@@ -6327,7 +6331,8 @@
             (a, b) => compararGestionProximasTarea(a, b, entrega, _gestionProximasOrdenCol, asc),
         );
         if (!tareas.length) {
-            return `<table class="gestion-proximas-tareas-table table table-compact mb-0">${GESTION_PROXIMAS_COLGROUP}<tbody><tr><td colspan="6" class="text-muted small py-2 ps-2">Sin tareas asociadas</td></tr></tbody></table>`;
+            const msg = entrega._sinTareasPorFecha ? 'Sin tareas en esta fecha' : 'Sin tareas asociadas';
+            return `<table class="gestion-proximas-tareas-table table table-compact mb-0">${GESTION_PROXIMAS_COLGROUP}<tbody><tr><td colspan="5" class="text-muted small py-2 ps-2">${msg}</td></tr></tbody></table>`;
         }
         const filas = tareas.map(t => {
             const st = gestionStatusJs(t.status || 'Pendiente');
@@ -6336,7 +6341,6 @@
                 <td class="col-chevron"></td>
                 <td class="col-status" onclick="toggleGestionTareaStatus(${t.id}, '${st}', event)">${iconoStatusGestion(t.status)}</td>
                 <td class="text-truncate small">${esc(t.descripcion) || '—'}</td>
-                <td class="text-muted small text-truncate">${esc(entrega.proyecto) || '—'}</td>
                 <td class="text-muted small text-truncate">${esc(t.asignado_nombre) || '—'}</td>
                 <td class="text-nowrap small text-muted col-fecha">${t.fecha_limite ? fmtFechaMov(t.fecha_limite) : '—'}</td>
             </tr>`;
@@ -6411,12 +6415,18 @@
         const resultado = [];
         entregas.forEach(e => {
             const entregaCoincide = gestionProximaEntregaCoincide(e, f);
-            const tareas = (e.tareas || []).filter(t => gestionProximaTareaCoincide(t, e, f));
-            if (!entregaCoincide && !tareas.length) return;
+            const tareasCoinciden = (e.tareas || []).filter(t => gestionProximaTareaCoincide(t, e, f));
+            if (!entregaCoincide && !tareasCoinciden.length) return;
+            // La fecha filtra cada fila: la etapa por fecha de entrega y la tarea por fecha límite.
+            const tareas = f.fecha
+                ? tareasCoinciden
+                : (entregaCoincide ? (e.tareas || []) : tareasCoinciden);
+            const tieneTareasEnFecha = (e.tareas || []).some(t => (t.fecha_limite || '') === f.fecha);
             resultado.push({
                 ...e,
-                tareas: entregaCoincide ? (e.tareas || []) : tareas,
-                _expandirPorFiltro: !entregaCoincide,
+                tareas,
+                _expandirPorFiltro: !entregaCoincide && tareas.length > 0,
+                _sinTareasPorFecha: !!f.fecha && !tieneTareasEnFecha && (e.tareas || []).length > 0,
             });
         });
         return resultado;
@@ -6427,7 +6437,7 @@
         if (col === 'proyecto') return (e.proyecto || '').toLowerCase();
         if (col === 'asignado') return (e.asignado_nombre || '').toLowerCase();
         if (col === 'status') return (e.status || '').toLowerCase();
-        return e.fecha_entrega || '9999-12-31';
+        return e.fecha_orden || e.fecha_entrega || '9999-12-31';
     }
 
     function valorOrdenGestionProximaTarea(t, entrega, col) {
@@ -6442,7 +6452,7 @@
         let cmp = String(valorOrdenGestionProxima(a, col))
             .localeCompare(String(valorOrdenGestionProxima(b, col)), 'es', { numeric: true });
         if (cmp === 0 && col !== 'fecha') {
-            cmp = String(a.fecha_entrega || '').localeCompare(String(b.fecha_entrega || ''));
+            cmp = String(a.fecha_orden || a.fecha_entrega || '').localeCompare(String(b.fecha_orden || b.fecha_entrega || ''));
         }
         if (cmp === 0) cmp = (a.id || 0) - (b.id || 0);
         return asc ? cmp : -cmp;
@@ -6520,25 +6530,24 @@
 
     function filaGestionEntrega(e, agrupado = false) {
         const vencida = e.dias_restantes < 0 && e.status !== 'Hecho';
-        const expandida = e._expandirPorFiltro || _gestionEntregasExpandidas.has(e.id);
+        const expandida = e._expandirPorFiltro || e.fuera_de_horizonte || _gestionEntregasExpandidas.has(e.id);
         const nTareas = (e.tareas || []).length;
         const badgeTareas = nTareas ? `<span class="badge bg-light text-dark border ms-1">${nTareas}</span>` : '';
         const st = gestionStatusJs(e.status || 'Por Hacer');
-        const agrupadaCls = agrupado ? ' gestion-entrega-agrupada' : '';
-        return `<tr class="gestion-entrega-row${agrupadaCls} ${vencida ? 'table-warning' : ''}">
+        const proyectoInline = agrupado ? '' : `<div class="text-muted small text-truncate">${esc(e.proyecto) || '—'}</div>`;
+        return `<tr class="gestion-entrega-row ${vencida ? 'table-warning' : ''}">
             <td class="col-chevron">
                 <button type="button" class="btn btn-sm btn-link p-0 text-teal" onclick="toggleGestionEntregaExpand(${e.id}, event)" title="Ver tareas">
                     <i class="fa-solid fa-chevron-${expandida ? 'down' : 'right'} gestion-entrega-chevron" data-entrega-id="${e.id}"></i>
                 </button>
             </td>
             <td class="col-status" onclick="toggleGestionEntregaStatus(${e.id}, '${st}', event)">${iconoStatusGestion(e.status)}</td>
-            <td class="text-truncate" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.descripcion) || '—'}${badgeTareas}</td>
-            <td class="text-truncate text-muted col-meta-proyecto" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.proyecto)}</td>
+            <td class="text-truncate" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.descripcion) || '—'}${badgeTareas}${proyectoInline}</td>
             <td class="text-truncate text-muted" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.asignado_nombre) || '—'}</td>
-            <td class="text-nowrap col-fecha" onclick="toggleGestionEntregaExpand(${e.id}, event)">${fmtFechaMov(e.fecha_entrega)}</td>
+            <td class="text-nowrap col-fecha${e.fuera_de_horizonte ? ' text-muted' : ''}" onclick="toggleGestionEntregaExpand(${e.id}, event)"${e.fuera_de_horizonte ? ' title="Etapa fuera del horizonte; visible por la fecha de sus tareas"' : ''}>${fmtFechaMov(e.fecha_entrega)}</td>
         </tr>
         <tr class="gestion-entrega-tareas-row ${expandida ? '' : 'd-none'}" id="gestion-entrega-tareas-${e.id}">
-            <td colspan="6" class="p-0">
+            <td colspan="5" class="p-0">
                 <div class="gestion-entrega-tareas-wrap">${filasGestionEntregaTareas(e)}</div>
             </td>
         </tr>`;
@@ -6563,7 +6572,7 @@
                     : `${visibles.length} de ${todas.length}`;
         }
         if (!visibles.length) {
-            el.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">${
+            el.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${
                 todas.length ? 'Sin coincidencias con los filtros' : 'Sin entregas próximas'
             }</td></tr>`;
             return;
@@ -6590,7 +6599,7 @@
             const nTareas = g.entregas.reduce((s, e) => s + (e.tareas || []).length, 0);
             return `<tr class="gestion-proyecto-header table-secondary" onclick="toggleGestionProyectoExpand(${pid}, event)">
                 <td class="col-chevron"><i class="fa-solid fa-chevron-${colapsado ? 'right' : 'down'} text-teal"></i></td>
-                <td colspan="5">
+                <td colspan="4">
                     <strong>${esc(g.proyecto)}</strong>
                     <span class="badge bg-light text-dark border ms-2">${nEnt} entrega${nEnt !== 1 ? 's' : ''}</span>
                     ${nTareas ? `<span class="badge bg-light text-muted border ms-1">${nTareas} tareas</span>` : ''}

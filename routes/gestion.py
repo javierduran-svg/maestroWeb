@@ -115,30 +115,59 @@ def get_gestion_dashboard():
             hoy + timedelta(days=dias_proximas_entregas)
             if dias_proximas_entregas is not None else None
         )
+
+        def _dentro_de_horizonte(fecha: date | None) -> bool:
+            """Vencidas y hasta el límite. Sin límite (Todo) entra cualquier fecha."""
+            if limite_entregas is None:
+                return True
+            if fecha is None:
+                return False
+            return fecha <= limite_entregas
+
         proximas_entregas = []
         for e in entregas:
+            etapa_en_horizonte = _dentro_de_horizonte(e.fecha_entrega)
             dias = (e.fecha_entrega - hoy).days
-            if limite_entregas is not None and e.fecha_entrega > limite_entregas:
-                continue
             entrega_dict = _entrega_a_dict(e)
             entrega_tareas = []
             for t in sorted(
                 tareas_por_entrega.get(e.id, []),
                 key=lambda x: (x.fecha_limite or date.max, x.id),
             ):
+                # El horizonte vale para la fecha de la etapa y para la de cada tarea.
+                # Una tarea sin fecha se muestra solo si su etapa está en el horizonte.
+                if limite_entregas is not None:
+                    if t.fecha_limite is None:
+                        if not etapa_en_horizonte:
+                            continue
+                    elif not _dentro_de_horizonte(t.fecha_limite):
+                        continue
                 td = _tarea_a_dict(t)
                 if t.fecha_limite:
                     td['dias_restantes'] = (t.fecha_limite - hoy).days
                 else:
                     td['dias_restantes'] = None
                 entrega_tareas.append(td)
+            if not etapa_en_horizonte and not entrega_tareas:
+                continue
+            fechas_tareas = [
+                date.fromisoformat(td['fecha_limite'])
+                for td in entrega_tareas
+                if td.get('fecha_limite')
+            ]
+            if etapa_en_horizonte:
+                fecha_orden = e.fecha_entrega
+            else:
+                fecha_orden = min(fechas_tareas) if fechas_tareas else e.fecha_entrega
             proximas_entregas.append({
                 **entrega_dict,
                 'dias_restantes': dias,
                 'nivel': _nivel_alerta_dias(dias),
                 'tareas': entrega_tareas,
+                'fuera_de_horizonte': not etapa_en_horizonte,
+                'fecha_orden': fecha_orden.strftime('%Y-%m-%d'),
             })
-        proximas_entregas.sort(key=lambda x: (x['fecha_entrega'], x['id']))
+        proximas_entregas.sort(key=lambda x: (x['fecha_orden'], x['id']))
 
         for t in proximas_tareas:
             if t['dias_restantes'] <= dias_alerta_entrega and t['status'] != 'Hecho':
