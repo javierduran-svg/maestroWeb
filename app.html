@@ -1949,6 +1949,7 @@
             <div class="sidebar-divider">Finanzas</div>
             <a href="#" class="sidebar-link sub" data-vista="dashboard-finanzas" onclick="return mostrarVista('dashboard-finanzas', this)"><i class="fa-solid fa-chart-line"></i><span>Dashboard financiero</span></a>
             <a href="#" class="sidebar-link" data-vista="movimientos" onclick="return mostrarVista('movimientos', this)"><i class="fa-solid fa-book"></i><span>Libro contable</span></a>
+            <a href="#" class="sidebar-link" data-vista="facturas" onclick="return mostrarVista('facturas', this)"><i class="fa-solid fa-file-invoice-dollar"></i><span>Facturas emitidas</span></a>
             <a href="#" class="sidebar-link" data-vista="banco" onclick="return mostrarVista('banco', this)"><i class="fa-solid fa-building-columns"></i><span>Bancos</span></a>
             <a href="#" class="sidebar-link" data-vista="conciliacion-bancaria" onclick="return mostrarVista('conciliacion-bancaria', this)"><i class="fa-solid fa-scale-balanced"></i><span>Conciliación bancaria</span></a>
             <a href="#" class="sidebar-link" data-vista="personal" onclick="return mostrarVista('personal', this)"><i class="fa-solid fa-id-card"></i><span>Personas</span></a>
@@ -2986,6 +2987,70 @@
                                 <tbody id="tablaConcLibro"></tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FACTURAS EMITIDAS -->
+            <section id="view-facturas" class="vista-panel d-none">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3"><div class="card p-3"><small class="text-muted fw-bold">Total facturado</small><h4 class="mb-0 fw-light" id="fact-kpi-total">$0</h4><small class="text-muted" id="fact-kpi-cantidad">0 facturas</small></div></div>
+                    <div class="col-md-3"><div class="card p-3" style="border-top-color:#198754"><small class="text-muted fw-bold">Cobrado</small><h4 class="mb-0 fw-light text-success" id="fact-kpi-cobrado">$0</h4><small class="text-muted">Pagadas y cedidas</small></div></div>
+                    <div class="col-md-3"><div class="card p-3" style="border-top-color:#ffc107"><small class="text-muted fw-bold">Por cobrar</small><h4 class="mb-0 fw-light" id="fact-kpi-saldo">$0</h4><small class="text-muted">Status Facturado</small></div></div>
+                    <div class="col-md-3"><div class="card p-3" style="border-top-color:#dc3545"><small class="text-muted fw-bold">Vencido</small><h4 class="mb-0 fw-light text-danger" id="fact-kpi-vencido">$0</h4><small class="text-muted" id="fact-kpi-vencido-cant">0 facturas</small></div></div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-0">Facturas emitidas</h5>
+                            <small class="text-muted">Estados de pago Facturados, Pagados o Cedidos (o con N° de factura)</small>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 ms-auto">
+                            <small class="text-muted" id="factContador"></small>
+                            <select class="form-select form-select-sm" id="factAnio" style="width:auto" onchange="listarFacturas()"><option value="">Todos los años</option></select>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosFacturas()">Limpiar filtros</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportarFacturasCsv()"><i class="fa-solid fa-file-csv"></i> Exportar</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive tabla-scroll-wrap p-0">
+                        <table id="tabla-facturas" class="table table-hover table-panel table-compact mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="mov-th-sort" data-col="numero_factura" onclick="ordenarFacturas('numero_factura')">N° Factura <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_facturacion" onclick="ordenarFacturas('fecha_facturacion')">Emisión <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="cliente" onclick="ordenarFacturas('cliente')">Cliente <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="proyecto" onclick="ordenarFacturas('proyecto')">Proyecto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-center" data-col="numero_ep" onclick="ordenarFacturas('numero_ep')">N° EP <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="monto_uf" onclick="ordenarFacturas('monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="monto" onclick="ordenarFacturas('monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="status_pago" onclick="ordenarFacturas('status_pago')">Status <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_vencimiento" onclick="ordenarFacturas('fecha_vencimiento')">Vencimiento <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort" data-col="fecha_pago" onclick="ordenarFacturas('fecha_pago')">Fecha pago <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort text-end" data-col="monto_cobrado" onclick="ordenarFacturas('monto_cobrado')">Cobrado <i class="fa-solid fa-sort sort-icon"></i></th>
+                                </tr>
+                                <tr class="mov-filtros">
+                                    <th><input type="text" class="form-control mov-filtro" id="filtroFactNumero" placeholder="N°" oninput="debounceRenderFacturas()"></th>
+                                    <th><input type="text" class="form-control mov-filtro" id="filtroFactFecha" placeholder="mm-aaaa" oninput="debounceRenderFacturas()"></th>
+                                    <th><input type="text" class="form-control mov-filtro" id="filtroFactCliente" placeholder="Cliente / RUT" oninput="debounceRenderFacturas()"></th>
+                                    <th><input type="text" class="form-control mov-filtro" id="filtroFactProyecto" placeholder="Proyecto" oninput="debounceRenderFacturas()"></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th><select class="form-select mov-filtro" id="filtroFactStatus" onchange="renderFacturas()">
+                                        <option value="">Todos</option>
+                                        <option value="Facturado">Facturado</option>
+                                        <option value="vencida">Facturado · vencida</option>
+                                        <option value="Pagado">Pagado</option>
+                                        <option value="Cedida">Cedida</option>
+                                    </select></th>
+                                    <th></th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-facturas-body"><tr><td colspan="11" class="text-center text-muted py-3">Cargando…</td></tr></tbody>
+                            <tfoot id="tabla-facturas-foot"></tfoot>
+                        </table>
                     </div>
                 </div>
             </section>
@@ -4058,7 +4123,7 @@
     let _userRol = 'trabajador';
 
     const VISTAS_SOLO_ADMIN = [
-        'dashboard-finanzas', 'movimientos', 'banco', 'conciliacion-bancaria', 'personal', 'simulador-utilidades',
+        'dashboard-finanzas', 'movimientos', 'facturas', 'banco', 'conciliacion-bancaria', 'personal', 'simulador-utilidades',
         'sii', 'cuentas', 'plan-cuentas', 'centros-costo', 'comprobantes', 'analisis-resultados',
     ];
     let _loginNeedsSetup = false;
@@ -5377,6 +5442,7 @@
             gantt: () => cargarGantt(_ganttDatos === null),
             propuestas: listarPropuestas,
             movimientos: listarMovimientos,
+            facturas: listarFacturas,
             banco: initVistaBanco,
             'conciliacion-bancaria': initVistaConciliacionBancaria,
             sii: initVistaSii,
@@ -5819,6 +5885,7 @@
     function refrescarDashboardsActivos() {
         if (_vistaActual === 'dashboard-finanzas') cargarDashboardFinanzas();
         if (_vistaActual === 'dashboard-gestion') cargarDashboardGestion();
+        if (_vistaActual === 'facturas') listarFacturas();
     }
 
     let _refrescoSecundarioTimer = null;
@@ -6260,6 +6327,174 @@
     function debounceRenderEpTrack() { debounceRenderEpDash('facturados'); }
     function ordenarEpTrack(col) { ordenarEpDash('facturados', col); }
     function limpiarFiltrosEpTrack() { limpiarFiltrosEpDash('facturados'); }
+
+    let _facturasCache = [];
+    let _facturasOrden = { col: 'fecha_facturacion', dir: 'desc' };
+    let _facturasFilterTimer = null;
+    let _facturasFetchSeq = 0;
+
+    async function listarFacturas() {
+        const tbody = document.getElementById('tabla-facturas-body');
+        const selAnio = document.getElementById('factAnio');
+        const seq = ++_facturasFetchSeq;
+        const anio = selAnio.value;
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-3">Cargando…</td></tr>';
+        try {
+            const res = await apiFetch('/api/finanzas/facturas' + (anio ? `?anio=${anio}` : ''));
+            const data = await res.json();
+            if (seq !== _facturasFetchSeq) return;
+            if (!res.ok) throw new Error(data.error || 'No se pudieron cargar las facturas');
+            _facturasCache = data.facturas || [];
+            selAnio.innerHTML = '<option value="">Todos los años</option>' + (data.anios || [])
+                .map(a => `<option value="${a}" ${String(a) === anio ? 'selected' : ''}>${a}</option>`).join('');
+            renderFacturas();
+        } catch (e) {
+            if (seq !== _facturasFetchSeq) return;
+            _facturasCache = [];
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-danger py-3">${esc(e.message)}</td></tr>`;
+            document.getElementById('tabla-facturas-foot').innerHTML = '';
+        }
+    }
+
+    function facturaCoincideFiltro(f) {
+        const val = id => (document.getElementById(id).value || '').trim().toLowerCase();
+        const numero = val('filtroFactNumero');
+        const fecha = val('filtroFactFecha');
+        const cliente = val('filtroFactCliente');
+        const proyecto = val('filtroFactProyecto');
+        const status = document.getElementById('filtroFactStatus').value;
+        if (numero && !String(f.numero_factura || '').toLowerCase().includes(numero)) return false;
+        if (fecha && !fmtFechaMov(f.fecha_facturacion).includes(fecha)) return false;
+        if (cliente && !`${f.cliente || ''} ${f.cliente_rut || ''}`.toLowerCase().includes(cliente)) return false;
+        if (proyecto && !String(f.proyecto || '').toLowerCase().includes(proyecto)) return false;
+        if (status === 'vencida') return f.status_pago === 'Facturado' && f.dias_vencida > 0;
+        if (status && f.status_pago !== status) return false;
+        return true;
+    }
+
+    function compararFacturas(a, b) {
+        const { col, dir } = _facturasOrden;
+        const num = ['monto', 'monto_uf', 'monto_cobrado', 'numero_ep'].includes(col);
+        let cmp;
+        if (num) cmp = (Number(a[col]) || 0) - (Number(b[col]) || 0);
+        else cmp = String(a[col] || '').localeCompare(String(b[col] || ''), 'es', { numeric: true });
+        return dir === 'asc' ? cmp : -cmp;
+    }
+
+    function facturasFiltradas() {
+        return _facturasCache.filter(facturaCoincideFiltro).sort(compararFacturas);
+    }
+
+    function renderFacturas() {
+        const tbody = document.getElementById('tabla-facturas-body');
+        const tfoot = document.getElementById('tabla-facturas-foot');
+        const filas = facturasFiltradas();
+        const total = filas.reduce((s, f) => s + (Number(f.monto) || 0), 0);
+        const cobrado = filas.reduce((s, f) => s + (Number(f.monto_cobrado) || 0), 0);
+        const saldo = filas.reduce((s, f) => s + (Number(f.saldo) || 0), 0);
+        const vencidas = filas.filter(f => f.dias_vencida > 0);
+        const vencido = vencidas.reduce((s, f) => s + (Number(f.saldo) || 0), 0);
+        document.getElementById('fact-kpi-total').innerText = fmtMontoMov(total);
+        document.getElementById('fact-kpi-cantidad').innerText = `${filas.length} factura${filas.length === 1 ? '' : 's'}`;
+        document.getElementById('fact-kpi-cobrado').innerText = fmtMontoMov(cobrado);
+        document.getElementById('fact-kpi-saldo').innerText = fmtMontoMov(saldo);
+        document.getElementById('fact-kpi-vencido').innerText = fmtMontoMov(vencido);
+        document.getElementById('fact-kpi-vencido-cant').innerText = `${vencidas.length} factura${vencidas.length === 1 ? '' : 's'}`;
+        document.getElementById('factContador').textContent = filas.length === _facturasCache.length
+            ? `${filas.length} facturas`
+            : `${filas.length} de ${_facturasCache.length}`;
+
+        document.querySelectorAll('#tabla-facturas .mov-th-sort').forEach(th => {
+            const icon = th.querySelector('.sort-icon');
+            const activa = th.dataset.col === _facturasOrden.col;
+            th.classList.toggle('active', activa);
+            if (icon) icon.className = 'sort-icon fa-solid ' + (activa ? (_facturasOrden.dir === 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort');
+        });
+
+        if (!filas.length) {
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-3">${
+                _facturasCache.length ? 'Sin coincidencias con los filtros' : 'Sin facturas emitidas en el periodo'
+            }</td></tr>`;
+            tfoot.innerHTML = '';
+            return;
+        }
+        tbody.innerHTML = filas.map(f => {
+            const ufTxt = f.monto_uf != null ? fmtUfEp(f.monto_uf) : '—';
+            const vencTxt = fmtFechaMov(f.fecha_vencimiento) || '—';
+            const venc = f.dias_vencida > 0
+                ? `<span class="text-danger fw-semibold" title="Vencida hace ${f.dias_vencida} días">${vencTxt} <small>(+${f.dias_vencida}d)</small></span>`
+                : vencTxt;
+            const abrir = f.proyecto_id ? `onclick="abrirEstadoPago(${f.proyecto_id}, ${f.id})" style="cursor:pointer" title="Abrir estado de pago"` : '';
+            return `<tr ${abrir}>
+                <td class="fw-semibold">${esc(f.numero_factura || '—')}</td>
+                <td>${fmtFechaMov(f.fecha_facturacion) || '—'}</td>
+                <td title="${esc(f.cliente_rut || '')}">${esc(f.cliente || '—')}${f.cliente_rut ? `<br><small class="text-muted">${esc(f.cliente_rut)}</small>` : ''}</td>
+                <td>${esc(f.proyecto || '—')}</td>
+                <td class="text-center">${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
+                <td class="text-end">${esc(ufTxt)}</td>
+                <td class="text-end">${fmtMontoMov(f.monto)}</td>
+                <td><span class="badge ${claseStatusPagoSelect(f.status_pago)}">${esc(f.status_pago || '—')}</span></td>
+                <td>${venc}</td>
+                <td>${fmtFechaMov(f.fecha_pago) || '—'}</td>
+                <td class="text-end">${f.monto_cobrado ? fmtMontoMov(f.monto_cobrado) : '—'}</td>
+            </tr>`;
+        }).join('');
+        tfoot.innerHTML = `<tr class="fw-bold">
+            <td colspan="6" class="text-end">Totales</td>
+            <td class="text-end">${fmtMontoMov(total)}</td>
+            <td colspan="3" class="text-end text-muted fw-normal">Por cobrar: ${fmtMontoMov(saldo)}</td>
+            <td class="text-end">${fmtMontoMov(cobrado)}</td>
+        </tr>`;
+    }
+
+    function debounceRenderFacturas() {
+        clearTimeout(_facturasFilterTimer);
+        _facturasFilterTimer = setTimeout(renderFacturas, 250);
+    }
+
+    function ordenarFacturas(col) {
+        if (_facturasOrden.col === col) _facturasOrden.dir = _facturasOrden.dir === 'asc' ? 'desc' : 'asc';
+        else _facturasOrden = { col, dir: 'asc' };
+        renderFacturas();
+    }
+
+    function limpiarFiltrosFacturas() {
+        ['filtroFactNumero', 'filtroFactFecha', 'filtroFactCliente', 'filtroFactProyecto', 'filtroFactStatus']
+            .forEach(id => { document.getElementById(id).value = ''; });
+        renderFacturas();
+    }
+
+    function exportarFacturasCsv() {
+        const filas = facturasFiltradas();
+        if (!filas.length) { alert('No hay facturas para exportar.'); return; }
+        const cols = [
+            ['N° Factura', f => f.numero_factura],
+            ['Fecha emisión', f => fmtFechaMov(f.fecha_facturacion)],
+            ['Cliente', f => f.cliente],
+            ['RUT cliente', f => f.cliente_rut],
+            ['Proyecto', f => f.proyecto],
+            ['N° EP', f => f.numero_ep],
+            ['UF', f => f.monto_uf != null ? String(f.monto_uf).replace('.', ',') : ''],
+            ['Monto', f => Math.round(Number(f.monto) || 0)],
+            ['Status', f => f.status_pago],
+            ['Condición pago (días)', f => f.condicion_pago_dias],
+            ['Vencimiento', f => fmtFechaMov(f.fecha_vencimiento)],
+            ['Días vencida', f => f.dias_vencida || ''],
+            ['Fecha pago', f => fmtFechaMov(f.fecha_pago)],
+            ['Cobrado', f => Math.round(Number(f.monto_cobrado) || 0)],
+            ['Saldo', f => Math.round(Number(f.saldo) || 0)],
+        ];
+        const celda = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const lineas = [cols.map(c => celda(c[0])).join(';')]
+            .concat(filas.map(f => cols.map(c => celda(c[1](f))).join(';')));
+        const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        const anio = document.getElementById('factAnio').value;
+        a.href = URL.createObjectURL(blob);
+        a.download = `facturas_emitidas${anio ? '_' + anio : ''}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
 
     function iconoStatusGestion(status) {
         if (status === 'Hecho') {

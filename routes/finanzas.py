@@ -1,5 +1,5 @@
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased
 
 from bootstrap import empresa_default_id as _empresa_default_id
 from common import *
+from common import _numero_ep_efectivo
 from contabilidad import (
     calcular_balance_cuenta,
     calcular_flujo_financiero,
@@ -181,6 +182,87 @@ def get_dashboard_estados_pago():
         return jsonify(filas)
     except ValueError:
         return jsonify({'error': 'Parámetro anio inválido'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+STATUS_FACTURA_EMITIDA = ('Facturado', 'Pagado', 'Cedida')
+
+
+def _factura_emitida_a_dict(m: Movimiento, hoy: date) -> dict:
+    proyecto = m.proyecto_rel
+    cliente = proyecto.cliente_rel if proyecto else None
+    status = m.status_pago or ''
+    dias_pago = m.condicion_pago_dias or 30
+    vencimiento = m.fecha_facturacion + timedelta(days=dias_pago) if m.fecha_facturacion else None
+    cobrada = status in ('Pagado', 'Cedida')
+    dias_vencida = (hoy - vencimiento).days if vencimiento and not cobrada and hoy > vencimiento else 0
+    monto = float(m.monto_pesos or 0)
+    monto_cobrado = (
+        float(m.monto_ingreso_cesion) if status == 'Cedida' and m.monto_ingreso_cesion is not None
+        else monto if cobrada else 0.0
+    )
+    return {
+        'id': m.id,
+        'numero_factura': m.numero_factura,
+        'numero_ep': _numero_ep_efectivo(m),
+        'proyecto_id': m.proyecto_id,
+        'proyecto': proyecto.nombre if proyecto else None,
+        'cliente': cliente.razon_social if cliente else None,
+        'cliente_rut': cliente.rut if cliente else None,
+        'descripcion': m.descripcion,
+        'fecha_estado_pago': m.fecha_estado_pago.strftime('%Y-%m-%d') if m.fecha_estado_pago else None,
+        'fecha_facturacion': m.fecha_facturacion.strftime('%Y-%m-%d') if m.fecha_facturacion else None,
+        'condicion_pago_dias': dias_pago,
+        'fecha_vencimiento': vencimiento.strftime('%Y-%m-%d') if vencimiento else None,
+        'fecha_pago': m.fecha_movimiento.strftime('%Y-%m-%d') if cobrada and m.fecha_movimiento else None,
+        'dias_vencida': dias_vencida,
+        'status_pago': status,
+        'monto': monto,
+        'monto_uf': m.monto_uf,
+        'valor_uf': m.valor_uf,
+        'monto_cobrado': monto_cobrado,
+        'saldo': 0.0 if cobrada else monto,
+    }
+
+
+@bp.route('/api/finanzas/facturas', methods=['GET'])
+def get_facturas_emitidas():
+    """Detalle de facturas emitidas (EP Facturado/Pagado/Cedida o con N° de factura).
+
+    Query params:
+      - anio: año de fecha_facturacion (o fecha del EP si no tiene); vacío = todos
+    """
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        movs = Movimiento.query.filter(
+            Movimiento.empresa_id == eid,
+            Movimiento.clase == 'estado_pago',
+            Movimiento.estado == 'Activo',
+            db.or_(
+                Movimiento.status_pago.in_(STATUS_FACTURA_EMITIDA),
+                db.and_(Movimiento.numero_factura.isnot(None), Movimiento.numero_factura != ''),
+            ),
+        ).all()
+
+        def fecha_ref(m):
+            return m.fecha_facturacion or m.fecha_estado_pago or m.fecha_movimiento
+
+        anios = sorted({fecha_ref(m).year for m in movs if fecha_ref(m)}, reverse=True)
+        anio = request.args.get('anio', type=int)
+        if anio:
+            movs = [m for m in movs if fecha_ref(m) and fecha_ref(m).year == anio]
+
+        hoy = date.today()
+        facturas = [_factura_emitida_a_dict(m, hoy) for m in movs]
+        facturas.sort(key=lambda f: (f['fecha_facturacion'] or '', f['numero_factura'] or ''), reverse=True)
+        return jsonify({
+            'anio': anio,
+            'anios': anios,
+            'facturas': facturas,
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
