@@ -1674,15 +1674,20 @@ def _fecha_uf_planilla(mes: int, anio: int) -> date:
 
 
 def _dias_trabajados_mes(trabajador: Trabajador, mes: int, anio: int) -> int:
-    """Días efectivos del mes; ajusta si el ingreso fue durante el período."""
-    ultimo_dia = calendar.monthrange(anio, mes)[1]
-    if trabajador.fecha_ingreso.year > anio:
+    """Días del mes comercial de 30, el que usa el libro de remuneraciones.
+
+    Un mes completo son 30 días, también en febrero y en los meses de 31.
+    Quien ingresa durante el mes se proporciona desde ese día hasta el día 30.
+    El día 31 no se paga aparte: si el ingreso es ese día, cuenta 1.
+    """
+    ingreso = trabajador.fecha_ingreso
+    if ingreso.year > anio or (ingreso.year == anio and ingreso.month > mes):
         return 0
-    if trabajador.fecha_ingreso.year == anio and trabajador.fecha_ingreso.month > mes:
-        return 0
-    if trabajador.fecha_ingreso.year == anio and trabajador.fecha_ingreso.month == mes:
-        return ultimo_dia - trabajador.fecha_ingreso.day + 1
-    return ultimo_dia
+    if ingreso.year < anio or ingreso.month < mes:
+        return 30
+    if ingreso.day >= 31:
+        return 1
+    return 30 - ingreso.day + 1
 
 
 def _desglose_salud_liquidacion(

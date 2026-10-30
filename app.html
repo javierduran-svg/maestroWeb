@@ -15205,7 +15205,8 @@
         const data = await res.json();
         if (!res.ok) {
             msg.className = 'small mt-2 text-danger';
-            msg.textContent = data.error || 'No se pudo generar la planilla';
+            msg.textContent = (data.error || 'No se pudo generar la planilla')
+                + ' La tabla sigue mostrando el último período cargado.';
             return;
         }
         msg.className = 'small mt-2 text-teal';

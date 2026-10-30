@@ -1,7 +1,7 @@
 """Liquidación de sueldo alineada al libro de remuneraciones oficial.
 
-Indicadores de septiembre 2026 (Previred / SII), verificados contra
-LibroRemuneraciones del período 09/2026:
+Indicadores Previred / SII, verificados contra el Libro de Remuneraciones
+de 09/2026 y de 10/2026:
 
 - UF del último día del mes.
 - Tope AFP y salud: 90 UF desde las remuneraciones de febrero 2026.
@@ -70,6 +70,8 @@ _UTM = {
     (2026, 7): 71649,
     (2026, 8): 71649,
     (2026, 9): 71721,
+    (2026, 10): 72151,
+    (2026, 11): 72440,
 }
 
 
