@@ -12,15 +12,9 @@ MESES_ES = (
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 )
 
-MESES_ES_MAYUS = (
-    '', 'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-    'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE',
-)
-
 # Paleta alineada con app.html (--teal-green, bordes, headers)
 TEAL = (0, 128, 128)
 TEAL_LIGHT = (227, 242, 242)
-DARK = (0, 0, 0)
 HEADER_BG = (241, 243, 245)
 BORDER = (222, 226, 230)
 TEXT_MUTED = (108, 117, 125)
@@ -65,7 +59,15 @@ def _fmt_clp(valor: float) -> str:
 
 
 def _fmt_uf(valor: float) -> str:
-    return f'UF {valor:.4f}'.replace('.', ',')
+    texto = f'{float(valor):.4f}'.rstrip('0').rstrip('.')
+    if '.' not in texto:
+        texto = f'{texto},00'
+    else:
+        entero, dec = texto.split('.')
+        if len(dec) < 2:
+            dec = dec.ljust(2, '0')
+        texto = f'{entero},{dec}'
+    return f'UF {texto}'
 
 
 def _fmt_rut(rut: str) -> str:
@@ -138,8 +140,8 @@ class LiquidacionPDF(FPDF):
 
     def __init__(self):
         super().__init__()
-        self.set_margins(14, 14, 14)
-        self.set_auto_page_break(auto=True, margin=18)
+        self.set_margins(12, 10, 12)
+        self.set_auto_page_break(auto=False)
         self._font_family, _ = _registrar_fuentes(self)
 
     def _set_font(self, style: str = '', size: int = 9):
@@ -149,18 +151,12 @@ class LiquidacionPDF(FPDF):
         pass
 
 
-_MARGEN_X = 14
-_ANCHO_CONTENIDO = 182
-_HEADER_H = 16
-_LOGO_MAX_W = 40
+_MARGEN_X = 12
+_ANCHO_CONTENIDO = 186
+_LOGO_MAX_W = 42
 _LOGO_MAX_H = 12
-_LOGO_PAD = 1.2
-
-
-def _dibujar_borde(pdf: FPDF, x: float, y: float, w: float, h: float):
-    pdf.set_draw_color(*BORDER)
-    pdf.set_line_width(0.2)
-    pdf.rect(x, y, w, h)
+_FILA_H = 4.3
+INK = (33, 37, 41)
 
 
 def _tamano_logo(path: str, max_w: float, max_h: float) -> tuple[float, float]:
@@ -180,134 +176,156 @@ def _tamano_logo(path: str, max_w: float, max_h: float) -> tuple[float, float]:
         return max_w, max_h
 
 
-def _colocar_logo_barra(pdf: LiquidacionPDF, logo_path: str, y: float) -> float:
-    """Dibuja el logo en un recuadro blanco dentro de la barra. Devuelve el x izquierdo del recuadro."""
-    logo_w, logo_h = _tamano_logo(logo_path, _LOGO_MAX_W, _LOGO_MAX_H)
-    box_w = logo_w + 2 * _LOGO_PAD
-    box_h = min(logo_h + 2 * _LOGO_PAD, _HEADER_H - 2)
-    box_x = _MARGEN_X + _ANCHO_CONTENIDO - box_w - 2
-    box_y = y + (_HEADER_H - box_h) / 2
-    pdf.set_fill_color(*WHITE)
-    pdf.rect(box_x, box_y, box_w, box_h, style='F')
-    pdf.image(
-        logo_path,
-        x=box_x + _LOGO_PAD,
-        y=box_y + (box_h - logo_h) / 2,
-        w=logo_w,
-        h=logo_h,
-    )
-    return box_x
+def _cortar(pdf: LiquidacionPDF, texto, ancho: float, size: float = 7.5) -> str:
+    s = _texto_seguro(texto)
+    pdf._set_font('', size)
+    if pdf.get_string_width(s) <= ancho:
+        return s
+    while s and pdf.get_string_width(s + '.') > ancho:
+        s = s[:-1]
+    return s.rstrip() + '.' if s else ''
 
 
-def _barra_titulo(pdf: LiquidacionPDF, titulo: str, subtitulo: str = '', logo_path: str | None = None):
-    """Barra superior oscura con acento teal; títulos a la izquierda, logo a la derecha."""
+def _encabezado(pdf: LiquidacionPDF, titulo: str, periodo: str, empresa: dict):
+    """Titulo y empresa sobre fondo blanco, con el logo a la derecha."""
     y = pdf.get_y()
-    pdf.set_fill_color(*DARK)
-    pdf.rect(_MARGEN_X, y, _ANCHO_CONTENIDO, _HEADER_H, style='F')
-    pdf.set_fill_color(*TEAL)
-    pdf.rect(_MARGEN_X, y, 3, _HEADER_H, style='F')
-    logo_x = _MARGEN_X + _ANCHO_CONTENIDO
+    logo_path = empresa.get('logo_path')
+    reservado = 0.0
     if logo_path and Path(logo_path).is_file():
         try:
-            logo_x = _colocar_logo_barra(pdf, logo_path, y)
+            logo_w, logo_h = _tamano_logo(logo_path, _LOGO_MAX_W, _LOGO_MAX_H)
+            pdf.image(
+                logo_path,
+                x=_MARGEN_X + _ANCHO_CONTENIDO - logo_w,
+                y=y,
+                w=logo_w,
+                h=logo_h,
+            )
+            reservado = logo_w + 4
         except Exception:
-            logo_x = _MARGEN_X + _ANCHO_CONTENIDO
-    titulo_w = max(60, logo_x - 24)
-    pdf.set_xy(20, y + 3)
-    pdf._set_font('B', 11)
-    pdf.set_text_color(*WHITE)
-    pdf.cell(titulo_w, 5, _texto_seguro(titulo), new_x='LMARGIN', new_y='NEXT')
-    if subtitulo:
-        pdf.set_xy(20, y + 8.5)
-        pdf._set_font('', 8)
-        pdf.set_text_color(200, 200, 200)
-        pdf.cell(titulo_w, 4, _texto_seguro(subtitulo), new_x='LMARGIN', new_y='NEXT')
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_y(y + _HEADER_H + 3)
-
-
-def _seccion_header(pdf: LiquidacionPDF, titulo: str):
-    """Encabezado de sección con fondo teal claro."""
-    pdf.ln(2)
-    y = pdf.get_y()
-    pdf.set_fill_color(*TEAL_LIGHT)
+            reservado = 0.0
+    texto_w = _ANCHO_CONTENIDO - reservado
+    pdf.set_xy(_MARGEN_X, y)
+    pdf._set_font('B', 13)
+    pdf.set_text_color(*TEAL)
+    pdf.cell(texto_w, 6, _texto_seguro(titulo))
+    pdf.set_xy(_MARGEN_X, y + 6.2)
+    pdf._set_font('', 8)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(texto_w, 4, _texto_seguro(periodo))
+    pdf.set_xy(_MARGEN_X, y + 11)
+    pdf._set_font('B', 8)
+    pdf.set_text_color(*INK)
+    empresa_txt = f"{empresa.get('razon_social', '')}    {_fmt_rut(empresa.get('rut', ''))}"
+    pdf.cell(texto_w, 4, _cortar(pdf, empresa_txt, texto_w, 8))
+    direccion = (empresa.get('direccion') or '').strip()
+    alto = 16.5
+    if direccion:
+        pdf.set_xy(_MARGEN_X, y + 15.2)
+        pdf._set_font('', 7.5)
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(texto_w, 3.5, _cortar(pdf, direccion, texto_w, 7.5))
+        alto = 20
+    y_linea = y + alto
     pdf.set_draw_color(*TEAL)
-    pdf.set_line_width(0.3)
-    pdf.rect(14, y, 182, 6, style='FD')
-    pdf.set_xy(16, y + 1)
+    pdf.set_line_width(0.45)
+    pdf.line(_MARGEN_X, y_linea, _MARGEN_X + _ANCHO_CONTENIDO, y_linea)
+    pdf.set_y(y_linea + 3)
+
+
+def _grilla_trabajador(pdf: LiquidacionPDF, pares: list[tuple[str, str, str, str]]):
+    """Dos pares etiqueta/valor por fila, sin encabezado de bloque."""
+    if not pares:
+        return
+    x = _MARGEN_X
+    y = pdf.get_y()
+    h = 4.5
+    anchos = (26, 67, 28, 65)
+    for i, fila in enumerate(pares):
+        yy = y + i * h
+        if i % 2 == 0:
+            pdf.set_fill_color(248, 249, 250)
+        else:
+            pdf.set_fill_color(*WHITE)
+        pdf.set_draw_color(*BORDER)
+        pdf.set_line_width(0.12)
+        pdf.rect(x, yy, _ANCHO_CONTENIDO, h, style='FD')
+        cx = x
+        for j, (texto, ancho) in enumerate(zip(fila, anchos)):
+            tam = 6.5 if j % 2 == 0 else 7.5
+            valor = _cortar(pdf, texto, ancho - 2.6, tam)
+            pdf.set_xy(cx + 1.4, yy + 0.7)
+            if j % 2 == 0:
+                pdf._set_font('', tam)
+                pdf.set_text_color(*TEXT_MUTED)
+            else:
+                pdf._set_font('B' if j == 1 and i == 0 else '', tam)
+                pdf.set_text_color(*INK)
+            pdf.cell(ancho - 2.2, 3.2, valor)
+            cx += ancho
+    pdf.set_text_color(*INK)
+    pdf.set_y(y + len(pares) * h + 3.5)
+
+
+def _tabla_conceptos(
+    pdf: LiquidacionPDF,
+    x: float,
+    y: float,
+    w: float,
+    titulo: str,
+    filas: list[tuple[str, float]],
+    total_label: str,
+    total_monto: float,
+) -> float:
+    """Tabla compacta. Devuelve la coordenada y bajo la tabla."""
+    pdf.set_xy(x, y)
     pdf._set_font('B', 8)
     pdf.set_text_color(*TEAL)
-    pdf.cell(0, 4, _texto_seguro(titulo.upper()), new_x='LMARGIN', new_y='NEXT')
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(1)
-
-
-def _tabla_fila_header(pdf: LiquidacionPDF, columnas: list[tuple[str, float]], x: float = 14):
-    """Fila de encabezado de tabla con fondo gris claro."""
-    y = pdf.get_y()
-    h = 5.5
+    pdf.cell(w, 4, _texto_seguro(titulo))
+    y += 4.6
+    monto_w = 32.0
+    conc_w = w - monto_w
     pdf.set_fill_color(*HEADER_BG)
     pdf.set_draw_color(*BORDER)
-    pdf.set_line_width(0.15)
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(60, 60, 60)
-    cx = x
-    for texto, ancho in columnas:
-        pdf.rect(cx, y, ancho, h, style='FD')
-        pdf.set_xy(cx + 1.5, y + 1.2)
-        pdf.cell(ancho - 2, 3.5, _texto_seguro(texto))
-        cx += ancho
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_y(y + h)
+    pdf.set_line_width(0.12)
+    pdf._set_font('B', 6.5)
+    pdf.set_text_color(90, 98, 104)
+    pdf.rect(x, y, conc_w, _FILA_H, style='FD')
+    pdf.rect(x + conc_w, y, monto_w, _FILA_H, style='FD')
+    pdf.set_xy(x + 1.3, y + 0.6)
+    pdf.cell(conc_w - 2, 3.1, 'Concepto')
+    pdf.set_xy(x + conc_w, y + 0.6)
+    pdf.cell(monto_w - 1.4, 3.1, 'Monto', align='R')
+    y += _FILA_H
 
+    if not filas:
+        filas = [('—', 0.0)]
+    pdf.set_text_color(*INK)
+    for concepto, monto in filas:
+        pdf.set_draw_color(*BORDER)
+        pdf.rect(x, y, conc_w, _FILA_H, style='D')
+        pdf.rect(x + conc_w, y, monto_w, _FILA_H, style='D')
+        concepto_txt = _cortar(pdf, concepto, conc_w - 2.4, 7)
+        pdf._set_font('', 7)
+        pdf.set_xy(x + 1.3, y + 0.6)
+        pdf.cell(conc_w - 2, 3.1, concepto_txt)
+        pdf.set_xy(x + conc_w, y + 0.6)
+        pdf.cell(monto_w - 1.4, 3.1, _fmt_clp(monto), align='R')
+        y += _FILA_H
 
-def _tabla_fila_datos(
-    pdf: LiquidacionPDF,
-    valores: list[tuple[str, float, str]],
-    x: float = 14,
-    negrita: bool = False,
-    fondo: tuple[int, int, int] | None = None,
-):
-    """Fila de datos: (texto, ancho, alineacion)."""
-    y = pdf.get_y()
-    h = 5
+    total_txt = _cortar(pdf, total_label, conc_w - 2.4, 7)
+    pdf.set_fill_color(*TEAL_LIGHT)
     pdf.set_draw_color(*BORDER)
-    pdf.set_line_width(0.15)
-    if fondo:
-        pdf.set_fill_color(*fondo)
-    pdf._set_font('B' if negrita else '', 7.5)
-    cx = x
-    for texto, ancho, align in valores:
-        style = 'FD' if fondo else 'D'
-        pdf.rect(cx, y, ancho, h, style=style)
-        pdf.set_xy(cx + 1.5, y + 1)
-        pdf.cell(ancho - 2, 3.5, _texto_seguro(texto), align=align)
-        cx += ancho
-    pdf.set_y(y + h)
-
-
-def _bloque_info(pdf: LiquidacionPDF, filas: list[tuple[str, str]], x: float, y: float, w: float):
-    """Bloque de etiqueta/valor con borde."""
-    h_total = len(filas) * 5 + 4
-    _dibujar_borde(pdf, x, y, w, h_total)
-    pdf.set_fill_color(*HEADER_BG)
-    pdf.rect(x, y, w, 5, style='F')
-    pdf.set_xy(x + 2, y + 1)
+    pdf.rect(x, y, conc_w, _FILA_H, style='FD')
+    pdf.rect(x + conc_w, y, monto_w, _FILA_H, style='FD')
     pdf._set_font('B', 7)
     pdf.set_text_color(*TEAL)
-    pdf.cell(w - 4, 3.5, _texto_seguro('DATOS'))
-    pdf.set_text_color(0, 0, 0)
-    cy = y + 5
-    for etq, val in filas:
-        pdf.set_xy(x + 2, cy)
-        pdf._set_font('B', 7)
-        pdf.set_text_color(*TEXT_MUTED)
-        pdf.cell(w * 0.35, 4, _texto_seguro(etq))
-        pdf._set_font('', 7.5)
-        pdf.set_text_color(0, 0, 0)
-        pdf.cell(w * 0.63, 4, _texto_seguro(val))
-        cy += 5
-    return h_total
+    pdf.set_xy(x + 1.3, y + 0.6)
+    pdf.cell(conc_w - 2, 3.1, total_txt, align='R')
+    pdf.set_xy(x + conc_w, y + 0.6)
+    pdf.cell(monto_w - 1.4, 3.1, _fmt_clp(total_monto), align='R')
+    pdf.set_text_color(*INK)
+    return y + _FILA_H
 
 
 def _parse_detalle(datos: dict) -> dict:
@@ -389,28 +407,6 @@ def _aportes_empleador_desde_detalle(det: dict) -> list[tuple[str, float]]:
     return items
 
 
-def _render_tabla_montos(
-    pdf: LiquidacionPDF,
-    filas: list[tuple[str, float]],
-    total_label: str | None = None,
-    total_monto: float | None = None,
-):
-    """Tabla de conceptos / montos con encabezado."""
-    ancho_concepto = 130.0
-    ancho_monto = 52.0
-    _tabla_fila_header(pdf, [('Concepto', ancho_concepto), ('Monto', ancho_monto)])
-    for concepto, monto in filas:
-        _tabla_fila_datos(pdf, [
-            (concepto, ancho_concepto, 'L'),
-            (_fmt_clp(monto), ancho_monto, 'R'),
-        ])
-    if total_label is not None and total_monto is not None:
-        _tabla_fila_datos(pdf, [
-            (total_label, ancho_concepto, 'R'),
-            (_fmt_clp(total_monto), ancho_monto, 'R'),
-        ], negrita=True, fondo=TEAL_LIGHT)
-
-
 def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
     t = datos.get('trabajador') or {}
     det = _parse_detalle(datos)
@@ -419,211 +415,166 @@ def _render_una_liquidacion(pdf: LiquidacionPDF, datos: dict):
     mes = datos.get('mes', 0)
     anio = datos.get('anio', 0)
     periodo = (
-        f'{MESES_ES_MAYUS[mes]} DE {anio}'
+        f'{MESES_ES[mes]} de {anio}'
         if 1 <= mes <= 12
         else f'{mes}/{anio}'
     )
+    _encabezado(pdf, 'Liquidacion de sueldo', periodo, empresa)
 
-    _barra_titulo(
-        pdf,
-        'LIQUIDACION DE SUELDOS',
-        periodo,
-        logo_path=empresa.get('logo_path'),
-    )
-
-    # Empleador: títulos a la izquierda, sin ocupar la franja del logo (~40 mm)
-    etq_w = 26
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(etq_w, 4, _texto_seguro('Razon Social'))
-    pdf._set_font('', 8)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(72, 4, _texto_seguro(empresa.get('razon_social', '')))
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(12, 4, _texto_seguro('RUT'))
-    pdf._set_font('', 8)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(28, 4, _texto_seguro(_fmt_rut(empresa.get('rut', ''))), new_x='LMARGIN', new_y='NEXT')
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(*TEXT_MUTED)
-    pdf.cell(etq_w, 4, _texto_seguro('Direccion'))
-    pdf._set_font('', 8)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(112, 4, _texto_seguro(empresa.get('direccion', '')), new_x='LMARGIN', new_y='NEXT')
-    pdf.ln(3)
-
-    # Datos trabajador en dos bloques
     sueldo_uf = det.get('sueldo_base_uf') or datos.get('sueldo_base_uf') or t.get('sueldo_base_uf') or 0
     sueldo_clp = det.get('sueldo_base_clp') or t.get('sueldo_base') or 0
     plan_uf = det.get('valor_plan_uf') or t.get('valor_plan_isapre_uf') or 0
     fecha_ing = t.get('fecha_ingreso', '')
-    if fecha_ing and len(fecha_ing) == 10 and fecha_ing[4] == '-':
-        y, m, d = fecha_ing.split('-')
-        fecha_ing = f'{d}/{m}/{y}'
-    fecha_term = det.get('fecha_termino') or t.get('fecha_termino') or ''
-    cargo = det.get('cargo') or t.get('cargo') or ''
-    unidad = det.get('unidad_negocio') or empresa.get('unidad_negocio', 'CASA MATRIZ')
-
-    filas_izq = [
-        ('Nombre:', t.get('nombre_completo', '')),
-        ('RUT:', _fmt_rut(t.get('rut', ''))),
-        ('Contrato:', t.get('tipo_contrato', '')),
-        ('Ingreso:', fecha_ing),
-        ('Termino:', fecha_term or '—'),
-        ('Cargo:', cargo or '—'),
-    ]
-    filas_der = [
-        ('Sueldo base (UF):', _fmt_uf(float(sueldo_uf))),
-        ('Sueldo base ($):', _fmt_clp(float(sueldo_clp))),
-        ('Unidad:', unidad),
-        ('AFP:', t.get('afp', '')),
-        ('Salud:', t.get('sistema_salud', '')),
-    ]
-    if (t.get('sistema_salud') or '').lower() == 'isapre' and plan_uf:
-        filas_der.append(('Plan salud:', f'{float(plan_uf):.4f} UF'.replace('.', ',')))
-
-    y_start = pdf.get_y()
-    col_w = 89.0
-    h_izq = _bloque_info(pdf, filas_izq, 14, y_start, col_w)
-    h_der = _bloque_info(pdf, filas_der, 14 + col_w + 4, y_start, col_w)
-    pdf.set_y(y_start + max(h_izq, h_der) + 4)
-
-    # Haberes
+    if fecha_ing and len(str(fecha_ing)) >= 10 and str(fecha_ing)[4] == '-':
+        yyyy, mm, dd = str(fecha_ing)[:10].split('-')
+        fecha_ing = f'{dd}/{mm}/{yyyy}'
+    cargo = (det.get('cargo') or t.get('cargo') or '').strip()
+    unidad = det.get('unidad_negocio') or empresa.get('unidad_negocio') or ''
     dias = det.get('dias_trabajados') or datos.get('dias_trabajados') or 0
+    salud = t.get('sistema_salud') or ''
+    if (salud or '').lower() == 'isapre' and t.get('nombre_isapre'):
+        salud = t.get('nombre_isapre')
+
+    izquierda = [
+        ('Nombre', t.get('nombre_completo', '')),
+        ('RUT', _fmt_rut(t.get('rut', ''))),
+        ('Contrato', t.get('tipo_contrato', '')),
+        ('Ingreso', fecha_ing),
+    ]
+    if cargo:
+        izquierda.append(('Cargo', cargo))
+    if unidad:
+        izquierda.append(('Unidad', unidad))
+    if (t.get('sistema_salud') or '').lower() == 'isapre' and plan_uf:
+        plan_txt = f'{float(plan_uf):.3f}'.rstrip('0').rstrip('.').replace('.', ',')
+        salud = f'{salud}  {plan_txt} UF'.strip()
+    derecha = [
+        ('Sueldo base', _fmt_uf(float(sueldo_uf))),
+        ('En pesos', _fmt_clp(float(sueldo_clp))),
+        ('Dias', str(dias)),
+        ('AFP', t.get('afp', '')),
+        ('Salud', salud),
+    ]
+    n = max(len(izquierda), len(derecha))
+    pares = []
+    for i in range(n):
+        a, b = izquierda[i] if i < len(izquierda) else ('', '')
+        c, d = derecha[i] if i < len(derecha) else ('', '')
+        pares.append((a, b, c, d))
+    _grilla_trabajador(pdf, pares)
+
     sueldo_prop = float(
         det.get('sueldo_proporcional_clp')
         or datos.get('sueldo_base_proporcional')
         or 0
     )
-    total_imponible = float(det.get('total_imponible') or datos.get('total_imponible') or 0)
-    total_no_imponible = float(det.get('total_no_imponible') or 0)
     total_haberes = float(det.get('total_haberes') or datos.get('total_haberes') or 0)
-
-    _seccion_header(pdf, 'Haberes')
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(*TEAL)
-    pdf.cell(0, 4, _texto_seguro('Imponibles'), new_x='LMARGIN', new_y='NEXT')
-    pdf.set_text_color(0, 0, 0)
-
+    haberes: list[tuple[str, float]] = []
     haberes_imp = det.get('haberes_imponibles')
-    filas_imp: list[tuple[str, float]] = []
     if haberes_imp:
         for h in haberes_imp:
-            filas_imp.append((h.get('concepto', ''), float(h.get('monto') or 0)))
+            haberes.append((h.get('concepto', ''), float(h.get('monto') or 0)))
     else:
-        filas_imp.append((f'SUELDO BASE {dias} DIAS', sueldo_prop))
-    _render_tabla_montos(pdf, filas_imp, 'TOTAL IMPONIBLE', total_imponible)
-    pdf.ln(2)
+        haberes.append((f'Sueldo base {dias} dias', sueldo_prop))
+    for h in det.get('haberes_no_imponibles') or []:
+        haberes.append((h.get('concepto', ''), float(h.get('monto') or 0)))
 
-    pdf._set_font('B', 7.5)
-    pdf.set_text_color(*TEAL)
-    pdf.cell(0, 4, _texto_seguro('No imponibles'), new_x='LMARGIN', new_y='NEXT')
-    pdf.set_text_color(0, 0, 0)
-    haberes_no = det.get('haberes_no_imponibles') or []
-    filas_no: list[tuple[str, float]] = [
-        (h.get('concepto', ''), float(h.get('monto') or 0)) for h in haberes_no
-    ]
-    if filas_no:
-        _render_tabla_montos(pdf, filas_no, 'TOTAL NO IMPONIBLE', total_no_imponible)
-    else:
-        _tabla_fila_header(pdf, [('Concepto', 130), ('Monto', 52)])
-        _tabla_fila_datos(pdf, [('—', 130, 'L'), (_fmt_clp(0), 52, 'R')])
-        _tabla_fila_datos(pdf, [
-            ('TOTAL NO IMPONIBLE', 130, 'R'),
-            (_fmt_clp(total_no_imponible), 52, 'R'),
-        ], negrita=True, fondo=TEAL_LIGHT)
-    pdf.ln(1)
-    _tabla_fila_datos(pdf, [
-        ('TOTAL HABERES', 130, 'R'),
-        (_fmt_clp(total_haberes), 52, 'R'),
-    ], negrita=True, fondo=HEADER_BG)
-    pdf.ln(1)
-
-    # Descuentos
-    _seccion_header(pdf, 'Descuentos')
     descuentos = _descuentos_desde_detalle(det, t)
-    _render_tabla_montos(
-        pdf,
-        descuentos,
-        'TOTAL DESCUENTOS',
+    gap = 4.0
+    col_w = (_ANCHO_CONTENIDO - gap) / 2
+    y_tablas = pdf.get_y()
+    y_hab = _tabla_conceptos(
+        pdf, _MARGEN_X, y_tablas, col_w,
+        'Haberes', haberes, 'Total haberes', total_haberes,
+    )
+    y_desc = _tabla_conceptos(
+        pdf, _MARGEN_X + col_w + gap, y_tablas, col_w,
+        'Descuentos', descuentos, 'Total descuentos',
         float(det.get('total_descuentos') or datos.get('total_descuentos') or 0),
     )
+    pdf.set_y(max(y_hab, y_desc) + 3.5)
 
     aportes_filas = _aportes_empleador_desde_detalle(det)
     total_aportes = float((det.get('aportes_empleador') or {}).get('total') or 0)
     if aportes_filas or total_aportes:
-        _seccion_header(pdf, 'Aportes del empleador')
-        pdf._set_font('', 6.5)
-        pdf.set_text_color(*TEXT_MUTED)
-        pdf.cell(
-            0, 3.5,
-            _texto_seguro('De cargo del empleador. No se descuentan del liquido a pago.'),
-            new_x='LMARGIN', new_y='NEXT',
+        y_ap = _tabla_conceptos(
+            pdf, _MARGEN_X, pdf.get_y(), _ANCHO_CONTENIDO,
+            'Aportes del empleador, no descuentan el liquido',
+            aportes_filas, 'Total aportes', total_aportes,
         )
-        pdf.set_text_color(0, 0, 0)
-        _render_tabla_montos(pdf, aportes_filas, 'TOTAL APORTES EMPLEADOR', total_aportes)
+        pdf.set_y(y_ap + 3)
 
-    # Resumen líquido
-    pdf.ln(2)
     liquido = float(det.get('alcance_liquido') or datos.get('alcance_liquido') or 0)
     tributable = float(det.get('total_tributable') or 0)
     y = pdf.get_y()
-    pdf.set_fill_color(*DARK)
-    pdf.rect(14, y, 182, 8, style='F')
+    alto_liq = 11 if tributable else 8
+    pdf.set_fill_color(*TEAL_LIGHT)
+    pdf.set_draw_color(*TEAL)
+    pdf.set_line_width(0.25)
+    pdf.rect(_MARGEN_X, y, _ANCHO_CONTENIDO, alto_liq, style='FD')
     pdf.set_fill_color(*TEAL)
-    pdf.rect(14, y, 3, 8, style='F')
-    pdf.set_xy(20, y + 2)
+    pdf.rect(_MARGEN_X, y, 2.2, alto_liq, style='F')
+    pdf.set_xy(_MARGEN_X + 6, y + 1.6)
     pdf._set_font('B', 9)
-    pdf.set_text_color(*WHITE)
-    pdf.cell(100, 4, _texto_seguro('LIQUIDO A PAGO'))
-    pdf.cell(0, 4, _fmt_clp(liquido), align='R', new_x='LMARGIN', new_y='NEXT')
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(*TEAL)
+    pdf.cell(70, 5, 'Liquido a pago')
+    pdf._set_font('B', 12)
+    pdf.set_xy(_MARGEN_X + 76, y + 1.3)
+    pdf.cell(_ANCHO_CONTENIDO - 82, 5.5, _fmt_clp(liquido), align='R')
     if tributable:
-        pdf.ln(1)
-        _tabla_fila_datos(pdf, [
-            ('TOTAL TRIBUTABLE', 130, 'R'),
-            (_fmt_clp(tributable), 52, 'R'),
-        ], negrita=True)
+        pdf.set_xy(_MARGEN_X + 6, y + 6.4)
+        pdf._set_font('', 7)
+        pdf.set_text_color(*TEXT_MUTED)
+        pdf.cell(_ANCHO_CONTENIDO - 12, 3.2, _texto_seguro(f'Base tributable   {_fmt_clp(tributable)}'))
+    pdf.set_y(y + alto_liq + 2.5)
 
-    # Depósito bancario
-    banco = t.get('banco') or datos.get('banco') or ''
-    cuenta = t.get('cuenta_bancaria') or datos.get('cuenta_bancaria') or ''
-    if banco or cuenta:
-        pdf.ln(3)
-        _seccion_header(pdf, 'Datos deposito')
-        filas_dep = []
-        if banco:
-            filas_dep.append(('Banco:', banco))
-        if cuenta:
-            filas_dep.append(('Cuenta:', cuenta))
-        y_dep = pdf.get_y()
-        _bloque_info(pdf, filas_dep, 14, y_dep, 182)
-        pdf.set_y(y_dep + len(filas_dep) * 5 + 9)
-
-    # Monto en palabras y conformidad
-    pdf.ln(2)
-    pdf._set_font('', 8)
-    pdf.set_text_color(*TEXT_MUTED)
+    banco = (t.get('banco') or datos.get('banco') or '').strip()
+    cuenta = (t.get('cuenta_bancaria') or datos.get('cuenta_bancaria') or '').strip()
     letras = _numero_a_letras(int(round(liquido)))
-    pdf.multi_cell(0, 4, _texto_seguro(f'SON: {letras} PESOS'))
-    pdf.ln(1)
+    pdf._set_font('', 7.5)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.cell(0, 3.6, _cortar(pdf, f'Son: {letras} pesos.', _ANCHO_CONTENIDO, 7.5), new_x='LMARGIN', new_y='NEXT')
+    if banco or cuenta:
+        deposito = 'Deposito: ' + '   '.join(p for p in (banco, f'cuenta {cuenta}' if cuenta else '') if p)
+        pdf.cell(0, 3.6, _cortar(pdf, deposito, _ANCHO_CONTENIDO, 7.5), new_x='LMARGIN', new_y='NEXT')
+
+    pdf.ln(3)
+    pdf._set_font('', 7)
+    pdf.set_text_color(*TEXT_MUTED)
     pdf.multi_cell(
-        0, 4,
+        _ANCHO_CONTENIDO, 3.2,
         _texto_seguro(
-            'RECIBI CONFORME EL ALCANCE LIQUIDO DE LA PRESENTE LIQUIDACION, '
-            'NO TENIENDO CARGO O COBRO ALGUNO QUE HACER POR NINGUN CONCEPTO'
+            'Recibi conforme el alcance liquido de esta liquidacion, '
+            'sin cargo ni cobro posterior por ningun concepto.'
         ),
     )
-    pdf.ln(5)
+    etiquetas_h = 12
+    y_linea = pdf.h - 14 - etiquetas_h
+    if y_linea < pdf.get_y() + 28:
+        y_linea = min(pdf.h - 14 - etiquetas_h, pdf.get_y() + 28)
+
+    col_w_firma = 72
+    x1 = _MARGEN_X + 6
+    x2 = _MARGEN_X + _ANCHO_CONTENIDO - col_w_firma - 6
     pdf.set_draw_color(*TEAL)
-    pdf.set_line_width(0.4)
-    pdf.line(70, pdf.get_y(), 140, pdf.get_y())
-    pdf.ln(2)
-    pdf._set_font('B', 7.5)
+    pdf.set_line_width(0.35)
+    pdf.line(x1, y_linea, x1 + col_w_firma, y_linea)
+    pdf.line(x2, y_linea, x2 + col_w_firma, y_linea)
+    pdf._set_font('B', 7)
     pdf.set_text_color(*TEAL)
-    pdf.cell(0, 4, _texto_seguro('FIRMA TRABAJADOR'), align='C')
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_xy(x1, y_linea + 1.6)
+    pdf.cell(col_w_firma, 3.4, 'Firma del trabajador', align='C')
+    pdf.set_xy(x2, y_linea + 1.6)
+    pdf.cell(col_w_firma, 3.4, 'Firma del empleador', align='C')
+    pdf._set_font('', 6.5)
+    pdf.set_text_color(*TEXT_MUTED)
+    pdf.set_xy(x1, y_linea + 5.2)
+    pdf.cell(col_w_firma, 3, _cortar(pdf, t.get('nombre_completo', ''), col_w_firma - 2, 6.5), align='C')
+    pdf.set_xy(x2, y_linea + 5.2)
+    pdf.cell(col_w_firma, 3, _cortar(pdf, empresa.get('razon_social', ''), col_w_firma - 2, 6.5), align='C')
+    pdf.set_xy(x1, y_linea + 8.2)
+    pdf.cell(col_w_firma, 3, _texto_seguro(_fmt_rut(t.get('rut', ''))), align='C')
+    pdf.set_text_color(*INK)
 
 
 def generar_pdf_liquidacion(datos: dict) -> bytes:

@@ -2847,6 +2847,7 @@
                         <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas()" title="Movimientos del año cuya cuenta destino es de remuneraciones">Remuneraciones pagadas</button>
                         <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas('resumen')" title="Total pagado por mes y trabajador">Resumen mensual</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnExportPdfPlanilla" onclick="exportarPdfPlanilla()" title="Exportar todas las liquidaciones del período"><i class="fa-solid fa-file-pdf me-1"></i>EXPORTAR PDF</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnEnviarLiquidaciones" onclick="enviarLiquidacionesCorreo()" title="Enviar a cada trabajador el PDF de su liquidación"><i class="fa-solid fa-envelope me-1"></i>ENVIAR LIQUIDACIONES POR CORREO</button>
                         <button class="btn btn-sm btn-teal" id="btnExportPrevired" onclick="exportarPrevired()" title="Descargar archivo TXT para carga en Previred"><i class="fa-solid fa-file-export me-1"></i>EXPORTAR PLANILLA MENSUAL A PREVIRED</button>
                         <button class="btn btn-sm btn-outline-secondary" id="btnIngresarMovimientos" onclick="ingresarPlanillaMovimientos()" title="Registrar liquidaciones del período en movimientos contables"><i class="fa-solid fa-book me-1"></i>INGRESAR A MOVIMIENTOS</button>
                     </div>
@@ -15232,6 +15233,33 @@
         const anio = document.getElementById('liqAnio').value;
         const q = _empresaActivaId ? `?empresa_id=${_empresaActivaId}` : '';
         window.open(`/api/personal/liquidaciones/${mes}/${anio}/pdf${q}`, '_blank');
+    }
+
+    async function enviarLiquidacionesCorreo() {
+        const mesSel = document.getElementById('liqMes');
+        const mes = mesSel.value;
+        const anio = document.getElementById('liqAnio').value;
+        const mesTxt = mesSel.selectedOptions[0] ? mesSel.selectedOptions[0].textContent : mes;
+        const msg = document.getElementById('liqMsg');
+        if (!confirm(`¿Enviar por correo la liquidación de ${mesTxt} ${anio} a cada trabajador?`)) return;
+        msg.className = 'small mt-2 text-muted';
+        msg.textContent = 'Enviando liquidaciones…';
+        const btn = document.getElementById('btnEnviarLiquidaciones');
+        if (btn) btn.disabled = true;
+        try {
+            const res = await apiFetch(`/api/personal/liquidaciones/${mes}/${anio}/correo`, { method: 'POST' });
+            const data = await res.json();
+            if (!res.ok) {
+                msg.className = 'small mt-2 text-danger';
+                msg.textContent = data.error || 'No se pudieron enviar las liquidaciones';
+                return;
+            }
+            const falloTotal = (data.enviados || 0) === 0 && (data.fallos || []).length;
+            msg.className = falloTotal ? 'small mt-2 text-danger' : 'small mt-2 text-teal';
+            msg.textContent = data.mensaje || `Enviadas: ${data.enviados || 0}`;
+        } finally {
+            if (btn) btn.disabled = false;
+        }
     }
 
     function exportarPrevired() {

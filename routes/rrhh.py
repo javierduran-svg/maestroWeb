@@ -3,7 +3,9 @@ import unicodedata
 from datetime import date
 from io import BytesIO
 
-from flask import Blueprint, jsonify, request, send_file, abort
+from html import escape
+
+from flask import Blueprint, current_app, jsonify, request, send_file, abort
 from sqlalchemy import extract
 
 from bootstrap import (
@@ -17,8 +19,9 @@ from bootstrap import (
 from common import *
 from extensions import db
 from models import Cuenta, Liquidacion, Movimiento, Trabajador
-from pdf_liquidaciones import generar_pdf_liquidacion, generar_pdf_planilla
+from pdf_liquidaciones import MESES_ES, generar_pdf_liquidacion, generar_pdf_planilla
 from previred_integration import PreviredFileGenerator
+from services.notificaciones_gestion import enviar_correo, smtp_disponible
 
 bp = Blueprint('rrhh', __name__)
 
@@ -617,6 +620,104 @@ def pdf_liquidaciones_planilla(mes, anio):
             as_attachment=True,
             download_name=f'planilla_sueldos_{mes:02d}_{anio}.pdf',
         )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def _pesos_correo(valor) -> str:
+    return f'${int(round(float(valor or 0))):,}'.replace(',', '.')
+
+
+def _mensaje_liquidacion(saludo: str, periodo: str, liquido: str, empresa: str) -> tuple[str, str, str]:
+    asunto = f'Liquidación de sueldo {periodo}'
+    texto = (
+        f'Hola {saludo},\n\n'
+        f'Adjuntamos tu liquidación de sueldo de {periodo}.\n'
+        f'Líquido a pago: {liquido}.\n\n'
+        f'{empresa}\n'
+    )
+    html = f'''<!DOCTYPE html>
+<html><body style="margin:0;background:#f4f7f6;font-family:Segoe UI,Arial,sans-serif;color:#1c2b27;">
+  <div style="max-width:560px;margin:24px auto;background:#fff;border:1px solid #d7e3df;border-radius:8px;overflow:hidden;">
+    <div style="background:#0d6e6e;color:#fff;padding:14px 18px;font-size:15px;">Liquidación de sueldo</div>
+    <div style="padding:18px;">
+      <p style="margin:0 0 12px;">Hola {escape(saludo)},</p>
+      <p style="margin:0 0 8px;">Adjuntamos tu liquidación de sueldo de <strong>{escape(periodo)}</strong>.</p>
+      <p style="margin:0 0 8px;">Líquido a pago: <strong>{escape(liquido)}</strong>.</p>
+      <p style="margin:16px 0 0;color:#6c757d;font-size:13px;">{escape(empresa)}</p>
+    </div>
+  </div>
+</body></html>'''
+    return asunto, texto, html
+
+
+def _nombre_pdf_liquidacion(liq: Liquidacion) -> str:
+    t = liq.trabajador_rel
+    rut = (t.rut if t and t.rut else str(liq.id)).replace('.', '').replace(' ', '')
+    return f'liquidacion_{rut}_{liq.mes:02d}_{liq.anio}.pdf'
+
+
+@bp.route('/api/personal/liquidaciones/<int:mes>/<int:anio>/correo', methods=['POST'])
+def enviar_liquidaciones_correo(mes, anio):
+    """Envía a cada trabajador el PDF de su liquidación del período."""
+    try:
+        eid, err = _requiere_empresa()
+        if err:
+            return err
+        if not (1 <= mes <= 12):
+            return jsonify({'error': 'mes debe estar entre 1 y 12'}), 400
+        if not smtp_disponible():
+            return jsonify({'error': 'El correo no está configurado en el servidor.'}), 400
+
+        liquidaciones = Liquidacion.query.filter_by(empresa_id=eid, mes=mes, anio=anio).all()
+        if not liquidaciones:
+            return jsonify({'error': 'No hay liquidaciones para este período. Genere la planilla primero.'}), 404
+
+        empresa = _empresa_pdf_payload(_resolver_empresa_pdf(eid))
+        razon = empresa.get('razon_social') or 'bgreen'
+        periodo = f'{MESES_ES[mes]} {anio}'
+        enviados = []
+        sin_correo = []
+        fallos = []
+
+        for liq in liquidaciones:
+            t = liq.trabajador_rel
+            nombre = _nombre_completo_trabajador(t) if t else f'Liquidación {liq.id}'
+            correo = (t.email or '').strip() if t else ''
+            if '@' not in correo:
+                sin_correo.append(nombre)
+                continue
+            try:
+                payload = _liquidacion_pdf_payload(liq, empresa_id=eid)
+                pdf_bytes = generar_pdf_liquidacion(payload)
+                saludo = ((t.nombres or nombre).split() or ['Hola'])[0]
+                asunto, texto, html = _mensaje_liquidacion(
+                    saludo, periodo, _pesos_correo(liq.alcance_liquido), razon,
+                )
+                ok = enviar_correo(
+                    correo, asunto, texto, html,
+                    adjuntos=[(_nombre_pdf_liquidacion(liq), pdf_bytes)],
+                    nombre_remitente=razon,
+                )
+            except Exception:
+                current_app.logger.exception('No se pudo preparar la liquidación %s', liq.id)
+                ok = False
+            if ok:
+                enviados.append(nombre)
+            else:
+                fallos.append(nombre)
+
+        partes = [f'Enviadas: {len(enviados)}']
+        if sin_correo:
+            partes.append('Sin correo: ' + ', '.join(sin_correo))
+        if fallos:
+            partes.append('No se pudo enviar: ' + ', '.join(fallos))
+        return jsonify({
+            'mensaje': '. '.join(partes) + '.',
+            'enviados': len(enviados),
+            'sin_correo': sin_correo,
+            'fallos': fallos,
+        })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

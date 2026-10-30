@@ -235,23 +235,74 @@ def _encolar(destinatario: str, asunto: str, texto: str, html: str) -> None:
     threading.Thread(target=_run, name='notif-gestion', daemon=True).start()
 
 
-def _enviar_smtp(destinatario: str, asunto: str, texto: str, html: str) -> bool:
+def smtp_disponible() -> bool:
+    return _smtp_listo()
+
+
+def _armar_mensaje(
+    destinatario: str,
+    asunto: str,
+    texto: str,
+    html: str,
+    adjuntos: list[tuple[str, bytes]] | None = None,
+    nombre_remitente: str = 'Notificaciones bgreen',
+):
     from email.message import EmailMessage
     from email.utils import formataddr
 
+    user = os.environ.get('SMTP_USER', '').strip()
+    remitente = os.environ.get('SMTP_FROM', user).strip() or user or 'noreply@localhost'
+    msg = EmailMessage()
+    msg['Subject'] = asunto
+    msg['From'] = formataddr((nombre_remitente, remitente))
+    msg['To'] = destinatario
+    msg.set_content(texto)
+    msg.add_alternative(html, subtype='html')
+    for nombre, contenido in adjuntos or []:
+        msg.add_attachment(contenido, maintype='application', subtype='pdf', filename=nombre)
+    return msg
+
+
+def enviar_correo(
+    destinatario: str,
+    asunto: str,
+    texto: str,
+    html: str,
+    *,
+    adjuntos: list[tuple[str, bytes]] | None = None,
+    nombre_remitente: str | None = None,
+) -> bool:
+    if not _smtp_listo():
+        return False
+    return _enviar_smtp(
+        destinatario,
+        asunto,
+        texto,
+        html,
+        adjuntos=adjuntos,
+        nombre_remitente=nombre_remitente or 'Notificaciones bgreen',
+    )
+
+
+def _enviar_smtp(
+    destinatario: str,
+    asunto: str,
+    texto: str,
+    html: str,
+    *,
+    adjuntos: list[tuple[str, bytes]] | None = None,
+    nombre_remitente: str = 'Notificaciones bgreen',
+) -> bool:
     host = os.environ.get('SMTP_HOST', 'smtp.gmail.com').strip() or 'smtp.gmail.com'
     port = int(os.environ.get('SMTP_PORT', '587') or '587')
     user = os.environ.get('SMTP_USER', '').strip()
     password = os.environ.get('SMTP_PASSWORD', '')
-    remitente = os.environ.get('SMTP_FROM', user).strip() or user
     usar_tls = os.environ.get('SMTP_USE_TLS', '1').strip().lower() not in ('0', 'false', 'no')
 
-    msg = EmailMessage()
-    msg['Subject'] = asunto
-    msg['From'] = formataddr(('Notificaciones bgreen', remitente))
-    msg['To'] = destinatario
-    msg.set_content(texto)
-    msg.add_alternative(html, subtype='html')
+    msg = _armar_mensaje(
+        destinatario, asunto, texto, html,
+        adjuntos=adjuntos, nombre_remitente=nombre_remitente,
+    )
     try:
         if port == 465:
             with smtplib.SMTP_SSL(host, port, context=ssl.create_default_context(), timeout=20) as smtp:
