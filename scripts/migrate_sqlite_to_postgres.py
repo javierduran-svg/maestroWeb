@@ -291,7 +291,7 @@ def migrate(sqlite_path: Path, dry_run: bool = False, truncate: bool = True) -> 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Migrate MaestroWeb SQLite data to PostgreSQL.")
+    parser = argparse.ArgumentParser(description="Migrate bgreen.ERP SQLite data to PostgreSQL.")
     parser.add_argument(
         "--sqlite-path",
         type=Path,

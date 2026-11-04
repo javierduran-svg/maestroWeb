@@ -1,6 +1,6 @@
 # Despliegue beta en Hetzner (Docker)
 
-Guía para publicar MaestroWeb con **datos reales** en un VPS Hetzner, accesible por HTTPS para el equipo.
+Guía para publicar bgreen.ERP con **datos reales** en un VPS Hetzner, accesible por HTTPS para el equipo.
 
 ## Resumen del stack
 

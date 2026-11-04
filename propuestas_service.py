@@ -914,12 +914,12 @@ TEMPLATES_POR_SERVICIO = {
 PROP_DOC_CSS = """
 body { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 9pt; color: #222222; line-height: 1.45; margin: 0; padding: 0; }
 .prop-doc { width: 100%; font-size: 9pt; }
-table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #008080; margin-bottom: 12px; }
+table.prop-doc-header { width: 100%; border-collapse: collapse; border-bottom: 2px solid #0f7b78; margin-bottom: 12px; }
 table.prop-doc-header td { vertical-align: top; padding: 0 0 8px 0; border: none; }
 .prop-doc-header-text { width: 72%; }
 .prop-doc-logo-wrap { width: 28%; text-align: right; vertical-align: top; }
 .prop-doc-titulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 13pt; font-weight: bold; margin: 0 0 4px 0; padding: 0; color: #111111; }
-.prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; margin: 0; padding: 0; color: #008080; }
+.prop-doc-subtitulo { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 11pt; font-weight: bold; margin: 0; padding: 0; color: #0f7b78; }
 h1.prop-doc-titulo { font-size: 13pt; }
 h2.prop-doc-subtitulo { font-size: 11pt; }
 .prop-doc-detalle { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 9.5pt; font-weight: normal; margin: 2px 0 0 0; padding: 0; color: #444444; }
@@ -927,7 +927,7 @@ h2.prop-doc-subtitulo { font-size: 11pt; }
 table.prop-doc-meta { width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 8.5pt; }
 table.prop-doc-meta th { text-align: left; padding: 2px 10px 2px 0; font-weight: bold; vertical-align: top; border: none; }
 table.prop-doc-meta td { padding: 2px 0; border: none; vertical-align: top; }
-h3.prop-doc-seccion { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; color: #008080; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
+h3.prop-doc-seccion { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10.5pt; font-weight: bold; color: #0f7b78; margin: 14px 0 8px 0; padding: 0 0 4px 0; border-bottom: 1px solid #dddddd; text-transform: uppercase; }
 h4 { font-family: Roboto, Helvetica, Arial, sans-serif; font-size: 10pt; font-weight: bold; margin: 10px 0 6px 0; color: #222222; }
 p { margin: 0 0 8px 0; text-align: justify; font-size: 9pt; }
 strong { font-weight: bold; }
@@ -991,7 +991,7 @@ table.ep-doc-meta-grid td { border: none; padding: 0 8px 0 0; vertical-align: to
 .ep-fact-titulo {
   margin: 0 0 6px 0;
   font-size: 8.5pt;
-  color: #008080;
+  color: #0f7b78;
   letter-spacing: 0.02em;
 }
 table.ep-doc-fact-grid { width: 100%; border-collapse: collapse; margin: 0; font-size: 9pt; }
@@ -1048,7 +1048,7 @@ table.ep-tabla-pdf th {
 table.ep-pdf-header { border-bottom: none; margin-bottom: 0; width: auto; }
 .ep-doc-header-line {
   border: 0;
-  border-top: 2px solid #008080;
+  border-top: 2px solid #0f7b78;
   margin: 0 0 22px 0;
   height: 1px;
   font-size: 1px;

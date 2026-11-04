@@ -1,4 +1,4 @@
-"""Generación de PDF de liquidaciones de sueldo (fpdf2), estilo Consultora Sustentable."""
+"""Generación de PDF de liquidaciones de sueldo (fpdf2), estilo bgreen.ERP."""
 from __future__ import annotations
 
 import json
@@ -13,11 +13,11 @@ MESES_ES = (
 )
 
 # Paleta alineada con app.html (--teal-green, bordes, headers)
-TEAL = (0, 128, 128)
-TEAL_LIGHT = (227, 242, 242)
-HEADER_BG = (241, 243, 245)
-BORDER = (222, 226, 230)
-TEXT_MUTED = (108, 117, 125)
+TEAL = (15, 123, 120)
+TEAL_LIGHT = (238, 248, 246)
+HEADER_BG = (244, 246, 247)
+BORDER = (227, 232, 234)
+TEXT_MUTED = (107, 123, 128)
 WHITE = (255, 255, 255)
 
 _UNIDADES = (

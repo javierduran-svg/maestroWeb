@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Consultoría | Sustentable</title>
-    <link rel="icon" href="data:,">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>bgreen.ERP</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2314a39a'/%3E%3Cstop offset='1' stop-color='%230f5f5c'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M8 24C8 14.6 14.6 8 24 8c0 9.4-6.6 16-16 16z' fill='%23fff'/%3E%3Cpath d='M8.8 23.2L17 15' stroke='%230f7b78' stroke-width='1.8' stroke-linecap='round'/%3E%3Ccircle cx='24.5' cy='24.5' r='3' fill='%23f28c28'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --teal-green: #008080;
+            --teal-green: #0f7b78;
             --sidebar-w: 240px;
             --navbar-h: 58px;
             --border-color: #dee2e6;
@@ -263,7 +265,7 @@
         #tabla-propuestas-grid .cell-edit-date { min-width: 0; }
         .table-panel th, .table-panel td { vertical-align: middle; }
         .btn-teal { background: var(--teal-green); color: #fff; border: none; }
-        .btn-teal:hover { background: #006666; color: #fff; }
+        .btn-teal:hover { background: #0f5f5c; color: #fff; }
         .modal-header { background: #000; color: #fff; }
         #modalPropuesta .prop-modal-dialog {
             margin: 0.25rem auto;
@@ -289,7 +291,7 @@
             height: 18px;
             cursor: nwse-resize;
             z-index: 10;
-            background: linear-gradient(135deg, transparent 50%, rgba(0,128,128,0.45) 50%);
+            background: linear-gradient(135deg, transparent 50%, rgba(15, 123, 120,0.45) 50%);
             border-bottom-right-radius: 0.3rem;
         }
         #modalPropuesta .modal-header,
@@ -517,7 +519,7 @@
         #modalEstadoPago .prop-modal-resize-grip {
             position: absolute; right: 0; bottom: 0; width: 18px; height: 18px;
             cursor: nwse-resize; z-index: 10;
-            background: linear-gradient(135deg, transparent 50%, rgba(0,128,128,0.45) 50%);
+            background: linear-gradient(135deg, transparent 50%, rgba(15, 123, 120,0.45) 50%);
             border-bottom-right-radius: 0.3rem;
         }
         #modalEstadoPago .modal-header,
@@ -617,7 +619,7 @@
             height: 44px;
             width: auto;
             object-fit: contain;
-            /* Verde hierba → teal marca (#008080); solo EP / modalEstadoPago */
+            /* Verde hierba → teal marca (#0f7b78); solo EP / modalEstadoPago */
             filter: hue-rotate(78deg) saturate(1.2) brightness(0.92);
         }
         #modalEstadoPago #epTemplate .ep-doc-empresa-block { margin: 0 0 4px 0; }
@@ -723,7 +725,7 @@
             margin: 8px 0 0 0; font-size: 9pt; line-height: 1.35; color: #222; text-align: left;
         }
 
-        .prop-template-editor:focus { outline: 2px solid rgba(0,128,128,0.35); outline-offset: 1px; }
+        .prop-template-editor:focus { outline: 2px solid rgba(15, 123, 120,0.35); outline-offset: 1px; }
         .prop-template-editor { font-family: 'Roboto', sans-serif; }
         .prop-template-editor table.prop-doc-header { display: table; width: 100%; table-layout: fixed; border-collapse: collapse; border-bottom: 2px solid var(--teal-green); margin-bottom: 1rem; }
         .prop-template-editor table.prop-doc-header tr { display: table-row; }
@@ -811,7 +813,7 @@
         #propCalcUnidades tr.prop-calc-subtitulo td { font-weight: 600; }
         #propCalcUnidades tr.prop-calc-subtitulo .form-control { font-weight: 600; background: transparent; border-color: transparent; font-size: 0.78rem; padding-left: 0.65rem; }
         #propCalcUnidades tr.prop-calc-item-child td:first-child .form-control { padding-left: 1.1rem; }
-        #propCalcUnidades tr.prop-calc-fila-activa { outline: 1px solid rgba(0, 128, 128, 0.35); outline-offset: -1px; }
+        #propCalcUnidades tr.prop-calc-fila-activa { outline: 1px solid rgba(15, 123, 120, 0.35); outline-offset: -1px; }
         #propCalcUnidades .prop-calc-acciones { white-space: nowrap; }
         #propCalcUnidades .prop-calc-acciones .btn { line-height: 1.1; }
         #propCalcUnidades .prop-calc-acciones .dropdown-menu { font-size: 0.75rem; min-width: 8.5rem; }
@@ -836,7 +838,7 @@
             user-select: none;
             z-index: 2;
         }
-        .prop-col-resize-grip:hover { background: rgba(0, 128, 128, 0.2); }
+        .prop-col-resize-grip:hover { background: rgba(15, 123, 120, 0.2); }
         .prop-calc-total { font-weight: 700; color: var(--teal-green); }
         .panel-toolbar { font-size: 0.8125rem; }
         .panel-toolbar .form-select-sm { font-size: 0.8125rem; }
@@ -992,8 +994,8 @@
         }
         .proy-timeline-axis-year {
             position: absolute; top: 0; bottom: 0;
-            background: rgba(0,128,128,0.14);
-            border-left: 1px solid rgba(0,128,128,0.22);
+            background: rgba(15, 123, 120,0.14);
+            border-left: 1px solid rgba(15, 123, 120,0.22);
         }
         .proy-timeline-axis-year:first-child { border-left: none; }
         .proy-timeline-axis-year-alt { background: #f5f5f5; border-left-color: rgba(0,0,0,0.08); }
@@ -1011,7 +1013,7 @@
         .proy-timeline-axis-line { position: absolute; left: 0; right: 0; bottom: 14px; height: 1px; background: #dee2e6; z-index: 1; }
         .proy-timeline-axis-tick {
             position: absolute; bottom: 0; width: 1px; height: 5px;
-            background: rgba(0,128,128,0.35); transform: translateX(-50%); z-index: 1;
+            background: rgba(15, 123, 120,0.35); transform: translateX(-50%); z-index: 1;
         }
         .proy-timeline-axis-label {
             position: absolute; bottom: 6px; left: 0;
@@ -1043,17 +1045,17 @@
         }
         .proy-timeline-month {
             position: absolute; top: 0; bottom: 0;
-            background: rgba(0,128,128,0.04);
+            background: rgba(15, 123, 120,0.04);
         }
-        .proy-timeline-month-alt { background: rgba(0,128,128,0.09); }
+        .proy-timeline-month-alt { background: rgba(15, 123, 120,0.09); }
         .proy-timeline-track-billing .proy-timeline-month { background: rgba(253,126,20,0.05); }
         .proy-timeline-track-billing .proy-timeline-month-alt { background: rgba(253,126,20,0.11); }
         .proy-timeline-rail-line {
             position: absolute; left: 0; right: 0; top: var(--rail-line-top, 50%);
             height: 5px; border-radius: 3px; z-index: 1;
             transform: translateY(-50%);
-            background: linear-gradient(90deg, rgba(0,128,128,0.25) 0%, var(--teal-green) 50%, rgba(0,128,128,0.25) 100%);
-            box-shadow: 0 1px 2px rgba(0,128,128,0.12);
+            background: linear-gradient(90deg, rgba(15, 123, 120,0.25) 0%, var(--teal-green) 50%, rgba(15, 123, 120,0.25) 100%);
+            box-shadow: 0 1px 2px rgba(15, 123, 120,0.12);
         }
         .proy-timeline-track-billing .proy-timeline-rail-line {
             background: linear-gradient(90deg, rgba(253,126,20,0.2) 0%, #fd7e14 50%, rgba(253,126,20,0.2) 100%);
@@ -1304,7 +1306,7 @@
             animation: filaGuardadoFlash 0.9s ease;
         }
         @keyframes filaGuardadoFlash {
-            0% { background-color: rgba(0, 128, 128, 0.18); }
+            0% { background-color: rgba(15, 123, 120, 0.18); }
             100% { background-color: transparent; }
         }
         .chart-box { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color); }
@@ -1354,7 +1356,7 @@
         .actividad-timeline .act-item { display: flex; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #eef1f3; font-size: 0.8125rem; }
         .actividad-timeline .act-fecha { min-width: 72px; color: #6c757d; font-size: 0.75rem; }
         .actividad-timeline .act-tipo { min-width: 64px; }
-        .badge-tipo-entrega { background: rgba(0,128,128,0.15); color: #006666; }
+        .badge-tipo-entrega { background: rgba(15, 123, 120,0.15); color: #0f5f5c; }
         .badge-tipo-tarea { background: rgba(0,123,255,0.12); color: #0056b3; }
         .badge-tipo-cobro { background: rgba(253,126,20,0.15); color: #c05600; }
         .proyecto-status-bar { height: 6px; border-radius: 3px; background: #e9ecef; overflow: hidden; display: flex; }
@@ -1405,7 +1407,7 @@
             text-align: center; overflow: visible;
         }
         .gestion-tarea-row { cursor: pointer; }
-        .gestion-tarea-row:hover td { background: rgba(0,128,128,0.06); }
+        .gestion-tarea-row:hover td { background: rgba(15, 123, 120,0.06); }
         .gestion-entrega-row td:not(:first-child):not(:nth-child(2)) { cursor: pointer; }
         .chart-box-waterfall { position: relative; height: 280px; }
         .tabla-scroll-wrap {
@@ -1437,7 +1439,7 @@
         }
         .table-redimensionable .col-resize-handle::after {
             content: ''; position: absolute; top: 18%; bottom: 18%; right: 2px; width: 2px;
-            border-radius: 1px; background: rgba(0, 128, 128, 0.2); transition: background 0.15s;
+            border-radius: 1px; background: rgba(15, 123, 120, 0.2); transition: background 0.15s;
         }
         .table-redimensionable .col-resize-handle:hover::after,
         .table-redimensionable.col-resizing .col-resize-handle.active::after { background: var(--teal-green); }
@@ -1538,7 +1540,7 @@
             top: var(--gantt-header-month-h);
             z-index: 2;
         }
-        .gantt-codigo { color: #008080; font-weight: 700; display: block; line-height: 1.2; }
+        .gantt-codigo { color: #0f7b78; font-weight: 700; display: block; line-height: 1.2; }
         .gantt-nombre { color: #333; font-weight: 400; font-size: 0.72rem; line-height: 1.25; display: block; }
         .gantt-week-col {
             min-width: var(--gantt-col-width);
@@ -1554,7 +1556,7 @@
             padding: 6px 2px;
             white-space: nowrap;
         }
-        .gantt-header .gantt-week-col.gantt-week-hoy { background: rgba(0, 128, 128, 0.15); color: #006666; }
+        .gantt-header .gantt-week-col.gantt-week-hoy { background: rgba(15, 123, 120, 0.15); color: #0f5f5c; }
         .gantt-week-cell {
             min-height: 52px;
             height: 52px;
@@ -1563,8 +1565,8 @@
             position: relative;
             overflow: visible;
         }
-        .gantt-week-cell.gantt-week-hoy { background: rgba(0, 128, 128, 0.04); }
-        .gantt-week-cell.drag-over { background: rgba(0, 128, 128, 0.12); outline: 2px dashed #008080; outline-offset: -2px; }
+        .gantt-week-cell.gantt-week-hoy { background: rgba(15, 123, 120, 0.04); }
+        .gantt-week-cell.drag-over { background: rgba(15, 123, 120, 0.12); outline: 2px dashed #0f7b78; outline-offset: -2px; }
         .gantt-week-cell.gantt-row-alt:not(.gantt-week-hoy) { background: #fafbfc; }
         .gantt-week-cell.gantt-month-alt:not(.gantt-week-hoy) { background: #eef0f2; }
         .gantt-col-proyecto.gantt-row-alt { background: #f1f3f5; }
@@ -1615,7 +1617,7 @@
         .gantt-leyenda .lg-entrega { background: #2563eb; }
         .gantt-leyenda .lg-cobro { background: var(--teal-green); }
         .gantt-leyenda .lg-tarea { background: #0ea5e9; }
-        .gantt-leyenda .lg-etapa { background: rgba(0, 128, 128, 0.18); }
+        .gantt-leyenda .lg-etapa { background: rgba(15, 123, 120, 0.18); }
         .gantt-zoom-label { font-size: 0.75rem; min-width: 4.5rem; text-align: center; color: #495057; }
         #gantt-detalle-proyecto {
             border-top: 1px solid var(--border-color);
@@ -1700,7 +1702,7 @@
         }
         .login-card .form-control:focus, .login-card .form-select:focus {
             border-color: var(--teal-green);
-            box-shadow: 0 0 0 0.15rem rgba(0, 128, 128, 0.2);
+            box-shadow: 0 0 0 0.15rem rgba(15, 123, 120, 0.2);
         }
         .btn-login {
             background: var(--teal-green);
@@ -1712,7 +1714,7 @@
             border-radius: 2px;
             width: 100%;
         }
-        .btn-login:hover { background: #006666; color: #fff; }
+        .btn-login:hover { background: #0f5f5c; color: #fff; }
         .btn-login:disabled { opacity: 0.65; }
         #loginMsg { font-size: 0.85rem; min-height: 1.25rem; }
         .navbar-user {
@@ -1877,14 +1879,551 @@
         #tabla-time-tracker-grid td { vertical-align: middle; }
         #tabla-time-tracker-grid .tt-col-acciones { white-space: nowrap; width: 72px; }
         .tt-resumen-card { border-left: 3px solid var(--teal-green); }
+
+        /* ================================================================
+           bgreen.ERP — tema visual (teal + grises claros + acento naranja)
+           ================================================================ */
+        :root {
+            --teal-950: #072427;
+            --teal-900: #0a3034;
+            --teal-800: #0d4145;
+            --teal-700: #0f5f5c;
+            --teal-600: #0f7b78;
+            --teal-500: #14a39a;
+            --teal-300: #6fd3c7;
+            --teal-100: #d5efeb;
+            --teal-50: #eef8f6;
+            --accent: #f28c28;
+            --accent-600: #e0701a;
+            --accent-700: #b8560f;
+            --accent-50: #fff4e8;
+            --gray-25: #fafbfb;
+            --gray-50: #f4f6f7;
+            --gray-100: #eef1f3;
+            --gray-200: #e3e8ea;
+            --gray-300: #cfd7da;
+            --gray-400: #9aa8ad;
+            --gray-500: #6b7b80;
+            --gray-700: #3d4b50;
+            --gray-900: #1b2a2e;
+            --teal-green: var(--teal-600);
+            --border-color: var(--gray-200);
+            --radius-sm: 6px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --shadow-xs: 0 1px 2px rgba(16, 42, 46, 0.05);
+            --shadow-sm: 0 1px 3px rgba(16, 42, 46, 0.06), 0 1px 2px rgba(16, 42, 46, 0.04);
+            --shadow-md: 0 8px 24px -6px rgba(16, 42, 46, 0.14), 0 2px 6px rgba(16, 42, 46, 0.05);
+            --shadow-lg: 0 24px 56px -12px rgba(7, 36, 39, 0.35);
+            --sidebar-w: 248px;
+            --navbar-h: 60px;
+
+            --font-display: 'Inter', 'Roboto', system-ui, sans-serif;
+            --bs-body-font-family: 'Roboto', system-ui, sans-serif;
+            --bs-body-color: var(--gray-900);
+            --bs-border-color: var(--gray-200);
+            --bs-border-radius: var(--radius-sm);
+            --bs-border-radius-sm: 5px;
+            --bs-border-radius-lg: var(--radius);
+            --bs-link-color: var(--teal-600);
+            --bs-link-color-rgb: 15, 123, 120;
+            --bs-link-hover-color: var(--teal-700);
+            --bs-link-hover-color-rgb: 15, 95, 92;
+            --bs-secondary-color: var(--gray-500);
+            --bs-focus-ring-color: rgba(20, 163, 154, 0.25);
+        }
+        body {
+            font-family: var(--bs-body-font-family);
+            background: var(--gray-50);
+            color: var(--gray-900);
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, h5, h6, .modal-title, .navbar, .sidebar, .login-card { font-family: var(--font-display); }
+        .text-muted { color: var(--gray-500) !important; }
+        .text-teal { color: var(--teal-600) !important; }
+        .text-accent { color: var(--accent-600) !important; }
+        .bg-light { background-color: var(--gray-25) !important; }
+        *::-webkit-scrollbar { width: 10px; height: 10px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+        *::-webkit-scrollbar-thumb:hover { background: var(--gray-400); border: 2px solid transparent; background-clip: padding-box; }
+        .sidebar *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border: 2px solid transparent; background-clip: padding-box; }
+
+        /* Marca */
+        .brand-mark { display: inline-flex; flex-shrink: 0; }
+        .brand-mark svg { display: block; }
+        .brand-word { font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+        .brand-word .brand-dot { color: var(--accent); font-weight: 600; letter-spacing: 0; }
+
+        /* Barra superior */
+        .navbar {
+            background: #fff !important;
+            border-bottom: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-xs);
+            min-height: var(--navbar-h);
+            height: var(--navbar-h);
+            padding: 0 1.5rem 0 0;
+            flex-wrap: nowrap;
+        }
+        .app-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            align-self: stretch;
+            width: var(--sidebar-w);
+            padding: 0 1.25rem;
+            background: var(--teal-950);
+            color: #fff;
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+        .app-brand:hover { color: #fff; }
+        .app-brand .brand-word { font-size: 1.15rem; }
+        .navbar-empresa {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding-left: 1.5rem;
+            min-width: 0;
+            color: var(--gray-900);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .navbar-empresa #empresaActivaNombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .navbar-empresa .empresa-logo-nav { height: 30px; max-width: 56px; border-radius: var(--radius-sm); }
+        .navbar-user { color: var(--gray-700); font-weight: 500; }
+        .navbar-user .btn-logout {
+            border: 1px solid var(--gray-200);
+            background: #fff;
+            color: var(--gray-700);
+            border-radius: 8px;
+            padding: 0.4rem 0.8rem;
+            font-weight: 500;
+            transition: 0.15s;
+        }
+        .navbar-user .btn-logout:hover { border-color: var(--accent); color: var(--accent-700); background: var(--accent-50); }
+        .navbar-user .avatar-round { box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--teal-100); }
+
+        /* Barra lateral */
+        .sidebar {
+            background: linear-gradient(180deg, var(--teal-950) 0%, var(--teal-900) 100%);
+            color: rgba(255, 255, 255, 0.75);
+            padding-top: 0.5rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .sidebar-divider {
+            padding: 1rem 1.4rem 0.4rem;
+            font-size: 0.66rem;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            color: rgba(255, 255, 255, 0.38);
+        }
+        .sidebar-link,
+        .sidebar-link.sub {
+            position: relative;
+            margin: 1px 0.7rem;
+            padding: 0.55rem 0.75rem;
+            border-left: 0;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .sidebar-link i,
+        .sidebar-link.sub i { font-size: 0.9rem; color: rgba(255, 255, 255, 0.45); transition: color 0.15s; }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+        .sidebar-link:hover i { color: var(--teal-300); }
+        .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(20, 163, 154, 0.28) 0%, rgba(20, 163, 154, 0.1) 100%);
+            color: #fff;
+            box-shadow: inset 0 0 0 1px rgba(111, 211, 199, 0.12);
+        }
+        .sidebar-link.active i { color: var(--teal-300); }
+        .sidebar-link.active::before {
+            content: '';
+            position: absolute;
+            left: -0.7rem;
+            top: 8px;
+            bottom: 8px;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background: var(--accent);
+        }
+        .sidebar-empresa {
+            background: rgba(0, 0, 0, 0.18);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .sidebar-empresa-btn {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            color: rgba(255, 255, 255, 0.88);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .sidebar-empresa-btn:hover,
+        .sidebar-empresa-btn.show {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(111, 211, 199, 0.45);
+        }
+        .sidebar-empresa-btn i.fa-building { color: var(--teal-300); }
+        .empresa-logo-sidebar { border-radius: 5px; }
+
+        /* Área principal */
+        .main-panel { padding: 1.75rem 2rem 2.5rem; background: var(--gray-50); }
+
+        /* Tarjetas y paneles */
+        .card {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        .card-header { background: var(--gray-25); border-bottom-color: var(--gray-200); }
+        .card-header:first-child { border-radius: calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px) 0 0; }
+        .panel-card {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+        .panel-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--gray-200); }
+        .main-panel .vista-panel .panel-header {
+            background: #fff;
+            color: var(--gray-900);
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .main-panel .vista-panel .panel-header h5 {
+            color: var(--gray-900);
+            font-size: 1rem;
+            font-weight: 650;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+        .main-panel .vista-panel .panel-header h5::before {
+            content: '';
+            width: 4px;
+            height: 1.05em;
+            border-radius: 4px;
+            background: linear-gradient(180deg, var(--teal-500), var(--teal-700));
+            flex-shrink: 0;
+        }
+        .main-panel .vista-panel .panel-header small,
+        .main-panel .vista-panel .panel-header .text-muted { color: var(--gray-500) !important; }
+        .main-panel .vista-panel .panel-header > div > small,
+        .main-panel .vista-panel .panel-header > div > .text-muted { display: block; padding-left: calc(4px + 0.55rem); }
+        .main-panel .vista-panel .panel-header .btn-outline-secondary,
+        .main-panel .vista-panel .panel-header .btn-outline-dark {
+            color: var(--gray-700);
+            border-color: var(--gray-300);
+            background: #fff;
+        }
+        .main-panel .vista-panel .panel-header .btn-outline-secondary:hover,
+        .main-panel .vista-panel .panel-header .btn-outline-secondary:focus,
+        .main-panel .vista-panel .panel-header .btn-outline-dark:hover,
+        .main-panel .vista-panel .panel-header .btn-outline-dark:focus {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+            color: var(--gray-900);
+        }
+        .main-panel .vista-panel .panel-header .btn-outline-secondary.active {
+            background: var(--teal-50);
+            border-color: var(--teal-500);
+            color: var(--teal-700);
+        }
+        .main-panel .vista-panel .panel-header .btn-dark {
+            background: var(--teal-800);
+            color: #fff;
+            border-color: var(--teal-800);
+        }
+        .main-panel .vista-panel .panel-header .btn-dark:hover {
+            background: var(--teal-900);
+            color: #fff;
+            border-color: var(--teal-900);
+        }
+        .main-panel .vista-panel .panel-header .form-check-label { color: var(--gray-700); }
+        .main-panel .vista-panel .panel-header .gantt-zoom-label.disabled { color: var(--gray-700); }
+        .panel-toolbar.bg-light,
+        .panel-toolbar { background: var(--gray-25) !important; border-color: var(--gray-200) !important; }
+
+        /* KPIs */
+        .gestion-kpi .card,
+        .kpi-row .card {
+            border: 1px solid var(--gray-200);
+            border-top: 3px solid var(--teal-500);
+            border-radius: var(--radius-lg);
+            padding: 1.1rem 1.25rem !important;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .gestion-kpi .card:hover,
+        .kpi-row .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .gestion-kpi .card > small:first-child,
+        .kpi-row .card > small:first-child {
+            font-size: 0.7rem;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--gray-500) !important;
+        }
+        .gestion-kpi .card h4,
+        .kpi-row .card h4 {
+            font-size: 1.65rem;
+            font-weight: 650 !important;
+            letter-spacing: -0.02em;
+            margin-top: 0.35rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Tablas */
+        .table {
+            --bs-table-hover-bg: rgba(20, 163, 154, 0.06);
+            --bs-table-striped-bg: var(--gray-25);
+            --bs-table-border-color: var(--gray-100);
+            color: var(--gray-900);
+        }
+        .table-panel { --bs-table-border-color: var(--gray-100); }
+        .table-panel thead,
+        .table-panel thead th { background: var(--gray-25); }
+        .table-panel thead tr:not(.mov-filtros) th {
+            color: var(--gray-500);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--gray-200);
+            padding-top: 0.6rem;
+            padding-bottom: 0.6rem;
+        }
+        .table-panel thead tr.mov-filtros th { background: #fff; border-bottom: 1px solid var(--gray-200); }
+        .table-panel tbody td { border-color: var(--gray-100); }
+
+        /* Botones */
+        .btn { border-radius: 8px; font-weight: 500; transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; }
+        .btn-sm { border-radius: 7px; }
+        .btn-teal {
+            background: var(--teal-600);
+            color: #fff;
+            border: 1px solid var(--teal-600);
+            box-shadow: 0 1px 2px rgba(15, 95, 92, 0.25);
+        }
+        .btn-teal:hover, .btn-teal:focus { background: var(--teal-700); border-color: var(--teal-700); color: #fff; }
+        .btn-teal:active { background: var(--teal-800) !important; color: #fff !important; }
+        .btn-accent {
+            background: var(--accent);
+            color: #fff;
+            border: 1px solid var(--accent);
+            box-shadow: 0 1px 2px rgba(184, 86, 15, 0.3);
+        }
+        .btn-accent:hover, .btn-accent:focus { background: var(--accent-600); border-color: var(--accent-600); color: #fff; }
+        .btn-dark { background: var(--teal-800); border-color: var(--teal-800); }
+        .btn-dark:hover, .btn-dark:focus { background: var(--teal-900); border-color: var(--teal-900); }
+        .btn-outline-secondary { color: var(--gray-700); border-color: var(--gray-300); }
+        .btn-outline-secondary:hover { background: var(--gray-100); border-color: var(--gray-400); color: var(--gray-900); }
+        .btn-check:checked + .btn-outline-secondary,
+        .btn-outline-secondary.active { background: var(--teal-50); border-color: var(--teal-500); color: var(--teal-700); }
+        .btn-outline-primary { color: var(--teal-600); border-color: var(--teal-500); }
+        .btn-outline-primary:hover { background: var(--teal-600); border-color: var(--teal-600); color: #fff; }
+        .btn:focus-visible { box-shadow: 0 0 0 0.2rem var(--bs-focus-ring-color); }
+
+        /* Formularios */
+        .form-control, .form-select {
+            border-color: var(--gray-300);
+            border-radius: 7px;
+            color: var(--gray-900);
+        }
+        .form-control::placeholder { color: var(--gray-400); }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--teal-500);
+            box-shadow: 0 0 0 0.2rem rgba(20, 163, 154, 0.18);
+        }
+        .form-label { color: var(--gray-700); font-weight: 500; }
+        .form-check-input:checked { background-color: var(--teal-600); border-color: var(--teal-600); }
+        .form-check-input:focus { border-color: var(--teal-500); box-shadow: 0 0 0 0.2rem rgba(20, 163, 154, 0.2); }
+        .form-switch .form-check-input:focus:not(:checked) {
+            --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2314a39a'/%3e%3c/svg%3e");
+        }
+
+        /* Modales */
+        .modal-content {
+            border: 0;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+        .modal-header {
+            background: linear-gradient(120deg, var(--teal-900) 0%, var(--teal-700) 100%);
+            color: #fff;
+            border-bottom: 2px solid var(--accent);
+            padding: 0.9rem 1.25rem;
+        }
+        .modal-header .modal-title { font-weight: 600; font-size: 1.05rem; letter-spacing: -0.01em; }
+        .modal-footer { background: var(--gray-25); border-top-color: var(--gray-200); }
+        .modal-backdrop.show { opacity: 0.45; background: var(--teal-950); }
+
+        /* Dropdowns y badges */
+        .dropdown-menu {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 0.35rem;
+        }
+        .dropdown-item { border-radius: 6px; }
+        .dropdown-item:hover, .dropdown-item:focus { background: var(--teal-50); color: var(--teal-800); }
+        .dropdown-item.active, .dropdown-item:active { background: var(--teal-600); color: #fff; }
+        .dropdown-menu-empresa { border-radius: var(--radius); }
+        .dropdown-menu-empresa .dropdown-item.active { background: var(--teal-50); color: var(--teal-800); }
+        .badge { border-radius: 999px; font-weight: 600; letter-spacing: 0.01em; }
+        .badge-tipo-cobro { background: var(--accent-50); color: var(--accent-700); }
+        .alerta-item { border-radius: 0 8px 8px 0; }
+
+        /* Gantt / calendario: "hoy" en acento */
+        .gantt-header .gantt-week-col.gantt-week-hoy { background: var(--accent-50); color: var(--accent-700); box-shadow: inset 0 -2px 0 var(--accent); }
+        .gantt-week-cell.gantt-week-hoy { background: rgba(242, 140, 40, 0.05); }
+        .calendario-contable .cal-cell.hoy { box-shadow: inset 0 0 0 2px var(--accent); }
+        .gantt-ms { border-radius: 7px; }
+        #gantt-container { border-radius: var(--radius); }
+
+        /* Time tracker */
+        #time-tracker-widget {
+            border: 1px solid var(--gray-200);
+            border-top: 3px solid var(--accent);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+        #time-tracker-widget .tt-header { background: var(--gray-25); border-bottom-color: var(--gray-200); }
+
+        /* Login */
+        #login-screen {
+            background:
+                radial-gradient(900px 500px at 12% 10%, rgba(20, 163, 154, 0.35), transparent 60%),
+                radial-gradient(700px 420px at 92% 95%, rgba(242, 140, 40, 0.22), transparent 60%),
+                linear-gradient(150deg, var(--teal-950) 0%, var(--teal-900) 55%, #0b3a3a 100%);
+        }
+        .login-card {
+            width: min(430px, calc(100vw - 2rem));
+            border-radius: 18px;
+            box-shadow: var(--shadow-lg);
+        }
+        .login-card-header {
+            background: #fff;
+            color: var(--gray-900);
+            padding: 2rem 2.25rem 0.5rem;
+            border-bottom: 0;
+        }
+        .login-card-header .login-brand { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.9rem; }
+        .login-card-header h1.brand-word { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; color: var(--gray-900); }
+        .login-card-header p { color: var(--gray-500); font-size: 0.875rem; }
+        .login-card-body { padding: 1.25rem 2.25rem 2.25rem; }
+        .login-card .form-label { text-transform: none; letter-spacing: 0; font-size: 0.8rem; color: var(--gray-700); }
+        .login-card .form-control, .login-card .form-select { border-radius: 9px; padding: 0.65rem 0.85rem; }
+        .btn-login {
+            background: var(--accent);
+            border-radius: 9px;
+            letter-spacing: 0.02em;
+            padding: 0.75rem 1rem;
+            box-shadow: 0 6px 16px -6px rgba(224, 112, 26, 0.6);
+        }
+        .btn-login:hover { background: var(--accent-600); }
+        .login-foot { margin-top: 1.25rem; text-align: center; font-size: 0.75rem; color: var(--gray-400); }
+
+        /* Iconos de KPI */
+        .gestion-kpi .card > small:first-child,
+        .kpi-row .card > small:first-child { display: block; padding-right: 2.9rem; }
+        .kpi-icon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            display: grid;
+            place-items: center;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+        .kpi-tone-teal { background: var(--teal-50); color: var(--teal-600); }
+        .kpi-tone-red { background: #fdeeee; color: #c8323f; }
+        .kpi-tone-amber { background: #fff7e0; color: #b7860b; }
+        .kpi-tone-blue { background: #eaf2ff; color: #2563eb; }
+        .kpi-tone-orange { background: var(--accent-50); color: var(--accent-600); }
+        .kpi-tone-slate { background: var(--gray-100); color: var(--gray-700); }
+
+        /* Estados vacíos, de carga y de error en tablas */
+        td.ui-state { padding: 2.25rem 1rem !important; text-align: center !important; background: #fff; }
+        td.ui-state .ui-state-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: inline-grid;
+            place-items: center;
+            font-size: 1.1rem;
+            margin-bottom: 0.6rem;
+            background: var(--teal-50);
+            color: var(--teal-600);
+        }
+        td.ui-state .ui-state-text { display: block; font-size: 0.85rem; font-weight: 500; color: var(--gray-500); }
+        td.ui-state-empty .ui-state-text { color: var(--gray-700); }
+        td.ui-state-error .ui-state-icon { background: #fdeeee; color: #c8323f; }
+        td.ui-state-error .ui-state-text { color: #c8323f; }
+        td.ui-state-loading .ui-state-icon { background: transparent; }
+        td.ui-state-loading .spinner-border { color: var(--teal-500); width: 1.6rem; height: 1.6rem; border-width: 0.18em; }
+        td.ui-state .ui-state-cta { margin-top: 0.85rem; }
+        td.ui-state.ui-state-compact { padding: 0.75rem 1rem !important; }
+        td.ui-state.ui-state-compact .ui-state-icon { width: auto; height: auto; background: none; margin: 0 0.4rem 0 0; font-size: 0.85rem; display: inline-block; vertical-align: middle; }
+        td.ui-state.ui-state-compact .ui-state-text { display: inline; font-size: 0.8rem; }
+        td.ui-state.ui-state-compact .spinner-border { width: 0.9rem; height: 0.9rem; }
+
+        /* Menú lateral colapsable */
+        .sidebar, .app-brand { transition: width 0.2s ease; }
+        .main-panel { transition: margin-left 0.2s ease; }
+        .sidebar-toggle {
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            display: grid;
+            place-items: center;
+            border: 1px solid var(--gray-200);
+            border-radius: 9px;
+            background: #fff;
+            color: var(--gray-500);
+            margin-left: 1rem;
+            transition: 0.15s;
+        }
+        .sidebar-toggle:hover { color: var(--teal-700); border-color: var(--teal-300); background: var(--teal-50); }
+        .sidebar-toggle i { transition: transform 0.2s ease; }
+        .navbar-empresa { padding-left: 0.85rem; }
+        body.sidebar-collapsed { --sidebar-w: 72px; }
+        body.sidebar-collapsed .sidebar-toggle i { transform: rotate(180deg); }
+        body.sidebar-collapsed .app-brand { justify-content: center; padding: 0; }
+        body.sidebar-collapsed .app-brand .brand-word { display: none; }
+        body.sidebar-collapsed .sidebar-link,
+        body.sidebar-collapsed .sidebar-link.sub { justify-content: center; padding: 0.6rem 0; }
+        body.sidebar-collapsed .sidebar-link span { display: none; }
+        body.sidebar-collapsed .sidebar-link i { font-size: 1rem; }
+        body.sidebar-collapsed .sidebar-divider {
+            font-size: 0;
+            height: 1px;
+            padding: 0;
+            margin: 0.75rem 1.1rem;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        body.sidebar-collapsed .sidebar-empresa { padding: 0.75rem 0.6rem; }
+        body.sidebar-collapsed .sidebar-empresa-btn { justify-content: center; padding: 0.55rem 0; }
+        body.sidebar-collapsed .sidebar-empresa-nombre,
+        body.sidebar-collapsed .sidebar-empresa-btn .fa-chevron-up { display: none; }
+        body.sidebar-collapsed .sidebar-empresa-btn.dropdown-toggle::after { display: none; }
+        body.sidebar-collapsed .dropdown-menu-empresa { min-width: 240px; }
     </style>
 </head>
 <body>
 <div id="login-screen">
     <div class="login-card">
         <div class="login-card-header">
-            <h1>MaestroWeb</h1>
-            <p>Consultoría Sustentable · Acceso seguro</p>
+            <div class="login-brand">
+                <span class="brand-mark"><svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="bgMarkLogin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14a39a"/><stop offset="1" stop-color="#0f5f5c"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#bgMarkLogin)"/><path d="M8 24C8 14.6 14.6 8 24 8c0 9.4-6.6 16-16 16z" fill="#fff"/><path d="M8.8 23.2L17 15" stroke="#0f7b78" stroke-width="1.8" stroke-linecap="round"/><circle cx="24.5" cy="24.5" r="3" fill="#f28c28"/></svg></span>
+                <h1 class="brand-word mb-0">bgreen<span class="brand-dot">.ERP</span></h1>
+            </div>
+            <p>Proyectos, finanzas y contabilidad en un solo lugar.</p>
         </div>
         <div class="login-card-body">
             <div id="loginSetupWrap" class="d-none mb-3">
@@ -1917,15 +2456,21 @@
             </div>
             <div id="loginMsg" class="text-danger mb-2"></div>
             <button type="button" class="btn btn-login" id="btnLogin" onclick="enviarLogin()">INGRESAR</button>
+            <div class="login-foot"><i class="fa-solid fa-lock me-1"></i>Conexión segura · bgreen.ERP</div>
         </div>
     </div>
 </div>
 <div class="app-shell app-hidden" id="appShell">
-    <nav class="navbar navbar-dark px-4">
-        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
-            <img id="empresaActivaLogo" class="empresa-logo-nav d-none" alt="">
-            <span id="empresaActivaNombre">Consultora Sustentable</span>
+    <nav class="navbar">
+        <a class="app-brand" href="#" onclick="return mostrarVista('dashboard-gestion', document.querySelector('.sidebar-link[data-vista=&quot;dashboard-gestion&quot;]'))">
+            <span class="brand-mark"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="bgMarkNav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14a39a"/><stop offset="1" stop-color="#0f5f5c"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#bgMarkNav)"/><path d="M8 24C8 14.6 14.6 8 24 8c0 9.4-6.6 16-16 16z" fill="#fff"/><path d="M8.8 23.2L17 15" stroke="#0f7b78" stroke-width="1.8" stroke-linecap="round"/><circle cx="24.5" cy="24.5" r="3" fill="#f28c28"/></svg></span>
+            <span class="brand-word">bgreen<span class="brand-dot">.ERP</span></span>
         </a>
+        <button type="button" class="sidebar-toggle" id="btnSidebarToggle" onclick="toggleSidebar()" title="Contraer menú" aria-label="Contraer menú"><i class="fa-solid fa-angles-left"></i></button>
+        <div class="navbar-empresa">
+            <img id="empresaActivaLogo" class="empresa-logo-nav d-none" alt="">
+            <span id="empresaActivaNombre"></span>
+        </div>
         <div class="navbar-user d-none" id="navbarUser">
             <img id="navbarUserAvatar" class="avatar-round avatar-round-sm d-none" alt="">
             <span id="navbarUserAvatarPh" class="avatar-round avatar-round-sm avatar-placeholder"><i class="fa-solid fa-user"></i></span>
@@ -4100,6 +4645,170 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+    /* bgreen.ERP — mejoras de interfaz independientes de la lógica de negocio */
+    (function () {
+        if (window.Chart) {
+            Chart.defaults.font.family = "'Inter', 'Roboto', system-ui, sans-serif";
+            Chart.defaults.color = '#6b7b80';
+            Chart.defaults.borderColor = '#eef1f3';
+            Chart.defaults.elements.bar.borderRadius = 4;
+            Chart.defaults.plugins.legend.labels.usePointStyle = true;
+            Chart.defaults.plugins.tooltip.backgroundColor = '#072427';
+            Chart.defaults.plugins.tooltip.padding = 10;
+            Chart.defaults.plugins.tooltip.cornerRadius = 8;
+            Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+        }
+    })();
+
+    const SIDEBAR_COLLAPSED_KEY = 'bgreenSidebarCollapsed';
+
+    function aplicarSidebarColapsado(colapsado) {
+        document.body.classList.toggle('sidebar-collapsed', colapsado);
+        const btn = document.getElementById('btnSidebarToggle');
+        if (btn) {
+            const label = colapsado ? 'Expandir menú' : 'Contraer menú';
+            btn.title = label;
+            btn.setAttribute('aria-label', label);
+        }
+    }
+
+    function toggleSidebar() {
+        const colapsado = !document.body.classList.contains('sidebar-collapsed');
+        aplicarSidebarColapsado(colapsado);
+        try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, colapsado ? '1' : '0'); } catch (e) { /* almacenamiento no disponible */ }
+    }
+
+    (function initSidebar() {
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            const span = link.querySelector('span');
+            if (span && !link.title) link.title = span.textContent.trim();
+        });
+        let pref = null;
+        try { pref = localStorage.getItem(SIDEBAR_COLLAPSED_KEY); } catch (e) { /* almacenamiento no disponible */ }
+        aplicarSidebarColapsado(pref === null ? window.innerWidth < 1200 : pref === '1');
+    })();
+
+    (function initKpiIconos() {
+        const KPI_ICONOS = {
+            'gestion-kpi-proyectos': ['fa-diagram-project', 'teal'],
+            'gestion-kpi-alertas': ['fa-bell', 'red'],
+            'gestion-kpi-vencidas': ['fa-hourglass-end', 'amber'],
+            'gestion-kpi-semana': ['fa-calendar-check', 'blue'],
+            'kpi-disponible': ['fa-sack-dollar', 'teal'],
+            'kpi-facturar': ['fa-file-invoice', 'blue'],
+            'count-proyectos': ['fa-diagram-project', 'teal'],
+            'kpi-egresos': ['fa-arrow-trend-down', 'red'],
+            'kpi-uf-valor': ['fa-coins', 'teal'],
+            'kpi-flotacion': ['fa-calendar-days', 'orange'],
+            'kpi-utilidad-proy': ['fa-chart-line', 'teal'],
+            'kpi-facturado-por-pagar': ['fa-file-invoice-dollar', 'red'],
+            'kpi-ep-enviados': ['fa-paper-plane', 'blue'],
+            'kpi-ep-programados': ['fa-clock', 'orange'],
+        };
+        document.querySelectorAll('.gestion-kpi .card, .kpi-row .card').forEach(card => {
+            if (card.querySelector('.kpi-icon')) return;
+            const valor = card.querySelector('h4[id]');
+            const [icono, tono] = KPI_ICONOS[valor && valor.id] || ['fa-chart-simple', 'slate'];
+            const span = document.createElement('span');
+            span.className = `kpi-icon kpi-tone-${tono}`;
+            span.innerHTML = `<i class="fa-solid ${icono}"></i>`;
+            card.appendChild(span);
+        });
+    })();
+
+    (function initEstadosTabla() {
+        const ICONOS_VACIO = [
+            [/client/i, 'fa-building'],
+            [/propuesta/i, 'fa-file-lines'],
+            [/banc/i, 'fa-building-columns'],
+            [/movimiento|libro/i, 'fa-book'],
+            [/trabajador|remuneraci|liquidaci/i, 'fa-id-card'],
+            [/reembolso/i, 'fa-receipt'],
+            [/comprobante|documento/i, 'fa-file-invoice'],
+            [/centro/i, 'fa-layer-group'],
+            [/cuenta/i, 'fa-wallet'],
+            [/proyect/i, 'fa-diagram-project'],
+            [/tarea|entrega|hito|cobro/i, 'fa-list-check'],
+            [/registro/i, 'fa-clock'],
+        ];
+        const RE_VACIO = /^(sin |ningún|ninguna|no hay|no se encontr)/i;
+        const RE_CTA = /registrad|^sin reembolsos$/i;
+        const RE_BOTON_CREAR = /nuev|agregar|registrar|^\s*\+/i;
+
+        function botonCrear(tr) {
+            const panel = tr.closest('.vista-panel');
+            if (!panel) return null;
+            const oculto = b => {
+                for (let el = b; el && el !== panel; el = el.parentElement) {
+                    if (el.classList.contains('d-none')) return true;
+                }
+                return false;
+            };
+            return [...panel.querySelectorAll('.panel-header .btn-teal, .panel-header .btn-dark')]
+                .find(b => RE_BOTON_CREAR.test(b.textContent) && !oculto(b)) || null;
+        }
+
+        function decorar(tr) {
+            if (tr.cells.length !== 1) return;
+            const td = tr.cells[0];
+            if (!td.hasAttribute('colspan') || td.dataset.uiState || td.children.length) return;
+            const texto = td.textContent.trim();
+            if (!texto) return;
+            let tipo = null;
+            if (td.classList.contains('text-danger')) tipo = 'error';
+            else if (/^cargando/i.test(texto)) tipo = 'loading';
+            else if (RE_VACIO.test(texto)) tipo = 'empty';
+            if (!tipo) return;
+
+            td.dataset.uiState = tipo;
+            td.classList.add('ui-state', `ui-state-${tipo}`);
+            if (td.classList.contains('py-2') || tr.closest('.entrega-tareas-wrap')) td.classList.add('ui-state-compact');
+
+            const icono = document.createElement('span');
+            icono.className = 'ui-state-icon';
+            if (tipo === 'loading') {
+                icono.innerHTML = '<span class="spinner-border" role="status"></span>';
+            } else if (tipo === 'error') {
+                icono.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                const match = ICONOS_VACIO.find(([re]) => re.test(texto));
+                icono.innerHTML = `<i class="fa-solid ${match ? match[1] : 'fa-inbox'}"></i>`;
+            }
+            const label = document.createElement('span');
+            label.className = 'ui-state-text';
+            label.textContent = texto;
+            td.textContent = '';
+            td.append(icono, label);
+
+            if (tipo === 'empty' && RE_CTA.test(texto) && !td.classList.contains('ui-state-compact')) {
+                const origen = botonCrear(tr);
+                if (origen) {
+                    const cta = document.createElement('button');
+                    cta.type = 'button';
+                    cta.className = 'btn btn-sm btn-teal ui-state-cta';
+                    cta.innerHTML = '<i class="fa-solid fa-plus me-1"></i>';
+                    cta.append(origen.textContent.replace(/^\s*\+\s*/, '').trim());
+                    cta.addEventListener('click', () => origen.click());
+                    const wrap = document.createElement('div');
+                    wrap.appendChild(cta);
+                    td.appendChild(wrap);
+                }
+            }
+        }
+
+        document.querySelectorAll('tbody > tr').forEach(decorar);
+        new MutationObserver(mutaciones => {
+            for (const m of mutaciones) {
+                for (const n of m.addedNodes) {
+                    if (n.nodeType !== 1) continue;
+                    if (n.tagName === 'TR') decorar(n);
+                    else if (n.tagName === 'TBODY' || n.tagName === 'TABLE') n.querySelectorAll('tr').forEach(decorar);
+                }
+            }
+        }).observe(document.body, { childList: true, subtree: true });
+    })();
+</script>
+<script>
     const fmt = n => '$' + Math.round(n).toLocaleString('es-CL');
     const fmtUf = n => (Number(n) || 0).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' UF';
     let _ufHoyPersonal = null;
@@ -4503,8 +5212,8 @@
         month: { label: 'Meses',   colWidth: 72, navDays: 120 },
     };
     const GANTT_STAGE_COLORS = [
-        'rgba(0, 128, 128, 0.07)',
-        'rgba(0, 128, 128, 0.13)',
+        'rgba(15, 123, 120, 0.07)',
+        'rgba(15, 123, 120, 0.13)',
         'rgba(0, 100, 120, 0.09)',
         'rgba(0, 140, 140, 0.11)',
         'rgba(0, 110, 110, 0.08)',
@@ -5590,7 +6299,7 @@
 
     function actualizarBrandingEmpresa() {
         const emp = empresaActiva();
-        const nombre = emp ? emp.nombre : 'MaestroWeb';
+        const nombre = emp ? emp.nombre : 'bgreen.ERP';
         const nav = document.getElementById('empresaActivaNombre');
         const side = document.getElementById('sidebarEmpresaNombre');
         if (nav) nav.textContent = nombre;
@@ -5605,7 +6314,7 @@
             document.getElementById('sidebarEmpresaIcon'),
             emp,
         );
-        document.title = nombre + ' | Admin';
+        document.title = emp ? `${nombre} · bgreen.ERP` : 'bgreen.ERP';
     }
 
     function renderMenuEmpresas() {
@@ -6981,7 +7690,7 @@
                     evs.slice(0, 3).forEach(ev => {
                         const span = document.createElement('span');
                         span.className = 'cal-evento';
-                        span.style.background = ev.color || '#008080';
+                        span.style.background = ev.color || '#0f7b78';
                         span.textContent = ev.nombre;
                         span.title = ev.descripcion || ev.nombre;
                         cell.appendChild(span);
@@ -7008,7 +7717,7 @@
                 if (vistos.has(r.id)) return false;
                 vistos.add(r.id);
                 return true;
-            }).map(r => `<span><i style="background:${r.color || '#008080'}"></i>${esc(r.nombre)}</span>`).join('');
+            }).map(r => `<span><i style="background:${r.color || '#0f7b78'}"></i>${esc(r.nombre)}</span>`).join('');
         } catch (e) {
             console.error('Calendario contable:', e);
         }
@@ -7087,7 +7796,7 @@
         const colors = [];
         const borderColors = [];
 
-        const colorPos = 'rgba(0, 128, 128, 0.75)';
+        const colorPos = 'rgba(15, 123, 120, 0.75)';
         const colorNeg = 'rgba(220, 53, 69, 0.65)';
         const colorTotalPos = 'rgba(0, 123, 255, 0.75)';
         const colorTotalNeg = 'rgba(185, 28, 28, 0.75)';
@@ -7098,7 +7807,7 @@
             floatingData.push([Math.min(start, cumulative), Math.max(start, cumulative)]);
             const pos = v >= 0;
             colors.push(pos ? colorPos : colorNeg);
-            borderColors.push(pos ? '#008080' : '#dc3545');
+            borderColors.push(pos ? '#0f7b78' : '#dc3545');
         });
 
         const total = cumulative;
@@ -7190,9 +7899,9 @@
 
     function _dashboardChartDatasets(data, acumulado, proyeccion) {
         const facturadoColor = acumulado ? 'rgba(0, 123, 255, 0.25)' : 'rgba(0, 123, 255, 0.75)';
-        const ingresosColor = acumulado ? 'rgba(0, 128, 128, 0.25)' : 'rgba(0, 128, 128, 0.75)';
+        const ingresosColor = acumulado ? 'rgba(15, 123, 120, 0.25)' : 'rgba(15, 123, 120, 0.75)';
         const gastosColor = acumulado ? 'rgba(220, 53, 69, 0.2)' : 'rgba(220, 53, 69, 0.65)';
-        const proyectadoColor = acumulado ? 'rgba(0, 128, 128, 0.12)' : 'rgba(0, 128, 128, 0.35)';
+        const proyectadoColor = acumulado ? 'rgba(15, 123, 120, 0.12)' : 'rgba(15, 123, 120, 0.35)';
 
         const gastosProyColor = acumulado ? 'rgba(253, 126, 20, 0.15)' : 'rgba(253, 126, 20, 0.4)';
 
@@ -7208,7 +7917,7 @@
         if (acumulado) {
             const datasets = [
                 base('Facturado', data.facturado, facturadoColor, '#007bff', { fill: true, tension: 0.2, pointRadius: 2 }),
-                base('Ingresos', data.ingresos, ingresosColor, '#008080', { fill: true, tension: 0.2, pointRadius: 2 }),
+                base('Ingresos', data.ingresos, ingresosColor, '#0f7b78', { fill: true, tension: 0.2, pointRadius: 2 }),
                 base('Gastos', data.gastos, gastosColor, '#dc3545', { fill: true, tension: 0.2, pointRadius: 2 }),
             ];
             if (proyeccion && data.ingresos_proyectados) {
@@ -7229,7 +7938,7 @@
         // grouped bar from y=0 alongside its series — no stack IDs needed.
         const datasets = [
             base('Facturado', data.facturado, facturadoColor, '#007bff'),
-            base('Ingresos', data.ingresos, ingresosColor, '#008080'),
+            base('Ingresos', data.ingresos, ingresosColor, '#0f7b78'),
             base('Gastos', data.gastos, gastosColor, '#dc3545'),
         ];
         if (proyeccion && data.ingresos_proyectados) {
@@ -11526,8 +12235,8 @@
                         type: 'bar',
                         label: 'Monto $ Enviadas',
                         data: data.monto_pesos_enviadas || [],
-                        backgroundColor: 'rgba(0, 128, 128, 0.75)',
-                        borderColor: '#008080',
+                        backgroundColor: 'rgba(15, 123, 120, 0.75)',
+                        borderColor: '#0f7b78',
                         borderWidth: 1,
                         yAxisID: 'y',
                         order: 2,
@@ -13339,7 +14048,7 @@
         const clp = cuentas.filter(c => c.moneda === 'CLP').sort((a, b) => Math.abs(b.saldo) - Math.abs(a.saldo)).slice(0, 12);
         const labels = clp.map(c => c.nombre.length > 28 ? c.nombre.slice(0, 26) + '…' : c.nombre);
         const data = clp.map(c => c.saldo);
-        const colors = data.map(v => v >= 0 ? '#008080' : '#dc3545');
+        const colors = data.map(v => v >= 0 ? '#0f7b78' : '#dc3545');
 
         if (_chartBarras) _chartBarras.destroy();
         const chartBarrasEl = document.getElementById('chartCuentasBarras');
@@ -13360,7 +14069,7 @@
         if (chartCatEl) {
             _chartCategorias = new Chart(chartCatEl, {
                 type: 'doughnut',
-                data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: ['#008080','#007bff','#ffc107','#dc3545','#6c757d','#20c997','#6610f2'] }] },
+                data: { labels: catLabels, datasets: [{ data: catData, backgroundColor: ['#0f7b78','#007bff','#ffc107','#dc3545','#6c757d','#20c997','#6610f2'] }] },
                 options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
             });
         }

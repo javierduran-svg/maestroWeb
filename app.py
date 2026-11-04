@@ -1,4 +1,4 @@
-"""MaestroWeb Flask application factory."""
+"""bgreen.ERP Flask application factory."""
 
 import os
 

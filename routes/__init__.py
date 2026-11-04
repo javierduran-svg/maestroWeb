@@ -1,4 +1,4 @@
-"""Flask blueprints for MaestroWeb API."""
+"""Flask blueprints for bgreen.ERP API."""
 
 from routes.configuracion import bp as configuracion_bp
 from routes.contabilidad import bp as contabilidad_bp

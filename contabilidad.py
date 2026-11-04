@@ -402,7 +402,7 @@ RUTINAS_CONTABLES = [
         'categoria': 'previred',
         'dia_inicio': 10,
         'dia_fin': 13,
-        'color': '#008080',
+        'color': '#0f7b78',
         'descripcion': 'Envío planilla de remuneraciones y cotizaciones previsionales.',
     },
     {

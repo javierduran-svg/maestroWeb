@@ -1,4 +1,4 @@
-"""Servicios de dominio MaestroWeb."""
+"""Servicios de dominio bgreen.ERP."""
 
 from services.contabilidad_service import (
     DescuadreContableError,

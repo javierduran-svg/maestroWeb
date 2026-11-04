@@ -244,7 +244,7 @@ def _fetch_uf_sii_html_anio(anio: int) -> str | None:
         resp = requests.get(
             url,
             timeout=_UF_FETCH_TIMEOUT,
-            headers={'User-Agent': 'MaestroWeb/1.0'},
+            headers={'User-Agent': 'bgreenERP/1.0'},
         )
         resp.raise_for_status()
         _UF_SII_HTML_CACHE[anio] = resp.text

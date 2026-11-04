@@ -6,14 +6,16 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-TEAL = (0, 128, 128)
-TEAL_LIGHT = (227, 242, 242)
-DARK = (0, 0, 0)
-HEADER_BG = (241, 243, 245)
-BORDER = (222, 226, 230)
-TEXT_MUTED = (108, 117, 125)
+# Paleta bgreen.ERP (alineada con app.html)
+TEAL = (15, 123, 120)
+TEAL_LIGHT = (238, 248, 246)
+DARK = (7, 36, 39)
+ACCENT = (242, 140, 40)
+HEADER_BG = (244, 246, 247)
+BORDER = (227, 232, 234)
+TEXT_MUTED = (107, 123, 128)
 WHITE = (255, 255, 255)
-ROW_ALT = (248, 250, 250)
+ROW_ALT = (250, 251, 251)
 
 _FONTS_DIR = Path(__file__).parent / 'fonts'
 
@@ -235,7 +237,7 @@ def generar_pdf_cuadro_proyectos(
     y = pdf.get_y()
     pdf.set_fill_color(*DARK)
     pdf.rect(14, y, _TABLE_W, 12, style='F')
-    pdf.set_fill_color(*TEAL)
+    pdf.set_fill_color(*ACCENT)
     pdf.rect(14, y, 3, 12, style='F')
     pdf.set_xy(20, y + 1.5)
     pdf._set_font('B', 11)

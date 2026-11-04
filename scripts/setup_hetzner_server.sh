@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Preparación inicial de un VPS Ubuntu en Hetzner para MaestroWeb beta.
+# Preparación inicial de un VPS Ubuntu en Hetzner para bgreen.ERP beta.
 # Ejecutar como root o con sudo en el servidor:
 #   curl -fsSL ... | bash
 # o tras clonar el repo:
