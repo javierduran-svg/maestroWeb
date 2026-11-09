@@ -55,6 +55,8 @@ def auth_login():
     trabajador = Trabajador.query.filter(db.func.lower(Trabajador.email) == email).first()
     if not trabajador or not _verificar_password(trabajador, password):
         return jsonify({'error': 'Credenciales inválidas'}), 401
+    if not _flag_trabajador(trabajador, 'activo', True):
+        return jsonify({'error': 'Esta cuenta está desactivada'}), 403
 
     _establecer_sesion_trabajador(trabajador)
     return jsonify({'mensaje': 'Sesión iniciada', 'usuario': _trabajador_auth_dict(trabajador)})

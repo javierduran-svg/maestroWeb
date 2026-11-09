@@ -1370,7 +1370,7 @@
         .gestion-proximas-table { table-layout: fixed; width: 100%; }
         .gestion-proximas-table col.col-chevron { width: 2.25rem; }
         .gestion-proximas-table col.col-status { width: 3.5rem; }
-        .gestion-proximas-table col.col-fecha { width: 5.5rem; }
+        .gestion-proximas-table col.col-fecha { width: 7.25rem; }
         .gestion-proximas-table col.col-meta { width: 18%; }
         .gestion-proximas-table col.col-asignado { width: 20%; }
         .gestion-proximas-table .col-chevron {
@@ -1392,7 +1392,7 @@
         .gestion-proximas-tareas-table { table-layout: fixed; width: 100%; margin: 0; background: transparent; }
         .gestion-proximas-tareas-table col.col-chevron { width: 2.25rem; }
         .gestion-proximas-tareas-table col.col-status { width: 3.5rem; }
-        .gestion-proximas-tareas-table col.col-fecha { width: 5.5rem; }
+        .gestion-proximas-tareas-table col.col-fecha { width: 7.25rem; }
         .gestion-proximas-tareas-table col.col-meta { width: 18%; }
         .gestion-proximas-tareas-table col.col-asignado { width: 20%; }
         .gestion-proximas-tareas-table td { border: none; vertical-align: middle; }
@@ -1406,9 +1406,31 @@
             padding-left: 0.35rem; padding-right: 0.35rem;
             text-align: center; overflow: visible;
         }
-        .gestion-tarea-row { cursor: pointer; }
         .gestion-tarea-row:hover td { background: rgba(15, 123, 120,0.06); }
-        .gestion-entrega-row td:not(:first-child):not(:nth-child(2)) { cursor: pointer; }
+        .gestion-entrega-row .col-chevron,
+        .gestion-entrega-row .col-status,
+        .gestion-tarea-row .col-status { cursor: pointer; }
+        #gestion-proximas-card .gestion-proximas-table .cell-edit,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit,
+        #gestion-proximas-card .gestion-proximas-table .cell-edit.form-select,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit.form-select {
+            min-width: 0; width: 100%; max-width: 100%;
+            padding: 0.1rem 0.28rem; font-size: 0.75rem; min-height: 1.35rem;
+            background-color: transparent;
+        }
+        #gestion-proximas-card .gestion-proximas-table .cell-edit.form-select,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit.form-select {
+            padding-right: 1.35rem;
+            background-position: right 0.2rem center;
+        }
+        #gestion-proximas-card .gestion-proximas-table .cell-edit:focus,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit:focus,
+        #gestion-proximas-card .gestion-proximas-table .cell-edit.form-select:focus,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit.form-select:focus {
+            background-color: #fff;
+        }
+        #gestion-proximas-card .gestion-proximas-table .cell-edit-date,
+        #gestion-proximas-card .gestion-proximas-tareas-table .cell-edit-date { min-width: 0; width: 100%; }
         .chart-box-waterfall { position: relative; height: 280px; }
         .tabla-scroll-wrap {
             max-height: var(--tabla-scroll-max, calc(100vh - 12.5rem));
@@ -1417,6 +1439,88 @@
         }
         .vista-panel.panel-card > .panel-toolbar + .tabla-scroll-wrap { --tabla-scroll-max: calc(100vh - 16rem); }
         #view-personal .tabla-scroll-wrap { --tabla-scroll-max: min(38vh, 360px); }
+        #view-personal .tabla-scroll-wrap.liq-scroll-ancho { --tabla-scroll-max: min(58vh, 560px); }
+        .planilla-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+            padding: 0.9rem 1rem 0.75rem;
+            background: #f7faf9;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .planilla-bar-top,
+        .planilla-bar-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem 1rem;
+        }
+        .planilla-bar-actions { align-items: flex-end; }
+        .planilla-bar .form-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #6c757d;
+        }
+        .planilla-vistas > .btn { font-size: 0.78rem; }
+        .planilla-vistas > .btn.active,
+        .planilla-vistas > .btn.active:hover,
+        .planilla-vistas > .btn.active:focus {
+            background: var(--teal-green);
+            border-color: var(--teal-green);
+            color: #fff;
+        }
+        .planilla-mes-inactivo { opacity: 0.4; pointer-events: none; }
+        .planilla-kpis {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: #fff;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .planilla-kpis > div {
+            border: 1px solid #e4eceb;
+            border-radius: 6px;
+            padding: 0.45rem 0.7rem;
+            background: #fbfdfd;
+        }
+        .planilla-kpis .kpi-costo { background: #eef6f6; border-color: #c5ddd9; }
+        .planilla-kpis span {
+            display: block;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: #6c757d;
+        }
+        .planilla-kpis strong { font-size: 1.02rem; font-weight: 650; color: #173b3a; }
+        #tabla-liquidaciones-grid.liq-modo-planilla th { white-space: nowrap; }
+        #tabla-liquidaciones-grid.liq-modo-planilla th.liq-sep,
+        #tabla-liquidaciones-grid.liq-modo-planilla td.liq-sep { border-left: 2px solid #e3e7eb; }
+        #tabla-liquidaciones-grid.liq-modo-resumen th,
+        #tabla-liquidaciones-grid.liq-modo-resumen td { white-space: nowrap; }
+        #tabla-liquidaciones-grid.liq-modo-resumen th:first-child,
+        #tabla-liquidaciones-grid.liq-modo-resumen td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            min-width: 11rem;
+            background: #fff;
+            box-shadow: 1px 0 0 #dee2e6;
+        }
+        #tabla-liquidaciones-grid.liq-modo-resumen thead th:first-child { z-index: 4; background: #f1f3f5; }
+        #tabla-liquidaciones-grid.liq-modo-resumen tfoot td:first-child { background: #f8f9fa; }
+        #tabla-liquidaciones-grid.liq-modo-resumen tbody tr:hover td:first-child { background: #f8f9fa; }
+        #tabla-liquidaciones-grid.liq-modo-resumen .liq-col-total {
+            background: #eef6f6;
+            box-shadow: inset 2px 0 0 #c5ddd9;
+        }
+        #tabla-liquidaciones-grid.liq-modo-resumen tfoot .liq-col-total { background: #e3f1f0; }
+        @media (max-width: 720px) {
+            .planilla-kpis { grid-template-columns: 1fr 1fr; }
+        }
         #view-sii .tabla-scroll-wrap { --tabla-scroll-max: min(48vh, 400px); }
         #view-plan-cuentas .tabla-scroll-wrap,
         #view-centros-costo .tabla-scroll-wrap,
@@ -2538,7 +2642,7 @@
                             <div class="panel-header flex-wrap gap-2">
                                 <div>
                                     <h5 class="mb-0">Próximas entregas y tareas</h5>
-                                    <small class="text-muted" id="gestionProximasSubtitulo">Próximos 60 días y vencidas, por fecha de etapa o tarea · expandir entrega para ver tareas · clic en icono para cambiar estado</small>
+                                    <small class="text-muted" id="gestionProximasSubtitulo">Próximos 60 días y vencidas, por fecha de etapa o tarea · editar descripción, asignado y fecha en la tabla · clic en el icono para cambiar estado</small>
                                 </div>
                                 <div class="d-flex flex-wrap align-items-center gap-3 ms-auto">
                                     <div class="d-flex align-items-center gap-2">
@@ -3358,6 +3462,7 @@
                             <th data-col="rut">RUT</th>
                             <th data-col="nombres">Nombres</th>
                             <th data-col="rol">Rol</th>
+                            <th data-col="estado">Estado</th>
                             <th data-col="ap_paterno">Ap. paterno</th>
                             <th data-col="ap_materno">Ap. materno</th>
                             <th data-col="fecha_ingreso">Fecha ingreso</th>
@@ -3376,60 +3481,76 @@
                         <tbody id="tabla-trabajadores"></tbody>
                     </table>
                 </div>
-                <div class="p-3 border-bottom bg-light">
-                    <h6 class="text-teal mb-3"><i class="fa-solid fa-file-invoice-dollar"></i> Planilla Mensual</h6>
-                    <div class="d-flex flex-wrap align-items-end gap-2">
+                <div class="planilla-bar">
+                    <div class="planilla-bar-top">
                         <div>
-                            <label class="form-label small fw-bold mb-1">Mes</label>
-                            <select class="form-select form-select-sm" id="liqMes" style="width:auto;min-width:130px"></select>
+                            <h6 class="text-teal mb-0"><i class="fa-solid fa-file-invoice-dollar"></i> Planilla mensual</h6>
+                            <small class="text-muted" id="liqVistaHint">Liquidaciones calculadas del mes. Costo RRHH = líquido + impuesto único + Previred.</small>
                         </div>
-                        <div>
-                            <label class="form-label small fw-bold mb-1">Año</label>
-                            <input type="number" class="form-control form-control-sm" id="liqAnio" style="width:90px" min="2000">
+                        <div class="btn-group btn-group-sm planilla-vistas" role="group" aria-label="Vista de la planilla">
+                            <button type="button" class="btn btn-outline-secondary active" id="btnVistaPlanilla" aria-pressed="true" onclick="verPlanillaMensual('planilla')">Planilla del mes</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnVistaPagos" aria-pressed="false" onclick="verPlanillaMensual('pagos')" title="Movimientos del año cuya cuenta destino es de remuneraciones">Remuneraciones pagadas</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnVistaResumen" aria-pressed="false" onclick="verPlanillaMensual('resumen')" title="Total pagado por mes y trabajador">Resumen mensual</button>
                         </div>
-                        <button class="btn btn-teal btn-sm" onclick="generarPlanillaSueldos()">GENERAR PLANILLA DE SUELDOS</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="cargarLiquidaciones()">Consultar</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas()" title="Movimientos del año cuya cuenta destino es de remuneraciones">Remuneraciones pagadas</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="consultarRemuneracionesPagadas('resumen')" title="Total pagado por mes y trabajador">Resumen mensual</button>
-                        <button class="btn btn-sm btn-outline-secondary" id="btnExportPdfPlanilla" onclick="exportarPdfPlanilla()" title="Exportar todas las liquidaciones del período"><i class="fa-solid fa-file-pdf me-1"></i>EXPORTAR PDF</button>
-                        <button class="btn btn-sm btn-outline-secondary" id="btnEnviarLiquidaciones" onclick="enviarLiquidacionesCorreo()" title="Enviar a cada trabajador el PDF de su liquidación"><i class="fa-solid fa-envelope me-1"></i>ENVIAR LIQUIDACIONES POR CORREO</button>
-                        <button class="btn btn-sm btn-teal" id="btnExportPrevired" onclick="exportarPrevired()" title="Descargar archivo TXT para carga en Previred"><i class="fa-solid fa-file-export me-1"></i>EXPORTAR PLANILLA MENSUAL A PREVIRED</button>
-                        <button class="btn btn-sm btn-outline-secondary" id="btnIngresarMovimientos" onclick="ingresarPlanillaMovimientos()" title="Registrar liquidaciones del período en movimientos contables"><i class="fa-solid fa-book me-1"></i>INGRESAR A MOVIMIENTOS</button>
                     </div>
-                    <div id="liqMsg" class="small mt-2"></div>
+                    <div class="planilla-bar-actions">
+                        <div class="d-flex flex-wrap align-items-end gap-2">
+                            <div id="liqMesWrap">
+                                <label class="form-label fw-bold mb-1" for="liqMes">Mes</label>
+                                <select class="form-select form-select-sm" id="liqMes" style="width:auto;min-width:130px" onchange="onPeriodoPlanillaChange()"></select>
+                            </div>
+                            <div>
+                                <label class="form-label fw-bold mb-1" for="liqAnio">Año</label>
+                                <input type="number" class="form-control form-control-sm" id="liqAnio" style="width:90px" min="2000" onchange="onPeriodoPlanillaChange()">
+                            </div>
+                            <small id="liqPeriodoNota" class="text-muted d-none align-self-end pb-1">Año completo</small>
+                        </div>
+                        <div id="accionesPlanilla" class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-teal btn-sm" onclick="generarPlanillaSueldos()">Generar planilla</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExportPdfPlanilla" onclick="exportarPdfPlanilla()" title="Exportar todas las liquidaciones del período"><i class="fa-solid fa-file-pdf me-1"></i>PDF</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnEnviarLiquidaciones" onclick="enviarLiquidacionesCorreo()" title="Enviar a cada trabajador el PDF de su liquidación"><i class="fa-solid fa-envelope me-1"></i>Correo</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExportPrevired" onclick="exportarPrevired()" title="Descargar archivo TXT para carga en Previred"><i class="fa-solid fa-file-export me-1"></i>Previred</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnIngresarMovimientos" onclick="ingresarPlanillaMovimientos()" title="Registrar liquidaciones del período en movimientos contables"><i class="fa-solid fa-book me-1"></i>A movimientos</button>
+                        </div>
+                        <div id="accionesResumen" class="d-none">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnExportResumenCsv" onclick="exportarResumenMensualCsv()" title="Descargar el resumen del año en CSV"><i class="fa-solid fa-file-csv me-1"></i>Exportar CSV</button>
+                        </div>
+                    </div>
+                    <div id="liqMsg" class="small"></div>
                 </div>
-                <div class="table-responsive tabla-scroll-wrap">
-                    <table id="tabla-liquidaciones-grid" class="table table-hover table-panel table-compact mb-0">
+                <div id="liqResumenStrip" class="planilla-kpis d-none">
+                    <div><span>Líquido a pagar</span><strong id="liqKpiLiquido">—</strong></div>
+                    <div><span>Impuesto único</span><strong id="liqKpiImpuesto">—</strong></div>
+                    <div><span>Previred</span><strong id="liqKpiPrevired">—</strong></div>
+                    <div class="kpi-costo"><span>Costo RRHH</span><strong id="liqKpiCosto">—</strong></div>
+                </div>
+                <div class="table-responsive tabla-scroll-wrap" id="liqTablaWrap">
+                    <table id="tabla-liquidaciones-grid" class="table table-hover table-panel table-compact mb-0 liq-modo-planilla">
                         <thead><tr>
-                            <th id="liqColPeriodo" class="d-none">Período</th>
                             <th>Nombre</th>
                             <th>RUT</th>
-                            <th class="text-end">Sueldo Base</th>
-                            <th class="text-end">Descuentos</th>
+                            <th class="text-end">Sueldo base</th>
+                            <th class="text-end liq-sep">Descuentos</th>
                             <th class="text-end">Impuesto único</th>
                             <th class="text-end" title="Cotizaciones del trabajador y del empleador que se pagan en Previred. No incluye el impuesto único.">Previred</th>
-                            <th class="text-end">Aportes empleador</th>
-                            <th class="text-end">Líquido a Pagar</th>
+                            <th class="text-end liq-sep">Aportes empleador</th>
+                            <th class="text-end liq-sep">Líquido a pagar</th>
                             <th class="text-end" title="Líquido a pagar + impuesto único + Previred">Costo RRHH</th>
-                            <th>Estado</th>
+                            <th class="liq-sep">Estado</th>
                             <th class="text-end" style="width:48px"></th>
                         </tr></thead>
                         <tbody id="tabla-liquidaciones"></tbody>
                         <tfoot id="tabla-liquidaciones-tfoot" class="d-none">
                             <tr class="table-light fw-bold">
-                                <td id="liqTotalLabel" colspan="3" class="text-end">Totales</td>
-                                <td class="text-end saldo-negativo" id="liqTotalDesc"></td>
+                                <td colspan="2" class="text-end">Totales</td>
+                                <td class="text-end" id="liqTotalSueldo"></td>
+                                <td class="text-end saldo-negativo liq-sep" id="liqTotalDesc"></td>
                                 <td class="text-end" id="liqTotalImpuesto"></td>
                                 <td class="text-end" id="liqTotalPrevired"></td>
-                                <td class="text-end" id="liqTotalAportes"></td>
-                                <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
+                                <td class="text-end liq-sep" id="liqTotalAportes"></td>
+                                <td class="text-end saldo-positivo liq-sep" id="liqTotalLiq"></td>
                                 <td class="text-end" id="liqTotalCosto"></td>
-                                <td colspan="2"></td>
-                            </tr>
-                            <tr class="fw-bold">
-                                <td colspan="8" class="text-end">Costo mensual RRHH</td>
-                                <td class="text-end saldo-positivo" id="liqGranTotal" title="Líquido a pagar + impuesto único + Previred"></td>
-                                <td colspan="2"></td>
+                                <td class="liq-sep" colspan="2"></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -4621,7 +4742,11 @@
                 <div class="col-md-4"><label class="form-label small fw-bold">Cuenta depósito sueldo</label><input type="text" class="form-control" id="trabCuentaBancaria" placeholder="N° cuenta"></div>
                 <div class="col-md-8"><label class="form-label small fw-bold">Cuenta de gasto (remuneración)</label><select class="form-select" id="trabCuenta" required></select></div>
                 <div class="col-12">
-                    <div class="form-text mb-1">Cálculo del libro de remuneraciones</div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="trabActivo" checked>
+                        <label class="form-check-label small" for="trabActivo">Activo <span class="text-muted">(puede ingresar y entra en la planilla de sueldos)</span></label>
+                    </div>
+                    <div class="form-text mb-1 mt-2">Cálculo del libro de remuneraciones</div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="checkbox" id="trabGratificacion" checked>
                         <label class="form-check-label small" for="trabGratificacion">Gratificación legal (25 % con tope)</label>
@@ -4812,6 +4937,8 @@
     const fmt = n => '$' + Math.round(n).toLocaleString('es-CL');
     const fmtUf = n => (Number(n) || 0).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' UF';
     let _ufHoyPersonal = null;
+    let _liqVista = 'planilla';
+    let _liqResumenData = null;
     let _proySelectList = [];
     let _cuentasGasto = [];
     let _cuentasCache = [];
@@ -5170,7 +5297,7 @@
         if (sel && GESTION_PROXIMAS_HORIZONTES.has(String(valor))) sel.value = String(valor);
         const sub = document.getElementById('gestionProximasSubtitulo');
         if (sub) {
-            sub.textContent = `${etiquetaGestionProximasHorizonte(valor || leerGestionProximasHorizonte())} · expandir entrega para ver tareas · clic en icono para cambiar estado`;
+            sub.textContent = `${etiquetaGestionProximasHorizonte(valor || leerGestionProximasHorizonte())} · editar descripción, asignado y fecha en la tabla · clic en el icono para cambiar estado`;
         }
     }
 
@@ -7231,26 +7358,274 @@
         return (status || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
+    let _gestionEdicionSeq = 0;
+    let _gestionProximasRefreshTimer = null;
+
+    function editorGestionProximasActivo() {
+        const activo = document.activeElement;
+        if (!activo || !activo.matches('input, select, textarea')) return false;
+        return !!activo.closest('#gestion-tabla-proximas');
+    }
+
+    function programarRefrescoGestionProximas() {
+        clearTimeout(_gestionProximasRefreshTimer);
+        _gestionProximasRefreshTimer = setTimeout(() => {
+            _gestionProximasRefreshTimer = null;
+            if (_vistaActual !== 'dashboard-gestion') return;
+            if (editorGestionProximasActivo()) {
+                programarRefrescoGestionProximas();
+                return;
+            }
+            cargarDashboardGestion();
+        }, 800);
+    }
+
+    function diasRestantesDesdeIso(iso) {
+        const d = parseIsoDate(iso);
+        if (!d) return null;
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        d.setHours(0, 0, 0, 0);
+        return Math.round((d - hoy) / 86400000);
+    }
+
+    function fechaMovCalendarioValida(iso) {
+        if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+        const d = parseIsoDate(iso);
+        if (!d) return false;
+        const [y, m, day] = iso.split('-').map(Number);
+        return d.getFullYear() === y && d.getMonth() + 1 === m && d.getDate() === day;
+    }
+
+    function buscarGestionEntrega(id) {
+        return ((_gestionDatos && _gestionDatos.proximas_entregas) || []).find(e => e.id === id) || null;
+    }
+
+    function buscarGestionTarea(id) {
+        for (const e of ((_gestionDatos && _gestionDatos.proximas_entregas) || [])) {
+            const t = (e.tareas || []).find(x => x.id === id);
+            if (t) return { entrega: e, tarea: t };
+        }
+        return null;
+    }
+
+    function fusionarEntregaGestion(dest, src) {
+        dest.descripcion = src.descripcion || '';
+        dest.asignado_id = src.asignado_id ?? null;
+        dest.asignado_nombre = src.asignado_nombre || '';
+        dest.fecha_entrega = src.fecha_entrega;
+        dest.status = src.status;
+        if (src.proyecto_id != null) dest.proyecto_id = src.proyecto_id;
+        if (src.proyecto) dest.proyecto = src.proyecto;
+        if (src.fecha_entrega) {
+            dest.dias_restantes = diasRestantesDesdeIso(src.fecha_entrega);
+            if (!dest.fuera_de_horizonte) dest.fecha_orden = src.fecha_entrega;
+        }
+        const ent = _proyDetalleCache?.entregas?.find(e => e.id === dest.id);
+        if (ent) {
+            ent.descripcion = dest.descripcion;
+            ent.asignado_id = dest.asignado_id;
+            ent.asignado_nombre = dest.asignado_nombre;
+            ent.fecha_entrega = dest.fecha_entrega;
+            ent.status = dest.status;
+        }
+    }
+
+    function fusionarTareaGestion(dest, src) {
+        dest.descripcion = src.descripcion || '';
+        dest.asignado_id = src.asignado_id ?? null;
+        dest.asignado_nombre = src.asignado_nombre || '';
+        dest.fecha_limite = src.fecha_limite || null;
+        dest.status = src.status;
+        dest.dias_restantes = dest.fecha_limite ? diasRestantesDesdeIso(dest.fecha_limite) : null;
+        const lista = _proyTareasCache.get(src.entrega_id || dest.entrega_id);
+        if (lista) {
+            const idx = lista.findIndex(t => t.id === dest.id);
+            if (idx >= 0) lista[idx] = { ...lista[idx], ...dest };
+        }
+    }
+
+    function aplicarEstiloFilaGestion(row, item, tipo) {
+        if (!row || !item) return;
+        const hecho = item.status === 'Hecho';
+        const vencida = item.dias_restantes != null && item.dias_restantes < 0 && !hecho;
+        row.classList.toggle('table-warning', vencida);
+        const statusTd = row.querySelector(':scope > .col-status');
+        if (!statusTd) return;
+        const base = item.status || (tipo === 'entrega' ? 'Por Hacer' : 'Pendiente');
+        const fn = tipo === 'entrega' ? 'toggleGestionEntregaStatus' : 'toggleGestionTareaStatus';
+        statusTd.setAttribute('onclick', `${fn}(${item.id}, '${gestionStatusJs(base)}', event)`);
+        statusTd.innerHTML = iconoStatusGestion(item.status);
+    }
+
+    function restaurarCampoGestion(input, field, item, tipo) {
+        if (!input || !item) return;
+        if (field === 'descripcion') input.value = item.descripcion || '';
+        else if (field === 'asignado') input.value = item.asignado_id != null ? String(item.asignado_id) : '';
+        else if (field === 'fecha') {
+            input.value = fmtFechaMov(tipo === 'entrega' ? item.fecha_entrega : item.fecha_limite);
+        }
+    }
+
+    function inputTextoGestion(valor, onchange) {
+        return `<input type="text" class="form-control cell-edit" value="${esc(valor || '')}" onchange="${onchange}" onclick="event.stopPropagation()">`;
+    }
+
+    async function guardarCampoGestionEntrega(id, input) {
+        const field = input.closest('td')?.dataset.field;
+        const row = input.closest('tr');
+        const actual = buscarGestionEntrega(id);
+        if (!field || !actual) return;
+        const payload = {};
+        if (field === 'descripcion') {
+            if ((input.value || '') === (actual.descripcion || '')) return;
+            payload.descripcion = input.value;
+        } else if (field === 'asignado') {
+            const asignadoId = leerAsignadoSelect(input);
+            if (asignadoId === (actual.asignado_id ?? null)) return;
+            payload.asignado_id = asignadoId;
+        } else if (field === 'fecha') {
+            const raw = input.value.trim();
+            const fecha = parseFechaMov(raw);
+            if ((raw && !fecha) || (fecha && !fechaMovCalendarioValida(fecha))) {
+                alert('Fecha inválida. Use dd-mm-aaaa');
+                restaurarCampoGestion(input, field, actual, 'entrega');
+                return;
+            }
+            if (!fecha) {
+                alert('La fecha de la entrega es obligatoria');
+                restaurarCampoGestion(input, field, actual, 'entrega');
+                return;
+            }
+            if (fecha === actual.fecha_entrega) return;
+            payload.fecha_entrega = fecha;
+        } else {
+            return;
+        }
+        _gestionEdicionSeq++;
+        try {
+            const res = await apiFetch(`/api/entregas/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'No se pudo guardar la entrega');
+                restaurarCampoGestion(input, field, actual, 'entrega');
+                return;
+            }
+            const data = await res.json();
+            if (data.entrega) fusionarEntregaGestion(actual, data.entrega);
+            aplicarEstiloFilaGestion(row, actual, 'entrega');
+            poblarSelectsGestionProximas((_gestionDatos && _gestionDatos.proximas_entregas) || []);
+            flashFilaGuardado(row);
+            programarRefrescoGestionProximas();
+        } catch (e) {
+            console.error(e);
+            alert('No se pudo guardar la entrega');
+            restaurarCampoGestion(input, field, actual, 'entrega');
+        }
+    }
+
+    async function guardarCampoGestionTarea(id, input) {
+        const field = input.closest('td')?.dataset.field;
+        const row = input.closest('tr');
+        const hallado = buscarGestionTarea(id);
+        const actual = hallado && hallado.tarea;
+        if (!field || !actual) return;
+        const payload = {};
+        if (field === 'descripcion') {
+            if ((input.value || '') === (actual.descripcion || '')) return;
+            payload.descripcion = input.value;
+        } else if (field === 'asignado') {
+            const asignadoId = leerAsignadoSelect(input);
+            if (asignadoId === (actual.asignado_id ?? null)) return;
+            payload.asignado_id = asignadoId;
+        } else if (field === 'fecha') {
+            const raw = input.value.trim();
+            const fecha = parseFechaMov(raw);
+            if ((raw && !fecha) || (fecha && !fechaMovCalendarioValida(fecha))) {
+                alert('Fecha inválida. Use dd-mm-aaaa');
+                restaurarCampoGestion(input, field, actual, 'tarea');
+                return;
+            }
+            if ((fecha || null) === (actual.fecha_limite || null)) return;
+            payload.fecha_limite = fecha;
+        } else {
+            return;
+        }
+        _gestionEdicionSeq++;
+        try {
+            const res = await apiFetch(`/api/tareas/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.error || 'No se pudo guardar la tarea');
+                restaurarCampoGestion(input, field, actual, 'tarea');
+                return;
+            }
+            const data = await res.json();
+            if (data.tarea) fusionarTareaGestion(actual, data.tarea);
+            aplicarEstiloFilaGestion(row, actual, 'tarea');
+            poblarSelectsGestionProximas((_gestionDatos && _gestionDatos.proximas_entregas) || []);
+            flashFilaGuardado(row);
+            programarRefrescoGestionProximas();
+        } catch (e) {
+            console.error(e);
+            alert('No se pudo guardar la tarea');
+            restaurarCampoGestion(input, field, actual, 'tarea');
+        }
+    }
+
     async function toggleGestionEntregaStatus(entregaId, statusActual, ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        const nuevo = siguienteStatusEntrega(statusActual);
+        const actual = buscarGestionEntrega(entregaId);
+        const base = actual ? actual.status : statusActual;
+        const nuevo = siguienteStatusEntrega(base);
+        const row = ev && ev.currentTarget ? ev.currentTarget.closest('tr') : null;
+        _gestionEdicionSeq++;
         const res = await apiFetch(`/api/entregas/${entregaId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: nuevo }),
         });
-        if (res.ok) await cargarDashboardGestion();
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (actual) {
+            if (data.entrega) fusionarEntregaGestion(actual, data.entrega);
+            else actual.status = nuevo;
+            aplicarEstiloFilaGestion(row, actual, 'entrega');
+        }
+        if (row) flashFilaGuardado(row);
+        programarRefrescoGestionProximas();
     }
 
     async function toggleGestionTareaStatus(tareaId, statusActual, ev) {
         if (ev) { ev.preventDefault(); ev.stopPropagation(); }
-        const nuevo = siguienteStatusTareaDashboard(statusActual);
+        const hallado = buscarGestionTarea(tareaId);
+        const actual = hallado && hallado.tarea;
+        const base = actual ? actual.status : statusActual;
+        const nuevo = siguienteStatusTareaDashboard(base);
+        const row = ev && ev.currentTarget ? ev.currentTarget.closest('tr') : null;
+        _gestionEdicionSeq++;
         const res = await apiFetch(`/api/tareas/${tareaId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: nuevo }),
         });
-        if (res.ok) await cargarDashboardGestion();
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (actual) {
+            if (data.tarea) fusionarTareaGestion(actual, data.tarea);
+            else actual.status = nuevo;
+            aplicarEstiloFilaGestion(row, actual, 'tarea');
+        }
+        if (row) flashFilaGuardado(row);
+        programarRefrescoGestionProximas();
     }
 
     function toggleGestionEntregaExpand(entregaId, ev) {
@@ -7282,12 +7657,13 @@
         const filas = tareas.map(t => {
             const st = gestionStatusJs(t.status || 'Pendiente');
             const vencida = t.dias_restantes != null && t.dias_restantes < 0 && t.status !== 'Hecho';
-            return `<tr class="gestion-tarea-row ${vencida ? 'table-warning' : ''}" onclick="toggleGestionTareaStatus(${t.id}, '${st}', event)">
+            const gc = `guardarCampoGestionTarea(${t.id}, this)`;
+            return `<tr class="gestion-tarea-row ${vencida ? 'table-warning' : ''}" data-id="${t.id}">
                 <td class="col-chevron"></td>
                 <td class="col-status" onclick="toggleGestionTareaStatus(${t.id}, '${st}', event)">${iconoStatusGestion(t.status)}</td>
-                <td class="text-truncate small">${esc(t.descripcion) || '—'}</td>
-                <td class="text-muted small text-truncate">${esc(t.asignado_nombre) || '—'}</td>
-                <td class="text-nowrap small text-muted col-fecha">${t.fecha_limite ? fmtFechaMov(t.fecha_limite) : '—'}</td>
+                <td data-field="descripcion">${inputTextoGestion(t.descripcion, gc)}</td>
+                <td data-field="asignado">${selectAsignadoTrabajador(t.asignado_id, gc, t.asignado_nombre)}</td>
+                <td class="col-fecha" data-field="fecha">${inputFechaMov(t.fecha_limite, gc)}</td>
             </tr>`;
         }).join('');
         return `<table class="gestion-proximas-tareas-table table table-compact mb-0">${GESTION_PROXIMAS_COLGROUP}<tbody>${filas}</tbody></table>`;
@@ -7479,17 +7855,19 @@
         const nTareas = (e.tareas || []).length;
         const badgeTareas = nTareas ? `<span class="badge bg-light text-dark border ms-1">${nTareas}</span>` : '';
         const st = gestionStatusJs(e.status || 'Por Hacer');
-        const proyectoInline = agrupado ? '' : `<div class="text-muted small text-truncate">${esc(e.proyecto) || '—'}</div>`;
-        return `<tr class="gestion-entrega-row ${vencida ? 'table-warning' : ''}">
+        const gc = `guardarCampoGestionEntrega(${e.id}, this)`;
+        const proyectoInline = agrupado ? '' : `<div class="text-muted small text-truncate" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.proyecto) || '—'}</div>`;
+        const fechaTitle = e.fuera_de_horizonte ? ' title="Etapa fuera del horizonte; visible por la fecha de sus tareas"' : '';
+        return `<tr class="gestion-entrega-row ${vencida ? 'table-warning' : ''}" data-id="${e.id}">
             <td class="col-chevron">
                 <button type="button" class="btn btn-sm btn-link p-0 text-teal" onclick="toggleGestionEntregaExpand(${e.id}, event)" title="Ver tareas">
                     <i class="fa-solid fa-chevron-${expandida ? 'down' : 'right'} gestion-entrega-chevron" data-entrega-id="${e.id}"></i>
                 </button>
             </td>
             <td class="col-status" onclick="toggleGestionEntregaStatus(${e.id}, '${st}', event)">${iconoStatusGestion(e.status)}</td>
-            <td class="text-truncate" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.descripcion) || '—'}${badgeTareas}${proyectoInline}</td>
-            <td class="text-truncate text-muted" onclick="toggleGestionEntregaExpand(${e.id}, event)">${esc(e.asignado_nombre) || '—'}</td>
-            <td class="text-nowrap col-fecha${e.fuera_de_horizonte ? ' text-muted' : ''}" onclick="toggleGestionEntregaExpand(${e.id}, event)"${e.fuera_de_horizonte ? ' title="Etapa fuera del horizonte; visible por la fecha de sus tareas"' : ''}>${fmtFechaMov(e.fecha_entrega)}</td>
+            <td data-field="descripcion"><div class="d-flex align-items-center gap-1">${inputTextoGestion(e.descripcion, gc)}${badgeTareas}</div>${proyectoInline}</td>
+            <td data-field="asignado">${selectAsignadoTrabajador(e.asignado_id, gc, e.asignado_nombre)}</td>
+            <td class="col-fecha${e.fuera_de_horizonte ? ' text-muted' : ''}" data-field="fecha"${fechaTitle}>${inputFechaMov(e.fecha_entrega, gc)}</td>
         </tr>
         <tr class="gestion-entrega-tareas-row ${expandida ? '' : 'd-none'}" id="gestion-entrega-tareas-${e.id}">
             <td colspan="5" class="p-0">
@@ -7501,6 +7879,12 @@
     function renderGestionProximas(entregas) {
         const el = document.getElementById('gestion-tabla-proximas');
         if (!el) return;
+        const wrap = el.closest('.tabla-scroll-wrap');
+        const scrollTop = wrap ? wrap.scrollTop : 0;
+        const pintar = (html) => {
+            el.innerHTML = html;
+            if (wrap) wrap.scrollTop = scrollTop;
+        };
         const todas = entregas || [];
         poblarSelectsGestionProximas(todas);
         actualizarIconosOrdenGestionProximas();
@@ -7517,13 +7901,13 @@
                     : `${visibles.length} de ${todas.length}`;
         }
         if (!visibles.length) {
-            el.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-4">${
+            pintar(`<tr><td colspan="5" class="text-center text-muted py-4">${
                 todas.length ? 'Sin coincidencias con los filtros' : 'Sin entregas próximas'
-            }</td></tr>`;
+            }</td></tr>`);
             return;
         }
         if (!_gestionProximasAgruparProyecto) {
-            el.innerHTML = visibles.map(e => filaGestionEntrega(e, false)).join('');
+            pintar(visibles.map(e => filaGestionEntrega(e, false)).join(''));
             return;
         }
         const porProyecto = new Map();
@@ -7537,7 +7921,7 @@
         const grupos = [...porProyecto.values()].sort((a, b) =>
             compararGestionProximas(a.entregas[0], b.entregas[0], _gestionProximasOrdenCol, asc)
         );
-        el.innerHTML = grupos.map(g => {
+        pintar(grupos.map(g => {
             const pid = g.entregas[0]?.proyecto_id || 0;
             const colapsado = _gestionProyectosColapsados.has(pid);
             const nEnt = g.entregas.length;
@@ -7550,10 +7934,11 @@
                     ${nTareas ? `<span class="badge bg-light text-muted border ms-1">${nTareas} tareas</span>` : ''}
                 </td>
             </tr>${colapsado ? '' : g.entregas.map(e => filaGestionEntrega(e, true)).join('')}`;
-        }).join('');
+        }).join(''));
     }
 
     async function cargarDashboardGestion() {
+        const edicionAlInicio = _gestionEdicionSeq;
         try {
             const horizonte = leerGestionProximasHorizonte();
             syncGestionProximasHorizonteUI(horizonte);
@@ -7562,6 +7947,15 @@
             const data = await res.json();
             if (!res.ok) {
                 console.error('Dashboard gestión:', data.error);
+                return;
+            }
+            if (edicionAlInicio !== _gestionEdicionSeq || editorGestionProximasActivo()) {
+                programarRefrescoGestionProximas();
+                return;
+            }
+            try { await asegurarTrabajadoresTareasCache(); } catch (err) { console.error(err); }
+            if (edicionAlInicio !== _gestionEdicionSeq || editorGestionProximasActivo()) {
+                programarRefrescoGestionProximas();
                 return;
             }
             _gestionDatos = data;
@@ -8605,12 +8999,17 @@
         return ['Pendiente', 'En proceso', 'Hecho'].map(s => `<option value="${s}"${s === val ? ' selected' : ''}>${s}</option>`).join('');
     }
 
-    function selectAsignadoTrabajador(selectedId, onchange) {
+    function selectAsignadoTrabajador(selectedId, onchange, nombreFallback) {
         const sel = selectedId != null && selectedId !== '' ? Number(selectedId) : null;
-        const opts = `<option value="">—</option>` + _trabajadoresTareasCache.map(t =>
+        const conocido = sel != null && _trabajadoresTareasCache.some(t => t.id === sel);
+        const extra = sel != null && !conocido
+            ? `<option value="${sel}" selected>${esc(nombreFallback || 'Asignado')}</option>` : '';
+        const opts = `<option value="">—</option>` + extra + _trabajadoresTareasCache
+            .filter(t => t.activo !== false || t.id === sel)
+            .map(t =>
             `<option value="${t.id}"${t.id === sel ? ' selected' : ''}>${esc(t.nombre_completo)}</option>`
         ).join('');
-        return `<select class="form-select cell-edit" onchange="${onchange}">${opts}</select>`;
+        return `<select class="form-select cell-edit" onchange="${onchange}" onclick="event.stopPropagation()">${opts}</select>`;
     }
 
     function leerAsignadoSelect(sel) {
@@ -11181,7 +11580,7 @@
             if (res.ok) _personalMeta = meta;
             const todos = meta.trabajadores || [];
             // Solo administradores (socios) pueden firmar propuestas.
-            _propFirmantesCache = todos.filter(t => String(t.rol || '').toLowerCase() === 'admin');
+            _propFirmantesCache = todos.filter(t => String(t.rol || '').toLowerCase() === 'admin' && t.activo !== false);
         } catch (_) {
             _propFirmantesCache = [];
         }
@@ -11193,10 +11592,15 @@
         if (!sel) return;
         const firmantes = await cargarFirmantesPropuesta(force);
         const actual = firmanteId != null ? String(firmanteId) : sel.value;
+        let lista = firmantes;
+        if (actual && !firmantes.some(t => String(t.id) === actual)) {
+            const extra = (_personalMeta?.trabajadores || []).find(t => String(t.id) === actual);
+            if (extra) lista = firmantes.concat([extra]);
+        }
         sel.innerHTML = '<option value="">— Seleccionar administrador —</option>' +
-            firmantes.map(t => {
+            lista.map(t => {
                 const nombre = t.nombre_display || t.nombre_completo || `${t.nombres} ${t.apellido_paterno}`;
-                const marca = t.firma_url ? '' : ' (sin firma)';
+                const marca = t.activo === false ? ' (inactivo)' : (t.firma_url ? '' : ' (sin firma)');
                 return `<option value="${t.id}" data-nombre="${esc(nombre)}" data-tiene-firma="${t.firma_url ? '1' : '0'}">${esc(nombre)}${marca}</option>`;
             }).join('');
         if (actual && [...sel.options].some(o => o.value === actual)) sel.value = actual;
@@ -15312,6 +15716,7 @@
         { id: 'rut', label: 'RUT' },
         { id: 'nombres', label: 'Nombres' },
         { id: 'rol', label: 'Rol' },
+        { id: 'estado', label: 'Estado' },
         { id: 'ap_paterno', label: 'Ap. paterno' },
         { id: 'ap_materno', label: 'Ap. materno' },
         { id: 'fecha_ingreso', label: 'Fecha ingreso' },
@@ -15440,11 +15845,12 @@
         _propFirmantesCache = null;
         const trabajadores = data.trabajadores || [];
         document.getElementById('tabla-trabajadores').innerHTML = trabajadores.length
-            ? trabajadores.map(t => `<tr>
+            ? trabajadores.map(t => `<tr class="${t.activo === false ? 'text-muted' : ''}">
                 <td class="text-nowrap" data-col="avatar">${avatarHtml(fotoUrlTrabajador(t), 'avatar-round-sm')}</td>
                 <td class="text-nowrap" data-col="rut">${esc(t.rut)}</td>
                 <td data-col="nombres">${esc(t.nombres)}</td>
                 <td class="text-nowrap" data-col="rol">${t.rol === 'admin' ? '<span class="badge bg-success-subtle text-success border">Admin</span>' : '<span class="badge bg-light text-dark border">Trabajador</span>'}</td>
+                <td class="text-nowrap" data-col="estado">${t.activo === false ? '<span class="badge bg-secondary-subtle text-secondary border">Inactivo</span>' : '<span class="badge badge-activo">Activo</span>'}</td>
                 <td data-col="ap_paterno">${esc(t.apellido_paterno)}</td>
                 <td data-col="ap_materno">${esc(t.apellido_materno || '—')}</td>
                 <td class="text-nowrap" data-col="fecha_ingreso">${fmtFecha(t.fecha_ingreso)}</td>
@@ -15460,13 +15866,30 @@
                 <td class="small text-muted" data-col="cuenta_gasto">${esc(t.cuenta_gasto)}</td>
                 <td class="text-end">
                     <span class="acciones-inline">
+                        <button class="btn btn-outline-secondary btn-accion" onclick="toggleActivoTrabajador(${t.id}, ${t.activo === false ? 'true' : 'false'})" title="${t.activo === false ? 'Activar' : 'Desactivar'}"><i class="fa-solid ${t.activo === false ? 'fa-user-check' : 'fa-user-slash'}"></i></button>
                         <button class="btn btn-outline-secondary btn-accion" onclick="abrirTrabajadorModal(${t.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-outline-danger btn-accion" onclick="borrarTrabajador(${t.id})" title="Borrar"><i class="fa-solid fa-trash"></i></button>
                     </span>
                 </td>
             </tr>`).join('')
-            : '<tr class="tabla-empty"><td colspan="18" class="text-center text-muted py-4">Sin personas registradas</td></tr>';
+            : '<tr class="tabla-empty"><td colspan="19" class="text-center text-muted py-4">Sin personas registradas</td></tr>';
         aplicarVisibilidadColumnasPersonas();
+    }
+
+    async function toggleActivoTrabajador(id, activo) {
+        const res = await apiFetch(`/api/personal/${id}/activo`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ activo: !!activo }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || 'No se pudo cambiar el estado');
+            return;
+        }
+        _trabajadoresTareasCache = [];
+        _propFirmantesCache = null;
+        await cargarPersonal();
     }
 
     async function abrirTrabajadorModal(id = null) {
@@ -15489,6 +15912,7 @@
         document.getElementById('trabNombreIsapre').value = '';
         document.getElementById('trabNombrePlan').value = '';
         document.getElementById('trabIsapreUf').value = '0';
+        document.getElementById('trabActivo').checked = true;
         document.getElementById('trabGratificacion').checked = true;
         document.getElementById('trabCesantia').checked = true;
         document.getElementById('trabSisTrabajador').checked = false;
@@ -15528,6 +15952,7 @@
                 document.getElementById('trabAfp').value = trabajador.afp;
                 document.getElementById('trabSalud').value = trabajador.sistema_salud;
                 document.getElementById('trabIsapreUf').value = trabajador.valor_plan_isapre_uf || 0;
+                document.getElementById('trabActivo').checked = trabajador.activo !== false;
                 document.getElementById('trabGratificacion').checked = trabajador.paga_gratificacion !== false;
                 document.getElementById('trabCesantia').checked = trabajador.afecto_cesantia !== false;
                 document.getElementById('trabSisTrabajador').checked = !!trabajador.sis_cargo_trabajador;
@@ -15585,6 +16010,7 @@
             afp: document.getElementById('trabAfp').value,
             sistema_salud: document.getElementById('trabSalud').value,
             valor_plan_isapre_uf: document.getElementById('trabIsapreUf').value || 0,
+            activo: document.getElementById('trabActivo').checked,
             paga_gratificacion: document.getElementById('trabGratificacion').checked,
             afecto_cesantia: document.getElementById('trabCesantia').checked,
             sis_cargo_trabajador: document.getElementById('trabSisTrabajador').checked,
@@ -15682,21 +16108,82 @@
         await cargarPersonal();
     }
 
+    function sincronizarVistaPlanilla(vista) {
+        _liqVista = vista;
+        const esPlanilla = vista === 'planilla';
+        const esResumen = vista === 'resumen';
+        [
+            ['planilla', 'btnVistaPlanilla'],
+            ['pagos', 'btnVistaPagos'],
+            ['resumen', 'btnVistaResumen'],
+        ].forEach(([id, btnId]) => {
+            const btn = document.getElementById(btnId);
+            if (!btn) return;
+            const on = id === vista;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        document.getElementById('accionesPlanilla')?.classList.toggle('d-none', !esPlanilla);
+        document.getElementById('accionesResumen')?.classList.toggle('d-none', !esResumen);
+        document.getElementById('liqMesWrap')?.classList.toggle('planilla-mes-inactivo', !esPlanilla);
+        document.getElementById('liqPeriodoNota')?.classList.toggle('d-none', esPlanilla);
+        const hint = document.getElementById('liqVistaHint');
+        if (hint) {
+            hint.textContent = esPlanilla
+                ? 'Liquidaciones calculadas del mes. Costo RRHH = líquido + impuesto único + Previred.'
+                : vista === 'pagos'
+                    ? 'Movimientos del año imputados a cuentas de remuneraciones.'
+                    : 'Total pagado a cada persona, mes a mes. Los montos salen de los movimientos contables.';
+        }
+        const grid = document.getElementById('tabla-liquidaciones-grid');
+        if (grid) {
+            grid.classList.toggle('liq-modo-planilla', esPlanilla);
+            grid.classList.toggle('liq-modo-resumen', esResumen);
+        }
+        document.getElementById('liqTablaWrap')?.classList.toggle('liq-scroll-ancho', esResumen);
+        if (!esPlanilla) actualizarKpisPlanilla(null, false);
+    }
+
+    function verPlanillaMensual(vista) {
+        sincronizarVistaPlanilla(vista);
+        if (vista === 'planilla') return cargarLiquidaciones();
+        if (vista === 'pagos') return consultarRemuneracionesPagadas();
+        return consultarRemuneracionesPagadas('resumen');
+    }
+
+    function onPeriodoPlanillaChange() {
+        verPlanillaMensual(_liqVista);
+    }
+
+    function actualizarKpisPlanilla(totales, visible) {
+        const strip = document.getElementById('liqResumenStrip');
+        if (!strip) return;
+        strip.classList.toggle('d-none', !visible);
+        if (!visible || !totales) return;
+        const set = (id, n) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = fmt(n || 0);
+        };
+        set('liqKpiLiquido', totales.liquido);
+        set('liqKpiImpuesto', totales.impuesto_unico);
+        set('liqKpiPrevired', totales.previred);
+        set('liqKpiCosto', totales.costo_rrhh);
+    }
+
     function cabeceraLiquidaciones() {
         const thead = document.querySelector('#tabla-liquidaciones-grid thead');
         if (!thead) return;
         thead.innerHTML = `<tr>
-            <th id="liqColPeriodo" class="d-none">Período</th>
             <th>Nombre</th>
             <th>RUT</th>
-            <th class="text-end">Sueldo Base</th>
-            <th class="text-end">Descuentos</th>
+            <th class="text-end">Sueldo base</th>
+            <th class="text-end liq-sep">Descuentos</th>
             <th class="text-end">Impuesto único</th>
             <th class="text-end" title="Cotizaciones del trabajador y del empleador que se pagan en Previred. No incluye el impuesto único.">Previred</th>
-            <th class="text-end">Aportes empleador</th>
-            <th class="text-end">Líquido a Pagar</th>
+            <th class="text-end liq-sep">Aportes empleador</th>
+            <th class="text-end liq-sep">Líquido a pagar</th>
             <th class="text-end" title="Líquido a pagar + impuesto único + Previred">Costo RRHH</th>
-            <th>Estado</th>
+            <th class="liq-sep">Estado</th>
             <th class="text-end" style="width:48px"></th>
         </tr>`;
     }
@@ -15705,24 +16192,21 @@
         const tfoot = document.getElementById('tabla-liquidaciones-tfoot');
         if (!tfoot) return tfoot;
         tfoot.innerHTML = `<tr class="table-light fw-bold">
-            <td id="liqTotalLabel" colspan="3" class="text-end">Totales</td>
-            <td class="text-end saldo-negativo" id="liqTotalDesc"></td>
+            <td colspan="2" class="text-end">Totales</td>
+            <td class="text-end" id="liqTotalSueldo"></td>
+            <td class="text-end saldo-negativo liq-sep" id="liqTotalDesc"></td>
             <td class="text-end" id="liqTotalImpuesto"></td>
             <td class="text-end" id="liqTotalPrevired"></td>
-            <td class="text-end" id="liqTotalAportes"></td>
-            <td class="text-end saldo-positivo" id="liqTotalLiq"></td>
+            <td class="text-end liq-sep" id="liqTotalAportes"></td>
+            <td class="text-end saldo-positivo liq-sep" id="liqTotalLiq"></td>
             <td class="text-end" id="liqTotalCosto"></td>
-            <td colspan="2"></td>
-        </tr>
-        <tr class="fw-bold">
-            <td colspan="8" class="text-end">Costo mensual RRHH</td>
-            <td class="text-end saldo-positivo" id="liqGranTotal" title="Líquido a pagar + impuesto único + Previred"></td>
-            <td colspan="2"></td>
+            <td class="liq-sep" colspan="2"></td>
         </tr>`;
         return tfoot;
     }
 
     function renderRemuneracionesPagadas(data) {
+        sincronizarVistaPlanilla('pagos');
         const items = data.pagos || [];
         const thead = document.querySelector('#tabla-liquidaciones-grid thead');
         const tbody = document.getElementById('tabla-liquidaciones');
@@ -15763,6 +16247,9 @@
     }
 
     function renderResumenMensualRemuneraciones(data) {
+        const anio = document.getElementById('liqAnio').value;
+        _liqResumenData = { ...data, _anio: anio };
+        sincronizarVistaPlanilla('resumen');
         const items = data.resumen || [];
         const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
         const thead = document.querySelector('#tabla-liquidaciones-grid thead');
@@ -15773,8 +16260,8 @@
             thead.innerHTML = `<tr>
                 <th>Persona</th>
                 <th>RUT</th>
-                ${meses.map(m => `<th class="text-end">${m}</th>`).join('')}
-                <th class="text-end">Total</th>
+                ${meses.map((m, i) => `<th class="text-end" title="${esc(_MESES[i])}">${m}</th>`).join('')}
+                <th class="text-end liq-col-total">Total ${esc(anio)}</th>
             </tr>`;
         }
         const celdaMes = monto => {
@@ -15792,7 +16279,7 @@
             <td class="fw-medium text-nowrap">${esc(r.nombre || '—')}</td>
             <td class="text-nowrap">${esc(r.rut || '—')}</td>
             ${(r.meses || []).map(celdaMes).join('')}
-            <td class="text-end fw-bold text-nowrap saldo-positivo" title="${r.pagos || 0} pago(s)">${fmt(r.total || 0)}</td>
+            <td class="text-end fw-bold text-nowrap saldo-positivo liq-col-total" title="${r.pagos || 0} pago(s)">${fmt(r.total || 0)}</td>
         </tr>`).join('');
         const totalesMes = (data.totales && data.totales.meses) || meses.map((_, i) =>
             items.reduce((s, r) => s + (Number((r.meses || [])[i]) || 0), 0)
@@ -15803,7 +16290,7 @@
         tfoot.innerHTML = `<tr class="table-light fw-bold">
             <td colspan="2" class="text-end">Total</td>
             ${totalesMes.map(celdaMes).join('')}
-            <td class="text-end text-nowrap saldo-positivo">${fmt(total)}</td>
+            <td class="text-end text-nowrap saldo-positivo liq-col-total">${fmt(total)}</td>
         </tr>`;
         tfoot.classList.remove('d-none');
     }
@@ -15813,6 +16300,7 @@
             renderRemuneracionesPagadas(data);
             return;
         }
+        sincronizarVistaPlanilla('planilla');
         cabeceraLiquidaciones();
         const items = data.liquidaciones || [];
         const tbody = document.getElementById('tabla-liquidaciones');
@@ -15820,19 +16308,20 @@
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">Sin liquidaciones para este período</td></tr>';
             tfoot.classList.add('d-none');
+            actualizarKpisPlanilla(null, false);
             return;
         }
         tbody.innerHTML = items.map(l => `<tr>
             <td class="fw-medium">${esc(l.nombre)}</td>
             <td class="text-nowrap">${esc(l.rut)}</td>
             <td class="text-end" title="${fmtUf(l.sueldo_base_uf || 0)}">${fmt(l.sueldo_base_proporcional)}</td>
-            <td class="text-end saldo-negativo">${fmt(l.total_descuentos)}</td>
+            <td class="text-end saldo-negativo liq-sep">${fmt(l.total_descuentos)}</td>
             <td class="text-end">${fmt(l.impuesto_unico || 0)}</td>
             <td class="text-end">${fmt(l.total_previred || 0)}</td>
-            <td class="text-end">${fmt(l.total_aportes_empleador || 0)}</td>
-            <td class="text-end fw-bold saldo-positivo">${fmt(l.alcance_liquido)}</td>
+            <td class="text-end liq-sep">${fmt(l.total_aportes_empleador || 0)}</td>
+            <td class="text-end fw-bold saldo-positivo liq-sep">${fmt(l.alcance_liquido)}</td>
             <td class="text-end fw-bold">${fmt(l.costo_rrhh || ((l.alcance_liquido || 0) + (l.impuesto_unico || 0) + (l.total_previred || 0)))}</td>
-            <td><span class="badge ${l.estado === 'Pagado' ? 'badge-activo' : 'bg-light text-dark border'}">${esc(l.estado)}</span></td>
+            <td class="liq-sep"><span class="badge ${l.estado === 'Pagado' ? 'badge-activo' : 'bg-light text-dark border'}">${esc(l.estado)}</span></td>
             <td class="text-end">
                 <button class="btn btn-outline-secondary btn-accion" onclick="exportarPdfLiquidacion(${l.id})" title="Exportar PDF"><i class="fa-solid fa-file-pdf"></i></button>
             </td>
@@ -15845,13 +16334,16 @@
             liquido: items.reduce((s, l) => s + (l.alcance_liquido || 0), 0),
             costo_rrhh: items.reduce((s, l) => s + (l.costo_rrhh || ((l.alcance_liquido || 0) + (l.impuesto_unico || 0) + (l.total_previred || 0))), 0),
         };
+        document.getElementById('liqTotalSueldo').textContent = fmt(
+            items.reduce((s, l) => s + (Number(l.sueldo_base_proporcional) || 0), 0)
+        );
         document.getElementById('liqTotalDesc').textContent = fmt(totales.descuentos || 0);
         document.getElementById('liqTotalImpuesto').textContent = fmt(totales.impuesto_unico || 0);
         document.getElementById('liqTotalPrevired').textContent = fmt(totales.previred || 0);
         document.getElementById('liqTotalAportes').textContent = fmt(totales.aportes_empleador || 0);
         document.getElementById('liqTotalLiq').textContent = fmt(totales.liquido || 0);
         document.getElementById('liqTotalCosto').textContent = fmt(totales.costo_rrhh || 0);
-        document.getElementById('liqGranTotal').textContent = fmt(totales.costo_rrhh || 0);
+        actualizarKpisPlanilla(totales, true);
         tfoot.classList.remove('d-none');
     }
 
@@ -15899,6 +16391,48 @@
             ? `${n} remuneración${n === 1 ? '' : 'es'} pagada${n === 1 ? '' : 's'} en ${anio}`
             : `No hay remuneraciones pagadas en ${anio}`;
         renderLiquidaciones(data);
+    }
+
+    function exportarResumenMensualCsv() {
+        const anio = document.getElementById('liqAnio').value;
+        const data = _liqResumenData;
+        if (!data || String(data._anio) !== String(anio)) {
+            alert('Abre el resumen mensual de ese año antes de exportar.');
+            return;
+        }
+        const items = data.resumen || [];
+        if (!items.length) {
+            alert(`No hay remuneraciones pagadas para exportar en ${anio}.`);
+            return;
+        }
+        const celda = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const num = n => Math.round(Number(n) || 0);
+        const encabezado = ['Persona', 'RUT', ..._MESES, 'Total', 'Nº pagos'];
+        const lineas = [encabezado.map(celda).join(';')];
+        items.forEach(r => {
+            const meses = Array.from({ length: 12 }, (_, i) => num((r.meses || [])[i]));
+            lineas.push([
+                celda(r.nombre || ''),
+                celda(r.rut || ''),
+                ...meses,
+                num(r.total),
+                num(r.pagos),
+            ].join(';'));
+        });
+        const totalesMes = (data.totales && data.totales.meses) || _MESES.map((_, i) =>
+            items.reduce((s, r) => s + num((r.meses || [])[i]), 0)
+        );
+        const total = (data.totales && data.totales.monto != null)
+            ? data.totales.monto
+            : items.reduce((s, r) => s + (Number(r.total) || 0), 0);
+        const pagos = items.reduce((s, r) => s + (Number(r.pagos) || 0), 0);
+        lineas.push([celda('Total'), celda(''), ...totalesMes.map(num), num(total), num(pagos)].join(';'));
+        const blob = new Blob(['\ufeff' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `resumen_remuneraciones_${anio}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     async function generarPlanillaSueldos() {
@@ -16081,7 +16615,9 @@
     }
 
     function ttOptsTrabajadores(selectedId) {
-        return _ttTrabajadoresTablaCache.map(t =>
+        return _ttTrabajadoresTablaCache
+            .filter(t => t.activo !== false || String(t.id) === String(selectedId))
+            .map(t =>
             `<option value="${t.id}"${String(t.id) === String(selectedId) ? ' selected' : ''}>${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
         ).join('');
     }
@@ -16218,7 +16754,7 @@
         document.getElementById('ttModalMsg').textContent = '';
         const selT = document.getElementById('ttModalTrabajador');
         const selP = document.getElementById('ttModalProyecto');
-        selT.innerHTML = _ttTrabajadoresTablaCache.map(t =>
+        selT.innerHTML = _ttTrabajadoresTablaCache.filter(t => t.activo !== false).map(t =>
             `<option value="${t.id}">${esc(t.nombre_completo || t.nombres || t.rut)}</option>`
         ).join('');
         selP.innerHTML = '<option value="">— Seleccione —</option>' + _ttProyectosTablaCache.map(p =>

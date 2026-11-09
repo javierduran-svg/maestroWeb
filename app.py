@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from bootstrap import configure_app, get_database_url
-from common import AUTH_EXEMPT_PREFIXES, _migrar_schema
+from common import AUTH_EXEMPT_PREFIXES, _flag_trabajador, _migrar_schema, _usuario_sesion
 from routes import ALL_BLUEPRINTS
 
 
@@ -41,6 +41,10 @@ def create_app(config_name=None):
                 return None
         if not session.get('trabajador_id'):
             return jsonify({'error': 'No autenticado'}), 401
+        usuario = _usuario_sesion()
+        if usuario is not None and not _flag_trabajador(usuario, 'activo', True):
+            session.clear()
+            return jsonify({'error': 'Cuenta desactivada'}), 401
         return None
 
     return app

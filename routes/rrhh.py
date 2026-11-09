@@ -148,6 +148,46 @@ def manejar_personal():
         return jsonify({'error': str(e)}), 500
 
 
+def _es_admin_activo(trabajador: Trabajador) -> bool:
+    return _rol_trabajador(trabajador) == 'admin' and _flag_trabajador(trabajador, 'activo', True)
+
+
+def _error_si_queda_sin_admin(trabajador: Trabajador, quedara_admin_activo: bool, era_admin_activo: bool) -> str | None:
+    """Impide dejar la empresa sin un administrador que pueda entrar."""
+    if quedara_admin_activo or not era_admin_activo:
+        return None
+    otros = Trabajador.query.filter(
+        Trabajador.empresa_id == trabajador.empresa_id,
+        Trabajador.id != trabajador.id,
+        Trabajador.rol == 'admin',
+    ).all()
+    if any(_flag_trabajador(t, 'activo', True) for t in otros):
+        return None
+    return 'Debe quedar al menos un administrador activo'
+
+
+@bp.route('/api/personal/<int:trabajador_id>/activo', methods=['PUT'])
+def cambiar_activo_trabajador(trabajador_id):
+    eid, err = _requiere_empresa()
+    if err:
+        return err
+    trabajador = Trabajador.query.filter_by(empresa_id=eid, id=trabajador_id).first_or_404()
+    data = request.json or {}
+    if 'activo' not in data:
+        return jsonify({'error': 'Indique activo: true o false'}), 400
+    nuevo = _parse_bool_flag(data.get('activo'), True)
+    era_admin = _es_admin_activo(trabajador)
+    bloqueo = _error_si_queda_sin_admin(trabajador, nuevo and _rol_trabajador(trabajador) == 'admin', era_admin)
+    if bloqueo:
+        return jsonify({'error': bloqueo}), 400
+    trabajador.activo = nuevo
+    db.session.commit()
+    return jsonify({
+        'mensaje': 'Trabajador activado' if nuevo else 'Trabajador desactivado',
+        'trabajador': _trabajador_a_dict(trabajador),
+    })
+
+
 @bp.route('/api/personal/<int:trabajador_id>', methods=['GET', 'PUT', 'DELETE'])
 def manejar_trabajador(trabajador_id):
     eid, err = _requiere_empresa()
@@ -173,6 +213,7 @@ def manejar_trabajador(trabajador_id):
             return jsonify({'mensaje': 'Trabajador eliminado'})
 
         data = request.json or {}
+        era_admin = _es_admin_activo(trabajador)
         if 'rol' in data:
             if not _es_admin():
                 return jsonify({'error': 'Solo administradores pueden cambiar roles'}), 403
@@ -183,6 +224,15 @@ def manejar_trabajador(trabajador_id):
         campos, error = _validar_datos_trabajador(data, eid, trabajador_id=trabajador_id)
         if error:
             return jsonify({'error': error}), 400
+        activo_final = bool(campos.get('activo', _flag_trabajador(trabajador, 'activo', True)))
+        bloqueo = _error_si_queda_sin_admin(
+            trabajador,
+            activo_final and _rol_trabajador(trabajador) == 'admin',
+            era_admin,
+        )
+        if bloqueo:
+            db.session.rollback()
+            return jsonify({'error': bloqueo}), 400
         _aplicar_datos_trabajador(trabajador, campos)
         pwd_err = _aplicar_password_trabajador(trabajador, data, es_nuevo=False)
         if pwd_err:
@@ -297,9 +347,12 @@ def generar_liquidaciones():
         if not (1 <= mes <= 12) or anio < 2000:
             return jsonify({'error': 'mes (1-12) y anio válidos son requeridos'}), 400
 
-        trabajadores = Trabajador.query.filter_by(empresa_id=eid).all()
+        trabajadores = [
+            t for t in Trabajador.query.filter_by(empresa_id=eid).all()
+            if _flag_trabajador(t, 'activo', True)
+        ]
         if not trabajadores:
-            return jsonify({'error': 'No hay trabajadores registrados'}), 400
+            return jsonify({'error': 'No hay trabajadores activos'}), 400
 
         from remuneraciones import utm_periodo
 

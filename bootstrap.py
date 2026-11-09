@@ -545,6 +545,7 @@ def _migrar_schema_legacy() -> None:
                 ('paga_gratificacion', f'BOOLEAN DEFAULT {bool_true}'),
                 ('afecto_cesantia', f'BOOLEAN DEFAULT {bool_true}'),
                 ('sis_cargo_trabajador', f'BOOLEAN DEFAULT {bool_false}'),
+                ('activo', f'BOOLEAN DEFAULT {bool_true}'),
             ):
                 if col not in cols_t:
                     conn.execute(text(f'ALTER TABLE trabajadores ADD COLUMN {col} {tipo}'))
@@ -740,11 +741,19 @@ def _asegurar_columnas_imagenes_trabajador() -> None:
         return
     cols = {c['name'] for c in inspect(db.engine).get_columns('trabajadores')}
     faltantes = [c for c in ('foto_path', 'firma_path') if c not in cols]
-    if not faltantes:
+    falta_activo = 'activo' not in cols
+    if not faltantes and not falta_activo:
         return
+    dialecto = db.engine.dialect.name
+    bool_true = 'TRUE' if dialecto == 'postgresql' else '1'
     with db.engine.connect() as conn:
         for col in faltantes:
             conn.execute(text(f'ALTER TABLE trabajadores ADD COLUMN {col} VARCHAR(255)'))
+        if falta_activo:
+            conn.execute(text(
+                f'ALTER TABLE trabajadores ADD COLUMN activo BOOLEAN DEFAULT {bool_true} NOT NULL'
+            ))
+            faltantes.append('activo')
         conn.commit()
     logger.warning('Columnas añadidas a trabajadores: %s', ', '.join(faltantes))
 

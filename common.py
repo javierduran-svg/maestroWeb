@@ -1437,6 +1437,7 @@ def _trabajador_a_dict(t: Trabajador, uf_clp: float | None = None) -> dict:
         'email': t.email or '',
         'tiene_password': bool(t.password_hash),
         'rol': _rol_trabajador(t),
+        'activo': _flag_trabajador(t, 'activo', True),
         'factor_overhead': float(t.factor_overhead or 1.0),
         'costo_hh_manual': float(t.costo_hh_manual) if t.costo_hh_manual is not None else None,
         'costo_hh_real': round(t.costo_hh_real, 2),
@@ -1519,6 +1520,8 @@ def _validar_datos_trabajador(data: dict, empresa_id: int, trabajador_id: int | 
         campos['afecto_cesantia'] = _parse_bool_flag(data.get('afecto_cesantia'), True)
     if 'sis_cargo_trabajador' in data:
         campos['sis_cargo_trabajador'] = _parse_bool_flag(data.get('sis_cargo_trabajador'), False)
+    if 'activo' in data:
+        campos['activo'] = _parse_bool_flag(data.get('activo'), True)
     return campos, None
 
 
@@ -3145,6 +3148,8 @@ __all__ = [
     '_env_fintoc_creds',
     '_env_sii_creds',
     '_es_admin',
+    '_flag_trabajador',
+    '_parse_bool_flag',
     '_establecer_sesion_trabajador',
     '_estado_gantt_a_status_pago',
     '_estado_pago_gantt_dict',

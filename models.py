@@ -225,6 +225,7 @@ class Trabajador(db.Model):
     email = db.Column(db.String(255), nullable=True, unique=True)
     password_hash = db.Column(db.String(255), nullable=True)
     rol = db.Column(db.String(20), default='trabajador', nullable=False)
+    activo = db.Column(db.Boolean, default=True, nullable=False)
     factor_overhead = db.Column(db.Float, default=1.0, nullable=False)
     costo_hh_manual = db.Column(db.Float, nullable=True)
     foto_path = db.Column(db.String(255), nullable=True)
