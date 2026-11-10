@@ -131,10 +131,13 @@ def get_dashboard_series():
 
 @bp.route('/api/dashboard/estados-pago', methods=['GET'])
 def get_dashboard_estados_pago():
-    """EP del dashboard por status (Programado, Enviado, Facturado, etc.).
+    """Foto actual del pipeline de EP (Programado, Enviado, Facturado, etc.).
+
+    No filtra por año: un EP Enviado puede tener el cobro (fecha_movimiento)
+    en otro año y sigue pendiente. El selector de año del gráfico no aplica.
+    Incluye EP sin proyecto, igual que los KPI de la misma foto.
 
     Query params:
-      - anio: filtra por año de fecha_movimiento
       - status: uno o varios status_pago separados por coma
         (si se omite: todos excepto 'Por enviar')
     """
@@ -144,7 +147,7 @@ def get_dashboard_estados_pago():
             return err
         query = Movimiento.query.filter_by(
             empresa_id=eid, clase='estado_pago', estado='Activo',
-        ).filter(Movimiento.proyecto_id.isnot(None))
+        )
         status_param = (request.args.get('status') or '').strip()
         if status_param:
             statuses = [s.strip() for s in status_param.split(',') if s.strip()]
@@ -161,10 +164,6 @@ def get_dashboard_estados_pago():
                 Movimiento.status_pago != '',
                 Movimiento.status_pago != 'Por enviar',
             )
-        anio_param = request.args.get('anio')
-        if anio_param:
-            anio = int(anio_param)
-            query = query.filter(func.extract('year', Movimiento.fecha_movimiento) == anio)
         movs = query.order_by(Movimiento.fecha_movimiento.desc(), Movimiento.id.desc()).all()
         cambiado = False
         for m in movs:
@@ -180,8 +179,6 @@ def get_dashboard_estados_pago():
         filas = [_movimiento_a_dict(m) for m in movs]
         filas.sort(key=lambda f: ((f.get('proyecto') or '').lower(), -(f.get('numero_ep') or 0)))
         return jsonify(filas)
-    except ValueError:
-        return jsonify({'error': 'Parámetro anio inválido'}), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

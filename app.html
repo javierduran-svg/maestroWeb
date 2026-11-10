@@ -1496,6 +1496,15 @@
             color: #6c757d;
         }
         .planilla-kpis strong { font-size: 1.02rem; font-weight: 650; color: #173b3a; }
+        #liqTablaWrap { background: #f4f6f8; }
+        #tabla-liquidaciones-grid {
+            opacity: 0.8;
+            --bs-table-bg: rgba(255, 255, 255, 0.5);
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.5);
+            --bs-table-striped-bg: rgba(255, 255, 255, 0.5);
+        }
+        #tabla-liquidaciones-grid.liq-modo-planilla thead th,
+        #tabla-liquidaciones-grid.liq-modo-resumen thead th { top: 0; }
         #tabla-liquidaciones-grid.liq-modo-planilla th { white-space: nowrap; }
         #tabla-liquidaciones-grid.liq-modo-planilla th.liq-sep,
         #tabla-liquidaciones-grid.liq-modo-planilla td.liq-sep { border-left: 2px solid #e3e7eb; }
@@ -1507,7 +1516,7 @@
             left: 0;
             z-index: 1;
             min-width: 11rem;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.5);
             box-shadow: 1px 0 0 #dee2e6;
         }
         #tabla-liquidaciones-grid.liq-modo-resumen thead th:first-child { z-index: 4; background: #f1f3f5; }
@@ -2813,7 +2822,7 @@
                                 <input class="form-check-input" type="checkbox" id="dashboardProyeccion" onchange="cargarDashboardChart()">
                                 <label class="form-check-label" for="dashboardProyeccion">Incluir proyección</label>
                             </div>
-                            <select class="form-select form-select-sm" id="dashboardAnio" style="width:auto;min-width:88px" onchange="cargarDashboardChart(); cargarSeguimientoEstadosPago()"></select>
+                            <select class="form-select form-select-sm" id="dashboardAnio" style="width:auto;min-width:88px" onchange="cargarDashboardChart()" title="Año del gráfico. Las tablas de EP muestran la foto actual, sin este filtro."></select>
                             <div class="btn-group btn-group-sm dashboard-periodo" role="group" id="dashboardPeriodo">
                                 <button type="button" class="btn btn-outline-secondary" data-periodo="diario" onclick="setDashboardPeriodo('diario', this)">Diario</button>
                                 <button type="button" class="btn btn-outline-secondary active" data-periodo="mensual" onclick="setDashboardPeriodo('mensual', this)">Mensual</button>
@@ -2867,7 +2876,7 @@
                     <div class="panel-header flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">Estados de pago programados</h5>
-                            <small class="text-muted">EP con status Programado — pendientes de envío al cliente</small>
+                            <small class="text-muted">Foto actual · status Programado, sin filtrar por el año del gráfico</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 ms-auto">
                             <small class="text-muted" id="epProgContador"></small>
@@ -2902,7 +2911,7 @@
                     <div class="panel-header flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">Estados de pago enviados</h5>
-                            <small class="text-muted">EP con status Enviado — a la espera de facturación o cobro</small>
+                            <small class="text-muted">Foto actual · status Enviado, aunque el cobro caiga en otro año</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 ms-auto">
                             <small class="text-muted" id="epEnvContador"></small>
@@ -2918,7 +2927,7 @@
                                     <th class="mov-th-sort text-end ep-col-uf" data-col="monto_uf" onclick="ordenarEpDash('enviados','monto_uf')">UF <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="mov-th-sort text-end ep-col-uf" data-col="valor_uf" onclick="ordenarEpDash('enviados','valor_uf')">Valor UF <i class="fa-solid fa-sort sort-icon"></i></th>
                                     <th class="mov-th-sort text-end ep-col-monto" data-col="monto" onclick="ordenarEpDash('enviados','monto')">Monto <i class="fa-solid fa-sort sort-icon"></i></th>
-                                    <th class="mov-th-sort ep-col-fecha" data-col="fecha_movimiento" onclick="ordenarEpDash('enviados','fecha_movimiento')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
+                                    <th class="mov-th-sort ep-col-fecha" data-col="fecha_estado_pago" onclick="ordenarEpDash('enviados','fecha_estado_pago')">Fecha envío <i class="fa-solid fa-sort sort-icon"></i></th>
                                 </tr>
                                 <tr class="mov-filtros">
                                     <th class="ep-track-col-proyecto"><select class="form-select mov-filtro" id="filtroEpEnvProyecto" onchange="renderEpDashTable('enviados')"><option value="">Todos</option></select></th>
@@ -2937,7 +2946,7 @@
                     <div class="panel-header flex-wrap gap-2">
                         <div>
                             <h5 class="mb-0">Estados de pago Facturados</h5>
-                            <small class="text-muted">EP con status Facturado — por cobrar (sin cedidos ni pagados)</small>
+                            <small class="text-muted">Foto actual · status Facturado, por cobrar (sin cedidos ni pagados)</small>
                         </div>
                         <div class="d-flex align-items-center gap-2 ms-auto">
                             <small class="text-muted" id="epFactContador"></small>
@@ -6855,7 +6864,7 @@
             contadorId: 'epProgContador',
             cols: 6,
             dateField: 'fecha_movimiento',
-            emptyMsg: 'Sin estados de pago programados en el periodo',
+            emptyMsg: 'Sin estados de pago programados',
             filtroIds: {
                 proyecto: 'filtroEpProgProyecto',
                 numero_ep: 'filtroEpProgNumero',
@@ -6871,15 +6880,15 @@
             tableId: 'tabla-dashboard-ep-enviados',
             contadorId: 'epEnvContador',
             cols: 6,
-            dateField: 'fecha_movimiento',
-            emptyMsg: 'Sin estados de pago enviados en el periodo',
+            dateField: 'fecha_estado_pago',
+            emptyMsg: 'Sin estados de pago enviados',
             filtroIds: {
                 proyecto: 'filtroEpEnvProyecto',
                 numero_ep: 'filtroEpEnvNumero',
                 monto_uf: 'filtroEpEnvUf',
                 valor_uf: 'filtroEpEnvValorUf',
                 monto: 'filtroEpEnvMonto',
-                fecha_movimiento: 'filtroEpEnvFecha',
+                fecha_estado_pago: 'filtroEpEnvFecha',
             },
         },
         facturados: {
@@ -6889,7 +6898,7 @@
             contadorId: 'epFactContador',
             cols: 6,
             dateField: 'fecha_facturacion',
-            emptyMsg: 'Sin estados de pago facturados en el periodo',
+            emptyMsg: 'Sin estados de pago facturados',
             filtroIds: {
                 proyecto: 'filtroEpFactProyecto',
                 numero_ep: 'filtroEpFactNumero',
@@ -6915,8 +6924,7 @@
                 tbody.innerHTML = `<tr><td colspan="${cfg.cols}" class="text-center text-muted py-3">Cargando…</td></tr>`;
             }
         });
-        const anio = document.getElementById('dashboardAnio')?.value || '';
-        const url = anio ? `/api/dashboard/estados-pago?anio=${encodeURIComponent(anio)}` : '/api/dashboard/estados-pago';
+        const url = '/api/dashboard/estados-pago';
         let filas = [];
         try {
             const res = await apiFetch(url);
@@ -7000,7 +7008,7 @@
         }
         if (filtro.fecha_movimiento && (f.fecha_movimiento || '') !== filtro.fecha_movimiento) return false;
         if (filtro.fecha_facturacion && (f.fecha_facturacion || '') !== filtro.fecha_facturacion) return false;
-        if (filtro.fecha_estado_pago && (f.fecha_estado_pago || '') !== filtro.fecha_estado_pago) return false;
+        if (filtro.fecha_estado_pago && (f.fecha_estado_pago || f.fecha_movimiento || '') !== filtro.fecha_estado_pago) return false;
         return true;
     }
 
@@ -7009,6 +7017,7 @@
         if (col === 'numero_ep') return f.numero_ep != null ? Number(f.numero_ep) : -Infinity;
         if (col === 'monto' || col === 'monto_uf' || col === 'valor_uf') return Number(f[col]) || 0;
         if (col === 'status_pago') return f.status_pago || '';
+        if (col === 'fecha_estado_pago') return f.fecha_estado_pago || f.fecha_movimiento || '';
         return f[col] || '';
     }
 
@@ -7066,13 +7075,16 @@
                 ? Number(f.valor_uf).toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '—';
             const dateField = cfg.dateField || 'fecha_movimiento';
+            const fechaMostrada = dateField === 'fecha_estado_pago'
+                ? (f.fecha_estado_pago || f.fecha_movimiento)
+                : f[dateField];
             return `<tr class="${nuevoGrupo ? 'ep-tracking-nuevo-proyecto' : ''}">
                 <td class="ep-track-col-proyecto" title="${esc(proyecto)}"><span class="ep-proyecto-cell">${esc(proyecto)}</span></td>
                 <td class="ep-col-num">${f.numero_ep != null ? esc(f.numero_ep) : '—'}</td>
                 <td class="text-end ep-col-uf">${esc(ufTxt)}</td>
                 <td class="text-end ep-col-uf">${esc(valorUfTxt)}</td>
                 <td class="text-end ep-col-monto">${fmtMontoMov(f.monto)}</td>
-                <td class="ep-col-fecha">${fmtFechaMov(f[dateField]) || '—'}</td>
+                <td class="ep-col-fecha">${fmtFechaMov(fechaMostrada) || '—'}</td>
             </tr>`;
         }).join('');
         ajustarAnchosTablaEpDash(document.getElementById(cfg.tableId));
@@ -16145,7 +16157,6 @@
     }
 
     function verPlanillaMensual(vista) {
-        sincronizarVistaPlanilla(vista);
         if (vista === 'planilla') return cargarLiquidaciones();
         if (vista === 'pagos') return consultarRemuneracionesPagadas();
         return consultarRemuneracionesPagadas('resumen');
